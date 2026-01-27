@@ -1,0 +1,60 @@
+﻿@page
+@model BetfairReplicator.Pages.FundsModel
+@{
+    ViewData["Title"] = "Saldo";
+}
+
+<h1>Saldo</h1>
+
+<form method="get" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+            <label class="form-label">Stake %</label>
+            <input class="form-control" type="number" name="pct" step="0.1" min="0.1" max="100"
+                   value="@Model.StakePercent.ToString("0.0")" />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Aggiorna</button>
+        </div>
+    </div>
+</form>
+
+
+<p class="text-muted">Mostra i fondi disponibili per gli account collegati.</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Disponibile</th>
+            <th>Stake (preview)</th>
+            <th>Esposizione</th>
+            <th>Stato</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model.Rows)
+        {
+            <tr>
+                <td>@r.DisplayName</td>
+                <td>@(r.AvailableToBetBalance?.ToString("0.00") ?? "-")</td>
+                <td>@(r.StakePreview?.ToString("0.00") ?? "-")</td>
+                <td>@(r.Exposure?.ToString("0.00") ?? "-")</td>
+
+                <td>
+                    @if (!string.IsNullOrWhiteSpace(r.Error))
+                    {
+                        <span class="badge bg-warning text-dark">@r.Error</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">OK</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a class="btn btn-secondary" asp-page="/ConnectBetfair">Indietro</a>

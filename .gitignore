@@ -1,0 +1,13 @@
+# Visual Studio
+.vs/
+
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.csproj.user
+
+# Local secrets
+appsettings.Development.json
+appsettings.*.Development.json

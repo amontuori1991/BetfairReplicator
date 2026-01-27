@@ -1,0 +1,314 @@
+﻿@page
+@model BetfairReplicator.Pages.MarketSearchModel
+@using BetfairReplicator.Models
+@{
+    ViewData["Title"] = "Cerca mercato";
+}
+
+<h1>Cerca mercato</h1>
+<p class="text-muted">Calcio → Match Odds (1X2). Seleziona un evento, poi scegli il mercato.</p>
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<form method="get" class="mb-3">
+    <div class="row g-2">
+        <div class="col-12 col-md-3">
+            <label class="form-label">Account (per la ricerca)</label>
+            <input class="form-control" name="Account" value="@Model.Account" />
+            <div class="form-text">Usa un account collegato (serve token).</div>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">Stake %</label>
+            <input class="form-control" type="number" step="0.1" min="0.1" max="100"
+                   id="stakePct" name="StakePercent" value="@Model.StakePercent" />
+        </div>
+
+        <div class="col-12 col-md-5">
+            <label class="form-label">Cerca evento</label>
+            <input class="form-control" name="Q" value="@Model.Q" placeholder="Es: Inter, Milan, Juventus..." />
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label">Mercato</label>
+            <select class="form-select" name="MarketType">
+                <option value="ALL" selected="@(Model.MarketType == "ALL")">Tutti</option>
+                <option value="FULLTIME_RESULT" selected="@(Model.MarketType == "FULLTIME_RESULT")">Full Time (1X2 + Double Chance)</option>
+                <option value="OVER_UNDER_ALL" selected="@(Model.MarketType == "OVER_UNDER_ALL")">Over/Under (tutte le linee)</option>
+                <option value="BTTS" selected="@(Model.MarketType == "BTTS")">GG/NG (BTTS)</option>
+                <option value="CORRECT_SCORE" selected="@(Model.MarketType == "CORRECT_SCORE")">Correct Score</option>
+                <option value="FIRST_HALF_GROUP" selected="@(Model.MarketType == "FIRST_HALF_GROUP")">Primo Tempo (tutti)</option>
+            </select>
+        </div>
+
+
+        <div class="col-12 col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100" type="submit">Cerca</button>
+            @if (!string.IsNullOrWhiteSpace(Model.EventId))
+            {
+                <input type="hidden" name="EventId" value="@Model.EventId" />
+            }
+
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.EventId))
+        {
+            <div class="col-12 col-md-2 d-flex align-items-end">
+                <a class="btn btn-secondary w-100"
+                   asp-page="/MarketSearch"
+                   asp-route-Account="@Model.Account"
+                   asp-route-Q="@Model.Q">
+                    Cambia evento
+                </a>
+            </div>
+        }
+    </div>
+</form>
+
+@if (string.IsNullOrWhiteSpace(Model.EventId))
+{
+    <h5>Eventi</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Evento</th>
+                <th>Data</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate))
+            {
+                <tr>
+                    <td>@e.Event?.name</td>
+                    <td>@(e.Event?.openDate?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</td>
+                    <td class="text-end">
+                        <a class="btn btn-outline-primary"
+                           asp-page="/MarketSearch"
+                           asp-route-Account="@Model.Account"
+                           asp-route-Q="@Model.Q"
+                           asp-route-EventId="@e.Event?.id">
+                            Scegli
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+else
+{
+    <div class="ns-page">
+        <div class="ns-header-card d-flex justify-content-between align-items-start">
+            <div>
+                <h2 class="ns-title h5">
+                    @(string.IsNullOrWhiteSpace(Model.SelectedEventName) ? "Evento selezionato" : Model.SelectedEventName)
+                </h2>
+                <div class="ns-subtitle">Mercati dell’evento</div>
+            </div>
+
+            <span class="ns-chip @(Model.IsInPlay ? "ns-live" : "ns-pre")">
+                @(Model.IsInPlay ? "LIVE" : "PRE")
+            </span>
+        </div>
+
+        <h5 class="mt-2">Mercati</h5>
+
+        @foreach (var m in (Model.Markets ?? new List<MarketCatalogue>()).OrderBy(x => x.marketName))
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">@m.marketName</div>
+                            <div class="text-muted small">
+                                @if (m.marketStartTime != null)
+                                {
+                                    <span>Start: @m.marketStartTime.Value.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                }
+                            </div>
+
+                        </div>
+
+                        <a class="btn btn-primary"
+                           asp-page="/OrderPreview"
+                           asp-route-MarketId="@m.marketId">
+                            Apri in Ordine (preview)
+                        </a>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="fw-semibold mb-1">Runner / Quote</div>
+
+                        <div class="table-responsive market-card" data-marketid="@m.marketId" data-account="@Model.Account">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Runner</th>
+                                        <th class="text-end text-primary">BACK</th>
+                                        <th class="text-end text-danger">LAY</th>
+                                        <th class="text-end">Azione</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var r in (m.runners ?? new List<RunnerCatalogue>()).OrderBy(x => x.runnerName))
+                                    {
+                                        <tr class="runner-row" data-selectionid="@r.selectionId">
+                                            <td>@r.runnerName</td>
+                                            <td class="text-end text-primary">
+                                                <span class="back-odds">-</span>
+                                            </td>
+                                            <td class="text-end text-danger">
+                                                <span class="lay-odds">-</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button"
+                                                            class="btn btn-outline-primary btn-order"
+                                                            data-side="BACK"
+                                                            data-marketid="@m.marketId"
+                                                            data-selectionid="@r.selectionId">
+                                                        BACK
+                                                    </button>
+
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-order"
+                                                            data-side="LAY"
+                                                            data-marketid="@m.marketId"
+                                                            data-selectionid="@r.selectionId">
+                                                        LAY
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+
+                            <div class="small text-muted mt-1 quote-status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (async function () {
+            const REFRESH_MS = 2500;
+
+            async function refreshMarketQuotes(container) {
+                const marketId = container.dataset.marketid;
+                const account = container.dataset.account || "";
+
+                try {
+                    const url = `/MarketSearch?handler=Quotes&marketId=${encodeURIComponent(marketId)}&account=${encodeURIComponent(account)}`;
+                    const res = await fetch(url, { cache: "no-store" });
+                    const data = await res.json();
+
+                    const statusEl = container.querySelector(".quote-status");
+                    if (!data.ok) {
+                        if (statusEl) statusEl.textContent = data.error || "Errore quote";
+                        return;
+                    }
+
+                    if (statusEl) statusEl.textContent = data.delayed ? "Quote DELAYED" : "Quote LIVE";
+
+                    const runners = data.runners || {};
+                    container.querySelectorAll(".runner-row").forEach(row => {
+                        const selId = row.dataset.selectionid;
+                        const q = runners[selId];
+
+                        const backEl = row.querySelector(".back-odds");
+                        const layEl = row.querySelector(".lay-odds");
+
+                        if (!q) {
+                            if (backEl) backEl.textContent = "-";
+                            if (layEl) layEl.textContent = "-";
+                            return;
+                        }
+
+                        if (backEl) backEl.textContent = q.back ? Number(q.back).toFixed(2) : "-";
+                        if (layEl) layEl.textContent = q.lay ? Number(q.lay).toFixed(2) : "-";
+                    });
+                } catch (e) {
+                    const statusEl = container.querySelector(".quote-status");
+                    if (statusEl) statusEl.textContent = "Errore rete";
+                }
+            }
+
+        async function refreshAll() {
+            const cards = document.querySelectorAll(".market-card");
+            for (const c of cards) {
+                await refreshMarketQuotes(c);
+            }
+            attachOrderButtons();
+        }
+
+
+        function parseOdd(text) {
+            if (!text) return null;
+            const t = text.replace(",", ".").trim();
+            const v = Number(t);
+            return Number.isFinite(v) && v > 1 ? v : null;
+        }
+
+        function getStakePct() {
+            const el = document.getElementById("stakePct");
+            const v = el ? Number(String(el.value).replace(",", ".")) : 3.0;
+            if (!Number.isFinite(v)) return 3.0;
+            return Math.min(100, Math.max(0.1, v));
+        }
+
+        function attachOrderButtons() {
+            document.querySelectorAll(".btn-order").forEach(btn => {
+                if (btn.dataset.bound === "1") return;
+                btn.dataset.bound = "1";
+
+                btn.addEventListener("click", () => {
+                    const marketId = btn.dataset.marketid;
+                    const selectionId = btn.dataset.selectionid;
+                    const side = (btn.dataset.side || "LAY").toUpperCase();
+
+                    const row = btn.closest(".runner-row");
+                    const backText = row?.querySelector(".back-odds")?.textContent || "";
+                    const layText = row?.querySelector(".lay-odds")?.textContent || "";
+
+                    const backPrice = parseOdd(backText);
+                    const layPrice = parseOdd(layText);
+
+                    // price da usare: BACK usa colonna blu, LAY usa colonna rossa
+        const price = side === "BACK" ? backPrice : layPrice; // può essere null
+
+        const stakePct = getStakePct();
+
+        let url =
+            `/OrderPreview?MarketId=${encodeURIComponent(marketId)}` +
+            `&SelectionId=${encodeURIComponent(selectionId)}` +
+            `&Side=${encodeURIComponent(side)}` +
+            `&StakePercent=${encodeURIComponent(stakePct.toFixed(1))}`;
+
+        // Passo Price SOLO se presente
+        if (price !== null && price !== undefined) {
+            url += `&Price=${encodeURIComponent(Number(price).toFixed(2))}`;
+        }
+
+        window.location.href = url;
+
+                });
+            });
+        }
+
+
+            await refreshAll();
+            setInterval(refreshAll, REFRESH_MS);
+        })();
+    </script>
+}

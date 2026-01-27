@@ -1,0 +1,310 @@
+/* ================================
+   BetfairReplicator - site.css
+   Dark app + Betfair yellow accent
+   ================================ */
+
+/* Base font sizing */
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+/* Theme variables */
+:root {
+    --bf-bg: #07101f; /* blu scuro */
+    --bf-card: rgba(255,255,255,.04); /* superficie */
+    --bf-border: rgba(255,255,255,.10);
+    --bf-text: #f2f6ff;
+    --bf-muted: rgba(242,246,255,.72);
+    --bf-blue: #2f6bff; /* vibe nextstake */
+    --bf-yellow: #ffcc00; /* betfair */
+    --bf-yellow-2: #ffdf4d; /* highlight */
+    --bf-danger: #ff4d6d;
+}
+
+/* Body background (blue + yellow glow) */
+body {
+    background: radial-gradient(900px 500px at 20% 10%, rgba(47,107,255,.22), transparent 60%), radial-gradient(800px 420px at 80% 20%, rgba(255,204,0,.16), transparent 55%), linear-gradient(180deg, rgba(255,204,0,.06), transparent 30%), var(--bf-bg);
+    color: var(--bf-text);
+    margin-bottom: 60px;
+}
+
+/* Links */
+a {
+    color: var(--bf-text);
+}
+
+    a:hover {
+        color: var(--bf-yellow);
+    }
+
+/* Bootstrap focus ring tweak */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem rgba(255,255,255,.18), 0 0 0 0.25rem rgba(255,204,0,.28);
+}
+
+/* Layout container */
+.container {
+    max-width: 980px;
+}
+
+/* Navbar */
+.navbar {
+    background: rgba(0,0,0,.18) !important;
+    border-bottom: 1px solid var(--bf-border) !important;
+}
+
+    .navbar .nav-link {
+        color: var(--bf-text) !important;
+        opacity: .92;
+    }
+
+        .navbar .nav-link:hover {
+            color: var(--bf-yellow) !important;
+            opacity: 1;
+        }
+
+    /* Brand (non bianco, ben visibile) */
+    .navbar .navbar-brand {
+        color: var(--bf-yellow) !important;
+        font-weight: 900;
+        letter-spacing: .2px;
+        text-shadow: 0 0 16px rgba(255,204,0,.18);
+    }
+
+/* Page padding helper */
+.ns-page {
+    padding: 10px 10px 80px;
+}
+
+@media (max-width: 576px) {
+    .ns-page {
+        padding: 8px 8px 90px;
+    }
+}
+
+/* Header card */
+.ns-header-card {
+    background: linear-gradient(180deg, rgba(255,204,0,.10), rgba(255,255,255,.03));
+    border: 1px solid rgba(255,204,0,.22);
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.22);
+}
+
+.ns-title {
+    font-weight: 900;
+    margin: 0;
+    color: var(--bf-yellow);
+    text-shadow: 0 0 18px rgba(255,204,0,.22);
+}
+
+.ns-subtitle {
+    color: var(--bf-muted);
+    margin: 6px 0 0;
+    font-size: 13px;
+}
+
+/* LIVE / PRE chip */
+.ns-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    border: 1px solid var(--bf-border);
+    background: rgba(255,255,255,.03);
+}
+
+.ns-live {
+    color: var(--bf-danger);
+    border-color: rgba(255,77,109,.45);
+    background: rgba(255,77,109,.12);
+}
+
+.ns-pre {
+    color: var(--bf-yellow);
+    border-color: rgba(255,204,0,.45);
+    background: rgba(255,204,0,.12);
+}
+
+/* Cards */
+.card {
+    background: rgba(255,255,255,.03) !important;
+    border: 1px solid var(--bf-border) !important;
+    border-radius: 16px !important;
+}
+
+/* Muted text */
+.text-muted {
+    color: var(--bf-muted) !important;
+}
+
+/* Inputs */
+.form-control,
+.form-select {
+    background-color: rgba(255,255,255,.04) !important;
+    color: var(--bf-text) !important;
+    border: 1px solid var(--bf-border) !important;
+    border-radius: 14px !important;
+}
+
+    .form-control::placeholder {
+        color: rgba(242,246,255,.45);
+    }
+
+/* Tables */
+.table {
+    color: var(--bf-text) !important;
+}
+
+    .table td,
+    .table th {
+        border-top: 1px solid var(--bf-border) !important;
+    }
+
+    .table thead th {
+        border-bottom: 1px solid var(--bf-border) !important;
+        color: rgba(242,246,255,.78) !important;
+    }
+
+/* Market table spacing (mobile friendly) */
+.market-card .table td,
+.market-card .table th {
+    padding-top: .55rem !important;
+    padding-bottom: .55rem !important;
+}
+
+/* ================================
+   Home tiles (2x2 app grid) - PRO
+   ================================ */
+.ns-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ns-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none !important;
+    background: radial-gradient(240px 160px at 20% 15%, rgba(47,107,255,.18), transparent 55%), radial-gradient(260px 180px at 80% 20%, rgba(255,204,0,.22), transparent 60%), rgba(255,255,255,.03);
+    border: 1px solid rgba(255,204,0,.18);
+    border-radius: 20px;
+    padding: 16px 14px;
+    min-height: 150px;
+    color: var(--bf-text) !important;
+    box-shadow: 0 12px 26px rgba(0,0,0,.26);
+    position: relative;
+    overflow: hidden;
+    transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+    .ns-tile:hover {
+        border-color: rgba(255,204,0,.42);
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(0,0,0,.30);
+    }
+
+.ns-tile-icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 12px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,204,0,.20), rgba(255,255,255,.03));
+    border: 1px solid rgba(255,204,0,.28);
+    box-shadow: 0 0 0 6px rgba(255,204,0,.06), 0 10px 24px rgba(0,0,0,.25);
+}
+
+    .ns-tile-icon svg {
+        width: 30px;
+        height: 30px;
+        color: var(--bf-yellow);
+        filter: drop-shadow(0 0 10px rgba(255,204,0,.20));
+        opacity: .98;
+    }
+
+.ns-tile-title {
+    font-weight: 900;
+    font-size: 17px;
+    margin: 0;
+    color: var(--bf-text);
+}
+
+.ns-tile-sub {
+    margin-top: 6px;
+    color: var(--bf-muted);
+    font-size: 13px;
+}
+
+/* ================================
+   App-style BACK / LAY buttons
+   ================================ */
+.btn-order {
+    border-radius: 999px !important;
+    font-weight: 900 !important;
+    letter-spacing: .3px;
+    padding: 8px 12px !important;
+    min-width: 78px;
+}
+
+    /* BACK: blu */
+    .btn-order[data-side="BACK"] {
+        border-color: rgba(47,107,255,.65) !important;
+        background: rgba(47,107,255,.14) !important;
+        color: var(--bf-text) !important;
+    }
+
+        .btn-order[data-side="BACK"]:hover {
+            background: rgba(47,107,255,.24) !important;
+            border-color: rgba(47,107,255,.95) !important;
+        }
+
+    /* LAY: giallo */
+    .btn-order[data-side="LAY"] {
+        border-color: rgba(255,204,0,.65) !important;
+        background: rgba(255,204,0,.14) !important;
+        color: var(--bf-text) !important;
+    }
+
+        .btn-order[data-side="LAY"]:hover {
+            background: rgba(255,204,0,.24) !important;
+            border-color: rgba(255,204,0,.95) !important;
+        }
+
+/* Footer */
+.footer {
+    border-top: 1px solid var(--bf-border) !important;
+    background: rgba(0,0,0,.12);
+    color: var(--bf-muted) !important;
+}
+/* Tap / press feedback (mobile + desktop) */
+.ns-tile:active {
+    transform: scale(.985);
+    box-shadow: 0 10px 22px rgba(0,0,0,.22);
+}
+
+.ns-tile {
+    -webkit-tap-highlight-color: transparent;
+}

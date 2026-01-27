@@ -1,0 +1,54 @@
+﻿@page
+@model BetfairReplicator.Pages.ConnectBetfairModel
+@{
+    ViewData["Title"] = "Collega Betfair";
+}
+
+<h1>Collega Betfair</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Account</th>
+            <th>Stato</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            <tr>
+                <td>@row.DisplayName</td>
+                <td>
+                    @if (row.IsConnected)
+                    {
+                        <span class="badge bg-success">Collegato</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Non collegato</span>
+                    }
+                </td>
+                <td class="text-end">
+                    <div class="d-inline-flex gap-2">
+                        <form method="get" asp-page="/BetfairLogin">
+                            <input type="hidden" name="displayName" value="@row.DisplayName" />
+                            <button type="submit" class="btn btn-primary">
+                                @(row.IsConnected ? "Ricollega" : "Collega")
+                            </button>
+                        </form>
+
+                        @if (row.IsConnected)
+                        {
+                            <form method="post" asp-page-handler="Disconnect">
+                                <input type="hidden" name="displayName" value="@row.DisplayName" />
+                                <button type="submit" class="btn btn-outline-danger">Scollega</button>
+                            </form>
+                        }
+                    </div>
+
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
