@@ -4,7 +4,7 @@ public class ListMarketBookParams
 {
     public List<string> marketIds { get; set; } = new();
     public PriceProjection priceProjection { get; set; } = new();
-}
+} 
 
 public class PriceProjection
 {
