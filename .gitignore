@@ -11,3 +11,6 @@ obj/
 # Local secrets
 appsettings.Development.json
 appsettings.*.Development.json
+
+# Betfair session/tokens
+App_Data/

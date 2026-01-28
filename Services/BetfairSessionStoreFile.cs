@@ -11,7 +11,20 @@ public class BetfairSessionStoreFile
 
     public BetfairSessionStoreFile(IWebHostEnvironment env, IDataProtectionProvider dp)
     {
-        var dir = Path.Combine(env.ContentRootPath, "App_Data");
+        // Su Fly abbiamo il volume montato su /data
+        // In locale continuiamo a usare App_Data
+        var flyDataDir = "/data";
+        string dir;
+
+        if (Directory.Exists(flyDataDir))
+        {
+            dir = flyDataDir;
+        }
+        else
+        {
+            dir = Path.Combine(env.ContentRootPath, "App_Data");
+        }
+
         Directory.CreateDirectory(dir);
 
         _path = Path.Combine(dir, "betfair-sessions.json");

@@ -1,5 +1,6 @@
 ﻿using BetfairReplicator.Services;
-
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
 namespace BetfairReplicator
 {
     public class Program
@@ -10,6 +11,13 @@ namespace BetfairReplicator
 
             // Add services to the container.
             builder.Services.AddRazorPages();
+
+            if (Directory.Exists("/data"))
+            {
+                builder.Services
+                    .AddDataProtection()
+                    .PersistKeysToFileSystem(new DirectoryInfo("/data/dpkeys"));
+            }
 
             builder.Services.Configure<BetfairReplicator.Options.BetfairOptions>(
                 builder.Configuration.GetSection("Betfair"));
