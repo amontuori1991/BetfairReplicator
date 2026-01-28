@@ -10,14 +10,22 @@ public class ConnectBetfairModel : PageModel
 {
     private readonly BetfairOptions _options;
     private readonly BetfairSessionStoreFile _store;
+    private readonly BetfairSsoService _sso;
 
-    public List<AccountRow> Rows { get; private set; } = new();
-
-    public ConnectBetfairModel(IOptions<BetfairOptions> options, BetfairSessionStoreFile store)
+    public ConnectBetfairModel(
+        IOptions<BetfairOptions> options,
+        BetfairSessionStoreFile store,
+        BetfairSsoService sso)
     {
         _options = options.Value;
         _store = store;
+        _sso = sso;
     }
+
+    public List<AccountRow> Rows { get; private set; } = new();
+
+    public string? Error { get; private set; }
+    public string? Success { get; private set; }
 
     public async Task OnGetAsync()
     {
@@ -26,6 +34,7 @@ public class ConnectBetfairModel : PageModel
         foreach (var a in _options.Accounts)
         {
             var token = await _store.GetTokenAsync(a.DisplayName);
+
             Rows.Add(new AccountRow
             {
                 DisplayName = a.DisplayName,
@@ -34,14 +43,68 @@ public class ConnectBetfairModel : PageModel
         }
     }
 
+    // POST: collega (login + salva token)
+    public async Task<IActionResult> OnPostConnectAsync(string displayName, string username, string password)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            Error = "DisplayName mancante.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var acc = _options.Accounts.FirstOrDefault(x => x.DisplayName == displayName);
+        if (acc == null)
+        {
+            Error = $"Account '{displayName}' non trovato in configurazione.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var appKey = acc.AppKeyDelayed;
+
+        // IMPORTANT: se in locale hai messo "*********" o stringa vuota, Betfair risponde in modo “strano”
+        if (string.IsNullOrWhiteSpace(appKey) || appKey.Contains("*"))
+        {
+            Error =
+                "AppKey mancante o mascherata. " +
+                "In locale mettila in appsettings.Development.json (NON committato) oppure come variabile ambiente/secrets su Fly.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            Error = "Inserisci username e password.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var login = await _sso.LoginItalyAsync(appKey, username, password);
+
+        if (!string.Equals(login.status, "SUCCESS", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(login.token))
+        {
+            // login.error può essere HTML_RESPONSE / UNEXPECTED_RESPONSE / ecc.
+            Error = $"Login fallito: status={login.status}, error={login.error}";
+            await OnGetAsync();
+            return Page();
+        }
+
+        await _store.SetTokenAsync(acc.DisplayName, login.token);
+
+        Success = $"Account '{acc.DisplayName}' collegato correttamente.";
+        await OnGetAsync();
+        return Page();
+    }
+
     public async Task<IActionResult> OnPostDisconnectAsync(string displayName)
     {
         if (!string.IsNullOrWhiteSpace(displayName))
             await _store.RemoveTokenAsync(displayName);
 
-        // ricarico la tabella
+        Success = $"Account '{displayName}' scollegato.";
         await OnGetAsync();
-
         return Page();
     }
 
