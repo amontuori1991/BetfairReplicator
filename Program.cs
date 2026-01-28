@@ -1,6 +1,8 @@
 ﻿using BetfairReplicator.Services;
-using System.IO;
+using BetfairReplicator.Options;
 using Microsoft.AspNetCore.DataProtection;
+using System.IO;
+
 namespace BetfairReplicator
 {
     public class Program
@@ -12,24 +14,19 @@ namespace BetfairReplicator
             // Add services to the container.
             builder.Services.AddRazorPages();
 
+            // ✅ DataProtection: 1 sola volta
+            // Su Fly persistiamo le chiavi nel volume /data (così i token restano decifrabili dopo restart/deploy)
+            var dp = builder.Services.AddDataProtection();
             if (Directory.Exists("/data"))
             {
-                builder.Services
-                    .AddDataProtection()
-                    .PersistKeysToFileSystem(new DirectoryInfo("/data/dpkeys"));
+                dp.PersistKeysToFileSystem(new DirectoryInfo("/data/dpkeys"));
             }
 
-            builder.Services.Configure<BetfairReplicator.Options.BetfairOptions>(
+            builder.Services.Configure<BetfairOptions>(
                 builder.Configuration.GetSection("Betfair"));
 
-            // ✅ Cifratura token (DataProtection)
-            builder.Services.AddDataProtection();
-
-            // ✅ Store token su file cifrato (App_Data/betfair-sessions.json)
+            // ✅ Store token su file cifrato
             builder.Services.AddSingleton<BetfairSessionStoreFile>();
-
-            // ❌ (per ora lasciamo questo commentato finché non lo sostituiamo ovunque)
-            // builder.Services.AddSingleton<BetfairSessionStore>();
 
             builder.Services.AddHttpClient<BetfairSsoService>();
             builder.Services.AddHttpClient<BetfairAccountApiService>();
