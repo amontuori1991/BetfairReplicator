@@ -19,15 +19,19 @@ namespace BetfairReplicator
                     o.Conventions.AuthorizeFolder("/Admin");
                     o.Conventions.AllowAnonymousToPage("/Admin/Login");
                 });
-            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Admin/Login";
-        options.AccessDeniedPath = "/Admin/Login";
-        options.Cookie.Name = "BetfairReplicator.Admin";
-        options.SlidingExpiration = true;
-        options.ExpireTimeSpan = TimeSpan.FromHours(12);
-    });
+
+            // ✅ Auth admin (cookie) — UNA SOLA VOLTA
+            builder.Services
+                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/Admin/Login";
+                    options.AccessDeniedPath = "/Admin/Login";
+                    options.Cookie.Name = "BetfairReplicator.Admin";
+                    options.Cookie.HttpOnly = true;
+                    options.SlidingExpiration = true;
+                    options.ExpireTimeSpan = TimeSpan.FromHours(12);
+                });
 
             builder.Services.AddAuthorization();
 
@@ -37,11 +41,14 @@ namespace BetfairReplicator
             {
                 dp.PersistKeysToFileSystem(new DirectoryInfo("/data/dpkeys"));
             }
+
+            // ✅ HttpClient factory
             builder.Services.AddHttpClient();
+
             builder.Services.Configure<BetfairOptions>(
                 builder.Configuration.GetSection("Betfair"));
 
-            // ✅ Store sessioni (già ok)
+            // ✅ Store sessioni (token Betfair)
             builder.Services.AddSingleton<BetfairSessionStoreFile>();
 
             // ✅ Store account + per-account cert/client
@@ -49,33 +56,19 @@ namespace BetfairReplicator
             builder.Services.AddSingleton<BetfairCertificateProvider>();
             builder.Services.AddSingleton<BetfairHttpClientProvider>();
 
-            // ✅ Auth admin (cookie)
-            builder.Services
-                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(o =>
-                {
-                    o.LoginPath = "/Admin/Login";
-                    o.LogoutPath = "/Admin/Logout";
-                    o.AccessDeniedPath = "/Admin/Login";
-                    o.Cookie.Name = "BetfairReplicator.Admin";
-                    o.Cookie.HttpOnly = true;
-                    o.SlidingExpiration = true;
-                    o.ExpireTimeSpan = TimeSpan.FromHours(12);
-                });
-
-            builder.Services.AddAuthorization();
-
-            // Servizi applicativi
+            // ✅ Servizi applicativi
             builder.Services.AddScoped<BetfairSsoService>();
             builder.Services.AddScoped<BetfairAccountApiService>();
             builder.Services.AddScoped<BetfairBettingApiService>();
 
             var app = builder.Build();
 
-            // Seed displayName da appsettings (senza secrets)
+            // ✅ Seed displayName da appsettings (senza secrets)
             using (var scope = app.Services.CreateScope())
             {
-                var opts = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BetfairOptions>>().Value;
+                var opts = scope.ServiceProvider
+                    .GetRequiredService<Microsoft.Extensions.Options.IOptions<BetfairOptions>>().Value;
+
                 var store = scope.ServiceProvider.GetRequiredService<BetfairAccountStoreFile>();
 
                 store.EnsureSeedFromOptionsAsync(
@@ -89,7 +82,6 @@ namespace BetfairReplicator
                 app.UseHsts();
             }
 
-            // Se fai reverse proxy dopo, puoi tenere. Per ora ok.
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
