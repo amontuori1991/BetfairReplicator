@@ -14,3 +14,8 @@ appsettings.*.Development.json
 
 # Betfair session/tokens
 App_Data/
+
+fly-secrets*.txt
+.env
+*.p12
+*.pfx
