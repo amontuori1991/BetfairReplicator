@@ -63,7 +63,24 @@ public class ConnectBetfairModel : PageModel
             return Page();
         }
 
-        var login = await _sso.LoginItalyAsync(displayName, username, password);
+        var acc = await _accountStore.GetAsync(displayName);
+
+        if (acc is null)
+        {
+            Error = $"Account '{displayName}' non trovato nello store.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(acc.AppKeyDelayed))
+        {
+            Error = $"AppKeyDelayed mancante per '{displayName}'.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var login = await _sso.LoginItalyAsync(acc.AppKeyDelayed, username, password);
+
 
         if (!string.Equals(login.status, "SUCCESS", StringComparison.OrdinalIgnoreCase) ||
             string.IsNullOrWhiteSpace(login.token))

@@ -19,3 +19,7 @@ fly-secrets*.txt
 .env
 *.p12
 *.pfx
+
+
+betfair-accounts.json
+betfair-accounts.*.json

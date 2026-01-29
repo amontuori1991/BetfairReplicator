@@ -33,7 +33,7 @@ public class BetfairLoginModel : PageModel
         if (string.IsNullOrWhiteSpace(displayName))
             return RedirectToPage("/ConnectBetfair");
 
-        await _accountStore.EnsureSeedFromOptionsAsync(_options.Accounts.Select(a => (a.DisplayName, a.AppKeyDelayed)));
+        
 
         var acc = await _accountStore.GetAsync(displayName);
         if (acc is null)
@@ -50,7 +50,21 @@ public class BetfairLoginModel : PageModel
 
         DisplayName = displayName;
 
-        var res = await _sso.LoginItalyAsync(displayName, username, password);
+        var acc = await _accountStore.GetAsync(displayName);
+        if (acc is null)
+        {
+            ErrorMessage = $"Account '{displayName}' non trovato nello store.";
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(acc.AppKeyDelayed))
+        {
+            ErrorMessage = $"AppKeyDelayed mancante per '{displayName}'.";
+            return Page();
+        }
+
+        var res = await _sso.LoginItalyAsync(acc.AppKeyDelayed, username, password);
+
 
         if (res.status == "SUCCESS" && !string.IsNullOrWhiteSpace(res.token))
         {
