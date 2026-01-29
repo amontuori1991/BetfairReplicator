@@ -13,11 +13,23 @@ namespace BetfairReplicator
             var builder = WebApplication.CreateBuilder(args);
 
             // ✅ Razor Pages + protezione folder Admin
-            builder.Services.AddRazorPages(o =>
-            {
-                o.Conventions.AuthorizeFolder("/Admin");
-                o.Conventions.AllowAnonymousToPage("/Admin/Login");
-            });
+            builder.Services.AddRazorPages()
+                .AddRazorPagesOptions(o =>
+                {
+                    o.Conventions.AuthorizeFolder("/Admin");
+                    o.Conventions.AllowAnonymousToPage("/Admin/Login");
+                });
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Admin/Login";
+        options.AccessDeniedPath = "/Admin/Login";
+        options.Cookie.Name = "BetfairReplicator.Admin";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(12);
+    });
+
+            builder.Services.AddAuthorization();
 
             // ✅ DataProtection (persistente su VPS /data)
             var dp = builder.Services.AddDataProtection();
