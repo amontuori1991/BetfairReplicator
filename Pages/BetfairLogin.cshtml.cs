@@ -50,21 +50,7 @@ public class BetfairLoginModel : PageModel
 
         DisplayName = displayName;
 
-        var acc = await _accountStore.GetAsync(displayName);
-        if (acc is null)
-        {
-            ErrorMessage = $"Account '{displayName}' non trovato nello store.";
-            return Page();
-        }
-
-        if (string.IsNullOrWhiteSpace(acc.AppKeyDelayed))
-        {
-            ErrorMessage = $"AppKeyDelayed mancante per '{displayName}'.";
-            return Page();
-        }
-
-        var res = await _sso.LoginItalyAsync(acc.AppKeyDelayed, username, password);
-
+        var res = await _sso.LoginItalyAsync(displayName, username, password);
 
         if (res.status == "SUCCESS" && !string.IsNullOrWhiteSpace(res.token))
         {
