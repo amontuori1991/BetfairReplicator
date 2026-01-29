@@ -11,27 +11,33 @@ public class ConnectBetfairModel : PageModel
     private readonly BetfairOptions _options;
     private readonly BetfairSessionStoreFile _store;
     private readonly BetfairSsoService _sso;
+    private readonly BetfairAccountStoreFile _accountStore;
 
     public ConnectBetfairModel(
         IOptions<BetfairOptions> options,
         BetfairSessionStoreFile store,
-        BetfairSsoService sso)
+        BetfairSsoService sso,
+        BetfairAccountStoreFile accountStore)
     {
         _options = options.Value;
         _store = store;
         _sso = sso;
+        _accountStore = accountStore;
     }
 
     public List<AccountRow> Rows { get; private set; } = new();
-
     public string? Error { get; private set; }
     public string? Success { get; private set; }
 
     public async Task OnGetAsync()
     {
-        Rows = new();
+        // importa eventuali DisplayName da appsettings nel file store (senza secrets)
+        await _accountStore.EnsureSeedFromOptionsAsync(_options.Accounts.Select(a => (a.DisplayName, a.AppKeyDelayed)));
 
-        foreach (var a in _options.Accounts)
+        var accounts = await _accountStore.GetAllAsync();
+
+        Rows = new();
+        foreach (var a in accounts)
         {
             var token = await _store.GetTokenAsync(a.DisplayName);
 
@@ -43,32 +49,11 @@ public class ConnectBetfairModel : PageModel
         }
     }
 
-    // POST: collega (login + salva token)
     public async Task<IActionResult> OnPostConnectAsync(string displayName, string username, string password)
     {
         if (string.IsNullOrWhiteSpace(displayName))
         {
             Error = "DisplayName mancante.";
-            await OnGetAsync();
-            return Page();
-        }
-
-        var acc = _options.Accounts.FirstOrDefault(x => x.DisplayName == displayName);
-        if (acc == null)
-        {
-            Error = $"Account '{displayName}' non trovato in configurazione.";
-            await OnGetAsync();
-            return Page();
-        }
-
-        var appKey = acc.AppKeyDelayed;
-
-        // IMPORTANT: se in locale hai messo "*********" o stringa vuota, Betfair risponde in modo “strano”
-        if (string.IsNullOrWhiteSpace(appKey) || appKey.Contains("*"))
-        {
-            Error =
-                "AppKey mancante o mascherata. " +
-                "In locale mettila in appsettings.Development.json (NON committato) oppure come variabile ambiente/secrets su Fly.";
             await OnGetAsync();
             return Page();
         }
@@ -80,20 +65,19 @@ public class ConnectBetfairModel : PageModel
             return Page();
         }
 
-        var login = await _sso.LoginItalyAsync(appKey, username, password);
+        var login = await _sso.LoginItalyAsync(displayName, username, password);
 
         if (!string.Equals(login.status, "SUCCESS", StringComparison.OrdinalIgnoreCase) ||
             string.IsNullOrWhiteSpace(login.token))
         {
-            // login.error può essere HTML_RESPONSE / UNEXPECTED_RESPONSE / ecc.
             Error = $"Login fallito: status={login.status}, error={login.error}";
             await OnGetAsync();
             return Page();
         }
 
-        await _store.SetTokenAsync(acc.DisplayName, login.token);
+        await _store.SetTokenAsync(displayName, login.token);
 
-        Success = $"Account '{acc.DisplayName}' collegato correttamente.";
+        Success = $"Account '{displayName}' collegato correttamente.";
         await OnGetAsync();
         return Page();
     }

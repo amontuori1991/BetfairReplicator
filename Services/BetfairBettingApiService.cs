@@ -9,10 +9,12 @@ public class BetfairBettingApiService
 {
     private readonly HttpClient _http;
 
-    public BetfairBettingApiService(HttpClient http)
+    public BetfairBettingApiService(IHttpClientFactory httpFactory)
     {
-        _http = http;
+        _http = httpFactory.CreateClient("Betfair");
+        _http.Timeout = TimeSpan.FromSeconds(30);
     }
+
 
     // NOTA: niente T? qui (evita CS8978)
     protected async Task<(T Result, string? Error)> CallAsync<T>(string appKey, string sessionToken, object rpcRequest)

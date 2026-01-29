@@ -7,29 +7,47 @@ namespace BetfairReplicator.Services;
 
 public class BetfairSsoService
 {
-    private readonly HttpClient _http;
+    private readonly BetfairHttpClientProvider _httpProvider;
+    private readonly BetfairAccountStoreFile _accounts;
 
-    public BetfairSsoService(HttpClient http)
+    public BetfairSsoService(BetfairHttpClientProvider httpProvider, BetfairAccountStoreFile accounts)
     {
-        _http = http;
+        _httpProvider = httpProvider;
+        _accounts = accounts;
     }
 
-    public async Task<BetfairLoginResponse> LoginItalyAsync(string appKey, string username, string password)
+    public async Task<BetfairLoginResponse> LoginItalyAsync(string displayName, string username, string password)
     {
-        var url = "https://identitysso.betfair.it/api/login";
+        var rec = await _accounts.GetAsync(displayName);
+        if (rec is null)
+        {
+            return new BetfairLoginResponse { status = "FAIL", error = $"ACCOUNT_NOT_FOUND ({displayName})" };
+        }
+
+        var appKey = rec.AppKeyDelayed;
+
+        if (string.IsNullOrWhiteSpace(appKey) || appKey.Contains("*"))
+        {
+            return new BetfairLoginResponse
+            {
+                status = "FAIL",
+                error = "APPKEY_MISSING_OR_MASKED"
+            };
+        }
+
+        var url = "https://identitysso-cert.betfair.it/api/certlogin";
+        Console.WriteLine($"SSO URL: {url}");
+
+        var http = await _httpProvider.GetAsync(displayName);
 
         using var req = new HttpRequestMessage(HttpMethod.Post, url);
 
-        // Betfair SSO spesso risponde text/plain: "status=SUCCESS&token=..."
         req.Headers.Accept.Clear();
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
 
-        // Header richiesti
         req.Headers.Add("X-Application", appKey);
-
-        // Alcuni gateway/WAF possono rispondere HTML se manca User-Agent
         req.Headers.UserAgent.ParseAdd("BetfairReplicator/1.0 (+https://localhost)");
 
         req.Content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -38,11 +56,10 @@ public class BetfairSsoService
             ["password"] = password
         });
 
-        var res = await _http.SendAsync(req);
+        var res = await http.SendAsync(req);
         var body = await res.Content.ReadAsStringAsync();
         var ct = res.Content.Headers.ContentType?.ToString() ?? "(no content-type)";
 
-        // DEBUG (Fly: fly logs)
         Console.WriteLine("=== BETFAIR SSO RESPONSE ===");
         Console.WriteLine($"HTTP {(int)res.StatusCode} {res.StatusCode}");
         Console.WriteLine($"Content-Type: {ct}");
@@ -50,7 +67,6 @@ public class BetfairSsoService
         Console.WriteLine(body.Length > 800 ? body.Substring(0, 800) : body);
         Console.WriteLine("=== END RESPONSE ===");
 
-        // Se torna HTML, non è risposta API
         if (body.Contains("<html", StringComparison.OrdinalIgnoreCase) ||
             body.Contains("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase))
         {
@@ -61,7 +77,7 @@ public class BetfairSsoService
             };
         }
 
-        // 1) Tentativo: querystring classico (status=...&token=...)
+        // 1) querystring
         {
             var parsed = HttpUtility.ParseQueryString(body);
             var status = parsed["status"];
@@ -70,17 +86,11 @@ public class BetfairSsoService
 
             if (!string.IsNullOrWhiteSpace(status))
             {
-                return new BetfairLoginResponse
-                {
-                    status = status,
-                    token = token,
-                    error = error
-                };
+                return new BetfairLoginResponse { status = status, token = token, error = error };
             }
         }
 
-        // 2) Tentativo: stessa cosa ma separata da newline (capita con alcuni proxy)
-        //    Esempio: "status=SUCCESS\ntoken=...."
+        // 2) newline
         {
             var normalized = body.Replace("\r\n", "&").Replace("\n", "&").Replace("\r", "&");
             var parsed = HttpUtility.ParseQueryString(normalized);
@@ -90,16 +100,11 @@ public class BetfairSsoService
 
             if (!string.IsNullOrWhiteSpace(status))
             {
-                return new BetfairLoginResponse
-                {
-                    status = status,
-                    token = token,
-                    error = error
-                };
+                return new BetfairLoginResponse { status = status, token = token, error = error };
             }
         }
 
-        // 3) Tentativo: JSON
+        // 3) JSON
         try
         {
             var obj = JsonSerializer.Deserialize<BetfairLoginResponse>(body, new JsonSerializerOptions
@@ -112,10 +117,9 @@ public class BetfairSsoService
         }
         catch
         {
-            // ignore -> fallback sotto
+            // ignore
         }
 
-        // Fallback finale
         return new BetfairLoginResponse
         {
             status = "FAIL",

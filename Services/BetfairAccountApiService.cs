@@ -9,10 +9,12 @@ public class BetfairAccountApiService
 {
     private readonly HttpClient _http;
 
-    public BetfairAccountApiService(HttpClient http)
+    public BetfairAccountApiService(IHttpClientFactory httpFactory)
     {
-        _http = http;
+        _http = httpFactory.CreateClient("Betfair");
+        _http.Timeout = TimeSpan.FromSeconds(30);
     }
+
 
     public async Task<(BetfairAccountFundsResult? Result, string? Error)> GetAccountFundsAsync(
         string appKey,

@@ -11,6 +11,7 @@ public class BetfairLoginModel : PageModel
     private readonly BetfairOptions _options;
     private readonly BetfairSsoService _sso;
     private readonly BetfairSessionStoreFile _store;
+    private readonly BetfairAccountStoreFile _accountStore;
 
     public string DisplayName { get; private set; } = "";
     public string? ErrorMessage { get; private set; }
@@ -18,19 +19,23 @@ public class BetfairLoginModel : PageModel
     public BetfairLoginModel(
         IOptions<BetfairOptions> options,
         BetfairSsoService sso,
-        BetfairSessionStoreFile store)
+        BetfairSessionStoreFile store,
+        BetfairAccountStoreFile accountStore)
     {
         _options = options.Value;
         _sso = sso;
         _store = store;
+        _accountStore = accountStore;
     }
 
-    public IActionResult OnGet(string displayName)
+    public async Task<IActionResult> OnGet(string displayName)
     {
         if (string.IsNullOrWhiteSpace(displayName))
             return RedirectToPage("/ConnectBetfair");
 
-        var acc = _options.Accounts.FirstOrDefault(a => a.DisplayName == displayName);
+        await _accountStore.EnsureSeedFromOptionsAsync(_options.Accounts.Select(a => (a.DisplayName, a.AppKeyDelayed)));
+
+        var acc = await _accountStore.GetAsync(displayName);
         if (acc is null)
             return RedirectToPage("/ConnectBetfair");
 
@@ -40,13 +45,12 @@ public class BetfairLoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(string displayName, string username, string password)
     {
-        var acc = _options.Accounts.FirstOrDefault(a => a.DisplayName == displayName);
-        if (acc is null)
+        if (string.IsNullOrWhiteSpace(displayName))
             return RedirectToPage("/ConnectBetfair");
 
         DisplayName = displayName;
 
-        var res = await _sso.LoginItalyAsync(acc.AppKeyDelayed, username, password);
+        var res = await _sso.LoginItalyAsync(displayName, username, password);
 
         if (res.status == "SUCCESS" && !string.IsNullOrWhiteSpace(res.token))
         {

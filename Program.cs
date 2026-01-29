@@ -1,5 +1,5 @@
-﻿using BetfairReplicator.Services;
-using BetfairReplicator.Options;
+﻿using BetfairReplicator.Options;
+using BetfairReplicator.Services;
 using Microsoft.AspNetCore.DataProtection;
 using System.IO;
 
@@ -11,11 +11,9 @@ namespace BetfairReplicator
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
             builder.Services.AddRazorPages();
 
-            // ✅ DataProtection: 1 sola volta
-            // Su Fly persistiamo le chiavi nel volume /data (così i token restano decifrabili dopo restart/deploy)
+            // ✅ DataProtection (persistente su VPS /data)
             var dp = builder.Services.AddDataProtection();
             if (Directory.Exists("/data"))
             {
@@ -25,16 +23,33 @@ namespace BetfairReplicator
             builder.Services.Configure<BetfairOptions>(
                 builder.Configuration.GetSection("Betfair"));
 
-            // ✅ Store token su file cifrato
+            // ✅ Store sessioni (già ok)
             builder.Services.AddSingleton<BetfairSessionStoreFile>();
 
-            builder.Services.AddHttpClient<BetfairSsoService>();
-            builder.Services.AddHttpClient<BetfairAccountApiService>();
-            builder.Services.AddHttpClient<BetfairBettingApiService>();
+            // ✅ Store account + per-account cert/client
+            builder.Services.AddSingleton<BetfairAccountStoreFile>();
+            builder.Services.AddSingleton<BetfairCertificateProvider>();
+            builder.Services.AddSingleton<BetfairHttpClientProvider>();
+
+            // Servizi applicativi
+            builder.Services.AddScoped<BetfairSsoService>();
+            builder.Services.AddScoped<BetfairAccountApiService>();
+            builder.Services.AddScoped<BetfairBettingApiService>();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // Se vuoi mantenere la lista displayName in appsettings,
+            // la importiamo nel file store una sola volta (senza secrets).
+            using (var scope = app.Services.CreateScope())
+            {
+                var opts = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BetfairOptions>>().Value;
+                var store = scope.ServiceProvider.GetRequiredService<BetfairAccountStoreFile>();
+
+                store.EnsureSeedFromOptionsAsync(
+                    opts.Accounts.Select(a => (a.DisplayName, a.AppKeyDelayed))
+                ).GetAwaiter().GetResult();
+            }
+
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Error");
@@ -45,9 +60,7 @@ namespace BetfairReplicator
             app.UseStaticFiles();
 
             app.UseRouting();
-
             app.UseAuthorization();
-
             app.MapRazorPages();
 
             app.Run();
