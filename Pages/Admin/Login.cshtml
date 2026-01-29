@@ -1,6 +1,26 @@
-﻿namespace BetfairReplicator.Pages.Login
-{
-    public class Login
-    {
-    }
+﻿@page
+@model BetfairReplicator.Pages.Admin.LoginModel
+@{
+    ViewData["Title"] = "Admin Login";
 }
+
+<h1>Admin Login</h1>
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<form method="post" class="mt-3" autocomplete="off">
+    <div class="mb-3">
+        <label class="form-label">Password admin</label>
+        <input type="password" name="password" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Entra</button>
+</form>
+
+<hr />
+<p class="text-muted">
+    Nota: la password admin arriva da variabile ambiente <code>Admin__Password</code>.
+</p>
