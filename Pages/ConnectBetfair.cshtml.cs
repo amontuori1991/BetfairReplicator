@@ -31,9 +31,6 @@ public class ConnectBetfairModel : PageModel
 
     public async Task OnGetAsync()
     {
-        // importa eventuali DisplayName da appsettings nel file store (senza secrets)
-        await _accountStore.EnsureSeedFromOptionsAsync(_options.Accounts.Select(a => (a.DisplayName, a.AppKeyDelayed)));
-
         var accounts = await _accountStore.GetAllAsync();
 
         Rows = new();
@@ -48,6 +45,7 @@ public class ConnectBetfairModel : PageModel
             });
         }
     }
+
 
     public async Task<IActionResult> OnPostConnectAsync(string displayName, string username, string password)
     {
