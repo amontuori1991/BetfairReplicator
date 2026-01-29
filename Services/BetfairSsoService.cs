@@ -95,9 +95,10 @@ public class BetfairSsoService
                 return new BetfairLoginResponse { status = status, token = token, error = error };
         }
 
-        // 3) JSON (alcuni gateway lo restituiscono così)
+        // 3) JSON (2 possibili formati)
         try
         {
+            // Formato "vecchio" (se mai arriva)
             var obj = JsonSerializer.Deserialize<BetfairLoginResponse>(bodyRaw, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -105,11 +106,29 @@ public class BetfairSsoService
 
             if (obj != null && !string.IsNullOrWhiteSpace(obj.status))
                 return obj;
+
+            // Formato "nuovo" (quello che stai ricevendo ora)
+            var certObj = JsonSerializer.Deserialize<BetfairCertLoginJson>(bodyRaw, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (certObj != null && !string.IsNullOrWhiteSpace(certObj.loginStatus))
+            {
+                return new BetfairLoginResponse
+                {
+                    status = certObj.loginStatus,
+                    token = certObj.sessionToken,
+                    error = null
+                };
+            }
         }
         catch
         {
             // ignore
         }
+
+
 
         // Fallback: includo snippet del body per capire cosa stiamo ricevendo
         var snippet = bodyRaw;
@@ -151,4 +170,12 @@ public class BetfairSsoService
         var val = m.Groups[1].Value?.Trim();
         return string.IsNullOrWhiteSpace(val) ? null : val;
     }
+
+    private sealed class BetfairCertLoginJson
+    {
+        public string? sessionToken { get; set; }
+        public string? loginStatus { get; set; }
+        public string? lastLoginDate { get; set; }
+    }
+
 }
