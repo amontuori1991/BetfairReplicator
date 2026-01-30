@@ -181,6 +181,29 @@ public class MarketSearchModel : PageModel
 
     }
 
+    private static readonly TimeZoneInfo RomeTz = GetRomeTimeZone();
+
+    private static TimeZoneInfo GetRomeTimeZone()
+    {
+        // Windows: "W. Europe Standard Time"
+        // Linux: "Europe/Rome"
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome"); }
+        catch { return TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time"); }
+    }
+    public string ToRome(DateTime? utcDateTime, string fmt = "dd/MM HH:mm")
+    {
+        if (utcDateTime == null) return "-";
+
+        var dt = utcDateTime.Value;
+
+        // Se arriva "Unspecified" (capita spesso da API), lo trattiamo come UTC
+        if (dt.Kind == DateTimeKind.Unspecified)
+            dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+
+        // Se arriva già Local/UTC coerente, ConvertTime gestisce tutto
+        var rome = TimeZoneInfo.ConvertTime(dt, RomeTz);
+        return rome.ToString(fmt);
+    }
 
     private static List<MarketCatalogue> ApplyMarketFamilyFilter(List<MarketCatalogue>? input, string marketType)
     {

@@ -93,7 +93,7 @@
             {
                 <tr>
                     <td>@e.Event?.name</td>
-                    <td>@(e.Event?.openDate?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</td>
+                    <td>@Model.ToRome(e.Event?.openDate)</td>
                     <td class="text-end">
                         <a class="btn btn-outline-primary"
                            asp-page="/MarketSearch"
@@ -137,7 +137,7 @@ else
                             <div class="text-muted small">
                                 @if (m.marketStartTime != null)
                                 {
-                                    <span>Start: @m.marketStartTime.Value.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                    <span>Start: @Model.ToRome(m.marketStartTime)</span>
                                 }
                             </div>
 
