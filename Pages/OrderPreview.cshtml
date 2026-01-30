@@ -5,7 +5,9 @@
 }
 
 <h1>Ordine (preview)</h1>
-<p class="text-muted">Qui NON inviamo nulla: mostriamo solo lo stake per account e il JSON pronto.</p>
+<p class="text-muted">
+    Preview: genera lo stake/importo per account e il JSON pronto. Con "INVIA ORDINE" piazza davvero l'ordine su tutti gli account collegati.
+</p>
 
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
@@ -14,6 +16,8 @@
 
 <form method="post" class="mb-4">
     @Html.AntiForgeryToken()
+
+    <!-- ROW 1: mercato + selezione + side + price -->
     <div class="row g-2">
         <div class="col-12 col-md-4">
             <label class="form-label">MarketId</label>
@@ -29,7 +33,9 @@
                     {
                         <option value="@r.SelectionId" selected="@(Model.SelectionId == r.SelectionId)">
                             @{
-                                var q = Model.QuotesBySelection.ContainsKey(r.SelectionId) ? Model.QuotesBySelection[r.SelectionId] : (null, null);
+                                var q = Model.QuotesBySelection.ContainsKey(r.SelectionId)
+                                    ? Model.QuotesBySelection[r.SelectionId]
+                                    : (null, null);
                                 var backTxt = q.Back?.ToString("0.00") ?? "-";
                                 var layTxt = q.Lay?.ToString("0.00") ?? "-";
                             }
@@ -42,39 +48,50 @@
                 {
                     <div class="form-text">@Model.QuotesInfo</div>
                 }
-
             }
             else
             {
                 <input class="form-control" type="number" name="SelectionId" value="@Model.SelectionId" placeholder="SelectionId" required />
                 <div class="form-text">Nessun runner caricato: controlla MarketId o token collegato.</div>
             }
-
         </div>
 
         <div class="col-6 col-md-2">
             <label class="form-label">Side</label>
-            <select class="form-select" name="Side">
+            <select class="form-select" name="Side" id="sideSelect">
                 <option value="BACK" selected="@(Model.Side == "BACK")">BACK</option>
                 <option value="LAY" selected="@(Model.Side == "LAY")">LAY</option>
             </select>
+            <div class="form-text">BACK = punta (importo fisso). LAY = banca (stake %).</div>
         </div>
 
         <div class="col-6 col-md-2">
             <label class="form-label">Price</label>
             <input class="form-control" type="number" step="0.01" min="1.01" name="Price" value="@Model.Price" required />
         </div>
+    </div>
 
-        <div class="col-6 col-md-2">
-            <label class="form-label">Stake %</label>
-            <input class="form-control" type="number" step="0.1" min="0.1" max="100" name="StakePercent" value="@Model.StakePercent" required />
+    <!-- ROW 2: stake + bottoni -->
+    <div class="row g-2 mt-1">
+        <!-- LAY: stake percent -->
+        <div class="col-12 col-md-3" id="grpStakePercent">
+            <label class="form-label">Stake % (solo LAY)</label>
+            <input class="form-control" type="number" step="0.1" min="0.1" max="100" name="StakePercent" value="@Model.StakePercent" />
+            <div class="form-text">Usato solo se Side=LAY.</div>
         </div>
 
-        <div class="col-6 col-md-2 d-flex align-items-end">
+        <!-- BACK: stake euro -->
+        <div class="col-12 col-md-3" id="grpBackStakeEuro">
+            <label class="form-label">Importo BACK € (solo BACK)</label>
+            <input class="form-control" type="number" step="0.01" min="1.00" name="BackStakeEuro" value="@(Model.BackStakeEuro?.ToString("0.00") ?? "")" />
+            <div class="form-text">Min 1€. Usato solo se Side=BACK.</div>
+        </div>
+
+        <div class="col-6 col-md-3 d-flex align-items-end">
             <button class="btn btn-primary w-100" type="submit" asp-page-handler="Preview">Genera preview</button>
         </div>
 
-        <div class="col-6 col-md-2 d-flex align-items-end">
+        <div class="col-6 col-md-3 d-flex align-items-end">
             <button class="btn btn-danger w-100"
                     type="submit"
                     asp-page-handler="Send"
@@ -82,9 +99,9 @@
                 INVIA ORDINE
             </button>
         </div>
-
     </div>
 </form>
+
 
 @if (Model.Rows?.Any() == true)
 {
@@ -93,7 +110,9 @@
             <tr>
                 <th>Account</th>
                 <th>Saldo</th>
-                <th>Stake</th>
+                <th>Stake/Importo</th>
+                <th>Liability (LAY)</th>
+                <th>Min 1€</th>
                 <th>Stato</th>
                 <th>BetId</th>
                 <th>Live</th>
@@ -106,41 +125,51 @@
                     <td>@r.DisplayName</td>
                     <td>@(r.Balance?.ToString("0.00") ?? "-")</td>
                     <td>@(r.Stake?.ToString("0.00") ?? "-")</td>
+                    <td>@(r.Liability?.ToString("0.00") ?? "-")</td>
+                    <td>
+                        @if (r.MinStakeApplied)
+                        {
+                            <span class="badge bg-warning text-dark">SI</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">NO</span>
+                        }
+                    </td>
                     <td>@r.Status</td>
                     <td>@(r.BetId ?? "-")</td>
-<td>
-    @if (!string.IsNullOrWhiteSpace(r.BetId))
-    {
-        <span class="order-live"
-              data-account="@r.DisplayName"
-              data-betid="@r.BetId">
-            …
-        </span>
 
-        <div class="small text-muted">
-            M:<span class="m"></span> R:<span class="r"></span> Avg:<span class="a"></span>
-        </div>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(r.BetId))
+                        {
+                            <span class="order-live"
+                                  data-account="@r.DisplayName"
+                                  data-betid="@r.BetId">
+                                …
+                            </span>
 
-        <button type="button"
-                class="btn btn-sm btn-outline-danger mt-1 btn-cancel"
-                data-account="@r.DisplayName"
-                data-betid="@r.BetId">
-            Cancella ordine
-        </button>
-    }
-    else
-    {
-        <span>-</span>
-    }
-</td>
+                            <div class="small text-muted">
+                                M:<span class="m"></span> R:<span class="r"></span> Avg:<span class="a"></span>
+                            </div>
 
-
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger mt-1 btn-cancel"
+                                    data-account="@r.DisplayName"
+                                    data-betid="@r.BetId">
+                                Cancella ordine
+                            </button>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
                 </tr>
 
                 @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
                 {
                     <tr>
-                        <td colspan="4">
+                        <td colspan="8">
                             <details>
                                 <summary>JSON-RPC preview (@r.DisplayName)</summary>
                                 <pre class="mt-2">@r.JsonRpcPreview</pre>
@@ -154,8 +183,30 @@
 }
 
 <a class="btn btn-secondary" asp-page="/Funds">Indietro</a>
+
 @section Scripts {
     <script>
+ function toggleSideFields() {
+    const side = (document.getElementById("sideSelect")?.value || "LAY").toUpperCase();
+    const grpStake = document.getElementById("grpStakePercent");
+    const grpBack = document.getElementById("grpBackStakeEuro");
+
+    const inpPct = document.querySelector('input[name="StakePercent"]');
+    const inpBack = document.querySelector('input[name="BackStakeEuro"]');
+
+    if (!grpStake || !grpBack) return;
+
+    const isLay = side === "LAY";
+
+    grpStake.style.display = isLay ? "" : "none";
+    grpBack.style.display = isLay ? "none" : "";
+
+    // IMPORTANT: disabilita il campo non usato così non viene postato
+    if (inpPct) inpPct.disabled = !isLay;
+    if (inpBack) inpBack.disabled = isLay;
+}
+
+
         (async function () {
             const REFRESH_MS = 2500;
 
@@ -194,61 +245,61 @@
                 const els = document.querySelectorAll(".order-live");
                 for (const el of els) await refreshOne(el);
             }
-function getAntiForgeryToken() {
-    const el = document.querySelector('input[name="__RequestVerificationToken"]');
-    return el ? el.value : "";
-}
 
-async function cancelOrder(account, betId) {
-    const token = getAntiForgeryToken();
-
-    const form = new URLSearchParams();
-    form.append("account", account);
-    form.append("betId", betId);
-
-    const res = await fetch(`/OrderPreview?handler=CancelOrder`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "RequestVerificationToken": token
-        },
-        body: form.toString()
-    });
-
-    return await res.json();
-}
-
-function bindCancelButtons() {
-    document.querySelectorAll(".btn-cancel").forEach(btn => {
-        if (btn.dataset.bound === "1") return;
-        btn.dataset.bound = "1";
-
-        btn.addEventListener("click", async () => {
-            const account = btn.dataset.account;
-            const betId = btn.dataset.betid;
-
-            if (!confirm(`Confermi cancellazione ordine?\nAccount: ${account}\nBetId: ${betId}`))
-                return;
-
-            btn.disabled = true;
-            try {
-                const data = await cancelOrder(account, betId);
-                if (!data.ok) {
-                    alert(data.error || "Errore cancellazione");
-                }
-
-                // refresh immediato dopo cancel
-                await refreshAll();
-            } finally {
-                btn.disabled = false;
+            function getAntiForgeryToken() {
+                const el = document.querySelector('input[name="__RequestVerificationToken"]');
+                return el ? el.value : "";
             }
-        });
-    });
-}
+
+            async function cancelOrder(account, betId) {
+                const token = getAntiForgeryToken();
+
+                const form = new URLSearchParams();
+                form.append("account", account);
+                form.append("betId", betId);
+
+                const res = await fetch(`/OrderPreview?handler=CancelOrder`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "RequestVerificationToken": token
+                    },
+                    body: form.toString()
+                });
+
+                return await res.json();
+            }
+
+            function bindCancelButtons() {
+                document.querySelectorAll(".btn-cancel").forEach(btn => {
+                    if (btn.dataset.bound === "1") return;
+                    btn.dataset.bound = "1";
+
+                    btn.addEventListener("click", async () => {
+                        const account = btn.dataset.account;
+                        const betId = btn.dataset.betid;
+
+                        if (!confirm(`Confermi cancellazione ordine?\nAccount: ${account}\nBetId: ${betId}`))
+                            return;
+
+                        btn.disabled = true;
+                        try {
+                            const data = await cancelOrder(account, betId);
+                            if (!data.ok) {
+                                alert(data.error || "Errore cancellazione");
+                            }
+
+                            await refreshAll();
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
+                });
+            }
 
             bindCancelButtons();
-await refreshAll();
-setInterval(refreshAll, REFRESH_MS);
+            await refreshAll();
+            setInterval(refreshAll, REFRESH_MS);
 
         })();
     </script>

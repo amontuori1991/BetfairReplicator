@@ -33,8 +33,11 @@ public class OrderPreviewModel : PageModel
     [BindProperty(SupportsGet = true)] public string Side { get; set; } = "LAY"; // default
     [BindProperty(SupportsGet = true)] public double Price { get; set; } = 2.00;
 
+    // LAY: % del saldo
     [BindProperty(SupportsGet = true)] public double StakePercent { get; set; } = 3.0;
 
+    // BACK: importo fisso in €
+    [BindProperty(SupportsGet = true)] public double? BackStakeEuro { get; set; }
 
     // Output
     public List<PreviewRow> Rows { get; private set; } = new();
@@ -57,7 +60,15 @@ public class OrderPreviewModel : PageModel
     {
         public string DisplayName { get; set; } = "";
         public double? Balance { get; set; }
+
+        // size che inviamo a Betfair (per LAY = stake, per BACK = importo puntato)
         public double? Stake { get; set; }
+
+        // solo per LAY
+        public double? Liability { get; set; }
+
+        public bool MinStakeApplied { get; set; }
+
         public string Status { get; set; } = "";
 
         // dopo invio reale
@@ -106,6 +117,22 @@ public class OrderPreviewModel : PageModel
             return Page();
         }
 
+        // Validazione input BACK (importo fisso)
+        if (Side == "BACK")
+        {
+            if (!BackStakeEuro.HasValue)
+            {
+                ErrorMessage = "Per BACK devi inserire l'importo in €.";
+                return Page();
+            }
+
+            if (BackStakeEuro.Value < 1.0)
+            {
+                ErrorMessage = "Importo BACK troppo basso (min 1€).";
+                return Page();
+            }
+        }
+
         StakePercent = Math.Clamp(StakePercent, 0.1, 100.0);
 
         foreach (var acc in _options.Accounts)
@@ -129,7 +156,29 @@ public class OrderPreviewModel : PageModel
             }
 
             var balance = funds.availableToBetBalance.Value;
-            var stake = Math.Round(balance * (StakePercent / 100.0), 2, MidpointRounding.AwayFromZero);
+
+            double rawStake;
+            double stake;
+            bool minApplied;
+
+            if (Side == "BACK")
+            {
+                rawStake = BackStakeEuro ?? 0.0;
+                stake = ApplyBetfairMinStake(rawStake);
+                minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+            }
+            else
+            {
+                rawStake = balance * (StakePercent / 100.0);
+                stake = ApplyBetfairMinStake(rawStake);
+                minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+            }
+
+            double? liability = null;
+            if (Side == "LAY")
+            {
+                liability = Math.Round((Price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
+            }
 
             var place = new PlaceOrdersParams
             {
@@ -166,6 +215,8 @@ public class OrderPreviewModel : PageModel
                 DisplayName = acc.DisplayName,
                 Balance = balance,
                 Stake = stake,
+                Liability = liability,
+                MinStakeApplied = minApplied,
                 Status = "OK (preview)",
                 JsonRpcPreview = json
             });
@@ -205,6 +256,22 @@ public class OrderPreviewModel : PageModel
             return Page();
         }
 
+        // Validazione input BACK (importo fisso)
+        if (Side == "BACK")
+        {
+            if (!BackStakeEuro.HasValue)
+            {
+                ErrorMessage = "Per BACK devi inserire l'importo in €.";
+                return Page();
+            }
+
+            if (BackStakeEuro.Value < 1.0)
+            {
+                ErrorMessage = "Importo BACK troppo basso (min 1€).";
+                return Page();
+            }
+        }
+
         StakePercent = Math.Clamp(StakePercent, 0.1, 100.0);
 
         // customerRef base per questa “batch”
@@ -231,7 +298,71 @@ public class OrderPreviewModel : PageModel
             }
 
             var balance = funds.availableToBetBalance.Value;
-            var stake = Math.Round(balance * (StakePercent / 100.0), 2, MidpointRounding.AwayFromZero);
+
+            // blocco globale: se saldo < 1€ non può piazzare nulla
+            if (balance < 1.0)
+            {
+                Rows.Add(new PreviewRow
+                {
+                    DisplayName = acc.DisplayName,
+                    Balance = balance,
+                    Stake = null,
+                    Status = "Saldo insufficiente (min 1€)"
+                });
+                continue;
+            }
+
+            double rawStake;
+            double stake;
+            bool minApplied;
+
+            if (Side == "BACK")
+            {
+                rawStake = BackStakeEuro ?? 0.0;
+                stake = ApplyBetfairMinStake(rawStake);
+                minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+
+                // extra sicurezza: stake non può superare il saldo disponibile
+                if (stake > balance)
+                {
+                    Rows.Add(new PreviewRow
+                    {
+                        DisplayName = acc.DisplayName,
+                        Balance = balance,
+                        Stake = stake,
+                        MinStakeApplied = minApplied,
+                        Status = "Importo BACK superiore al saldo disponibile"
+                    });
+                    continue;
+                }
+            }
+            else
+            {
+                rawStake = balance * (StakePercent / 100.0);
+                stake = ApplyBetfairMinStake(rawStake);
+                minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+            }
+
+            double? liability = null;
+            if (Side == "LAY")
+            {
+                liability = Math.Round((Price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
+
+                // consigliato: non bancare se liability supera il saldo
+                if (liability > balance)
+                {
+                    Rows.Add(new PreviewRow
+                    {
+                        DisplayName = acc.DisplayName,
+                        Balance = balance,
+                        Stake = stake,
+                        Liability = liability,
+                        MinStakeApplied = minApplied,
+                        Status = "Liability superiore al saldo disponibile"
+                    });
+                    continue;
+                }
+            }
 
             // customerRef UNICO per account (evita doppi invii se premi 2 volte)
             var customerRef = $"{batchRef}-{acc.DisplayName}".Replace(" ", "");
@@ -267,6 +398,8 @@ public class OrderPreviewModel : PageModel
                     DisplayName = acc.DisplayName,
                     Balance = balance,
                     Stake = stake,
+                    Liability = liability,
+                    MinStakeApplied = minApplied,
                     Status = $"ERRORE: {placeErr}"
                 });
                 continue;
@@ -287,6 +420,8 @@ public class OrderPreviewModel : PageModel
                 DisplayName = acc.DisplayName,
                 Balance = balance,
                 Stake = stake,
+                Liability = liability,
+                MinStakeApplied = minApplied,
                 Status = msg,
                 BetId = betId,
                 LiveStatus = string.IsNullOrWhiteSpace(betId) ? null : "…",
@@ -371,7 +506,6 @@ public class OrderPreviewModel : PageModel
         }
     }
 
-
     public async Task<IActionResult> OnGetOrderStatusAsync(string account, string betId)
     {
         if (string.IsNullOrWhiteSpace(account) || string.IsNullOrWhiteSpace(betId))
@@ -428,5 +562,10 @@ public class OrderPreviewModel : PageModel
         });
     }
 
-
+    private static double ApplyBetfairMinStake(double rawStake)
+    {
+        // Betfair: stake minimo 1.00
+        var stake = Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+        return stake < 1.0 ? 1.0 : stake;
+    }
 }
