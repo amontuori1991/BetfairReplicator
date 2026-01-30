@@ -30,14 +30,38 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                    <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link text-dark" asp-page="/Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-page="/ConnectBetfair">Collega</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-page="/Funds">Fondi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-page="/MarketSearch">Mercati</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-page="/OrderPreview">Ordine</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-page="/Admin/Accounts">Accounts</a>
                         </li>
                     </ul>
+
+                    <ul class="navbar-nav">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <form method="post" asp-page="/Admin/Logout" class="m-0">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Logout</button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+
                 </div>
             </div>
         </nav>

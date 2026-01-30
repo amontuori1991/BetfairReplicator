@@ -3,6 +3,8 @@ using BetfairReplicator.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using System.IO;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace BetfairReplicator
 {
@@ -14,11 +16,15 @@ namespace BetfairReplicator
 
             // ✅ Razor Pages + protezione folder Admin
             builder.Services.AddRazorPages()
-                .AddRazorPagesOptions(o =>
-                {
-                    o.Conventions.AuthorizeFolder("/Admin");
-                    o.Conventions.AllowAnonymousToPage("/Admin/Login");
-                });
+    .AddRazorPagesOptions(o =>
+    {
+        // ✅ Protegge TUTTE le pagine del sito
+        o.Conventions.AuthorizeFolder("/");
+
+        // ✅ Lascia pubblica SOLO la login
+        o.Conventions.AllowAnonymousToPage("/Admin/Login");
+    });
+
 
             // ✅ Auth admin (cookie) — UNA SOLA VOLTA
             builder.Services
@@ -31,6 +37,23 @@ namespace BetfairReplicator
                     options.Cookie.HttpOnly = true;
                     options.SlidingExpiration = true;
                     options.ExpireTimeSpan = TimeSpan.FromHours(12);
+                    options.Events = new CookieAuthenticationEvents
+                    {
+                        OnRedirectToLogin = ctx =>
+                        {
+                            // Se è una chiamata AJAX (fetch) meglio 401 che redirect HTML
+                            if (ctx.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                                ctx.Request.Query.ContainsKey("handler"))
+                            {
+                                ctx.Response.StatusCode = 401;
+                                return Task.CompletedTask;
+                            }
+
+                            ctx.Response.Redirect(ctx.RedirectUri);
+                            return Task.CompletedTask;
+                        }
+                    };
+
                 });
 
             builder.Services.AddAuthorization();

@@ -3,24 +3,68 @@
 @{
     ViewData["Title"] = "Admin Login";
 }
+<style>
+    .login-card {
+        animation: loginIn .35s ease-out both;
+    }
 
-<h1>Admin Login</h1>
+    @@keyframes loginIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px) scale(.99);
+        }
 
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
-}
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
 
-<form method="post" class="mt-3" autocomplete="off">
-    <div class="mb-3">
-        <label class="form-label">Password admin</label>
-        <input type="password" name="password" class="form-control" required />
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="card shadow-sm p-4 login-card" style="width: 100%; max-width: 420px;">
+
+
+        <!-- LOGO -->
+        <div class="text-center mb-3">
+            <img src="~/brand/favicon-96x96.png"
+                 alt="BetfairReplicator"
+                 style="width:96px;height:96px;border-radius:20px;box-shadow:0 8px 20px rgba(0,0,0,.15);" />
+        </div>
+
+        <!-- TITOLO -->
+        <h4 class="text-center mb-4">Accesso amministratore</h4>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Error))
+        {
+            <div class="alert alert-danger">@Model.Error</div>
+        }
+
+        <form method="post" autocomplete="off">
+            <input type="hidden" name="returnUrl" value="@Request.Query["returnUrl"]" />
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password"
+                       name="password"
+                       class="form-control form-control-lg"
+                       required
+                       autofocus />
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="remember" name="remember" value="true" />
+                <label class="form-check-label" for="remember">Ricordami</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                Entra
+            </button>
+        </form>
+
+        <div class="text-center mt-3 text-muted small">
+            BetfairReplicator Admin
+        </div>
+
     </div>
-
-    <button type="submit" class="btn btn-primary">Entra</button>
-</form>
-
-<hr />
-<p class="text-muted">
-    Nota: la password admin arriva da variabile ambiente <code>Admin__Password</code>.
-</p>
+</div>

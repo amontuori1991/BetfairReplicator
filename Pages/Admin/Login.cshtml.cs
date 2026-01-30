@@ -14,9 +14,9 @@ public class LoginModel : PageModel
     {
     }
 
-    public async Task<IActionResult> OnPostAsync(string? password, string? returnUrl)
+    public async Task<IActionResult> OnPostAsync(string? password, bool remember, string? returnUrl)
     {
-        var adminPwd = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
+        var adminPwd = Environment.GetEnvironmentVariable("Admin__Password");
 
         if (string.IsNullOrWhiteSpace(adminPwd))
         {
@@ -31,25 +31,30 @@ public class LoginModel : PageModel
         }
 
         var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name, "admin")
-        };
+    {
+        new(ClaimTypes.Name, "admin")
+    };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
+
+        var expires = remember
+            ? DateTimeOffset.UtcNow.AddDays(7)
+            : DateTimeOffset.UtcNow.AddHours(12);
 
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,
             new AuthenticationProperties
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(12)
+                IsPersistent = remember,
+                ExpiresUtc = expires
             });
 
         if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             return LocalRedirect(returnUrl);
 
-        return RedirectToPage("/Admin/Accounts");
+        return RedirectToPage("/Index");
     }
+
 }

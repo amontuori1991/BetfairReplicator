@@ -6,14 +6,24 @@
 
 <div class="ns-page">
     <div class="ns-header-card">
-        <div class="d-flex align-items-center gap-2">
-            <img src="~/brand/favicon-96x96.png" alt="Logo" style="width:34px;height:34px;border-radius:10px;" />
-            <div>
-                <h1 class="ns-title h4 mb-1">BetfairReplicator</h1>
-                <div class="ns-subtitle">Pannello rapido</div>
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <img src="~/brand/favicon-96x96.png" alt="Logo" style="width:34px;height:34px;border-radius:10px;" />
+                <div>
+                    <h1 class="ns-title h4 mb-1">BetfairReplicator</h1>
+                    <div class="ns-subtitle">Pannello rapido</div>
+                </div>
             </div>
+
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <form method="post" asp-page="/Admin/Logout" class="m-0">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Logout</button>
+                </form>
+            }
         </div>
     </div>
+
 
 
     <div class="ns-grid">
@@ -60,6 +70,16 @@
             </div>
             <div class="ns-tile-title">Ordine</div>
             <div class="ns-tile-sub">Preview</div>
+        </a>
+        <a class="ns-tile" asp-page="/Admin/Accounts">
+            <div class="ns-tile-icon" aria-hidden="true">
+                <!-- users (filled) -->
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M16 11c1.66 0 3-1.79 3-4s-1.34-4-3-4-3 1.79-3 4 1.34 4 3 4Zm-8 0c1.66 0 3-1.79 3-4S9.66 3 8 3 5 4.79 5 7s1.34 4 3 4Zm0 2c-2.67 0-8 1.34-8 4v2h10v-2c0-1.07.39-2.06 1.07-2.89C10.14 13.45 8.89 13 8 13Zm8 0c-.29 0-.62.02-.97.05C16.19 13.96 17 15.38 17 17v2h7v-2c0-2.66-5.33-4-8-4Z" />
+                </svg>
+            </div>
+            <div class="ns-tile-title">Accounts</div>
+            <div class="ns-tile-sub">Gestione utenti</div>
         </a>
 
     </div>
