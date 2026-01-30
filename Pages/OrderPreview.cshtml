@@ -12,11 +12,96 @@
         color: #212529 !important;
     }
 
-    /* Se qualche tuo CSS applica opacity al testo */
     #sendConfirmModal .modal-content,
     #sendConfirmModal .modal-body,
     #sendConfirmModal .modal-title {
         opacity: 1 !important;
+    }
+
+    /* === Anti-errore stile banca === */
+    #sendConfirmModal .bank-header {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+    }
+
+    #sendConfirmModal .ball {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: rgba(13,110,253,.12); /* blu soft */
+        border: 1px solid rgba(13,110,253,.20);
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    #sendConfirmModal .bank-summary {
+        border: 1px solid rgba(0,0,0,.08);
+        background: rgba(0,0,0,.02);
+        border-radius: 12px;
+        padding: 12px 12px;
+    }
+
+    #sendConfirmModal .bank-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        border-bottom: 1px dashed rgba(0,0,0,.08);
+    }
+
+        #sendConfirmModal .bank-row:last-child {
+            border-bottom: none;
+        }
+
+    #sendConfirmModal .bank-k {
+        font-weight: 600;
+        color: rgba(33,37,41,.80);
+        white-space: nowrap;
+    }
+
+    #sendConfirmModal .bank-v {
+        font-weight: 700;
+        text-align: right;
+    }
+
+    /* Badge BACK/LAY */
+    #sendConfirmModal .badge-side {
+        font-weight: 700;
+        letter-spacing: .3px;
+        padding: .45rem .6rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+    #sendConfirmModal .badge-back {
+        background: rgba(13,110,253,.12);
+        color: #0d6efd;
+        border: 1px solid rgba(13,110,253,.25);
+    }
+
+    #sendConfirmModal .badge-lay {
+        background: rgba(220,53,69,.12);
+        color: #dc3545;
+        border: 1px solid rgba(220,53,69,.25);
+    }
+
+    /* Pulsante invio: aspetto "banca" */
+    #sendConfirmModal #btnConfirmSend[disabled] {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
+    #sendConfirmModal .risk-box {
+        border-radius: 12px;
+        border: 1px solid rgba(255,193,7,.35);
+        background: rgba(255,193,7,.14);
+        padding: 10px 12px;
     }
 </style>
 
@@ -212,23 +297,58 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow text-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Conferma invio ordine</h5>
+                <div class="bank-header">
+                    <span class="ball">⚽</span>
+                    <h5 class="modal-title mb-0">Conferma invio ordine</h5>
+                </div>
+
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
 
             <div class="modal-body text-dark">
-                <div class="alert alert-warning mb-3">
+                <div class="risk-box mb-3">
                     <strong>Stai per inviare un ordine REALE</strong> su <strong>tutti</strong> gli account collegati.
+                    <div class="small mt-1">
+                        Controlla bene i dati qui sotto prima di confermare.
+                    </div>
                 </div>
 
-                <ul class="mb-0">
-                    <li><strong>MarketId:</strong> <span id="mMarketId">-</span></li>
-                    <li><strong>SelectionId:</strong> <span id="mSelectionId">-</span></li>
-                    <li><strong>Side:</strong> <span id="mSide">-</span></li>
-                    <li><strong>Price:</strong> <span id="mPrice">-</span></li>
-                    <li class="mt-2"><strong>Stake% (LAY):</strong> <span id="mStakePercent">-</span></li>
-                    <li><strong>Importo € (BACK):</strong> <span id="mBackEuro">-</span></li>
-                </ul>
+
+                <div class="bank-summary">
+                    <div class="bank-row">
+                        <div class="bank-k">Evento</div>
+                        <div class="bank-v" id="mEventName">-</div>
+                    </div>
+
+                    <div class="bank-row">
+                        <div class="bank-k">Selezione</div>
+                        <div class="bank-v" id="mRunnerName">-</div>
+                    </div>
+
+                    <div class="bank-row">
+                        <div class="bank-k">Tipo</div>
+                        <div class="bank-v">
+                            <span id="mSideBadge" class="badge-side badge-back">BACK</span>
+                        </div>
+                    </div>
+
+                    <div class="bank-row">
+                        <div class="bank-k">Quota</div>
+                        <div class="bank-v" id="mPrice">-</div>
+                    </div>
+
+                    <div class="bank-row">
+                        <div class="bank-k">Stake % (LAY)</div>
+                        <div class="bank-v" id="mStakePercent">-</div>
+                    </div>
+
+                    <div class="bank-row">
+                        <div class="bank-k">Importo € (BACK)</div>
+                        <div class="bank-v" id="mBackEuro">-</div>
+                    </div>
+                </div>
+
+
 
                 <div class="form-check mt-3">
                     <input class="form-check-input" type="checkbox" id="chkFinalConfirm">
@@ -357,26 +477,113 @@
             return el ? (el.value || "").trim() : "";
         }
 
-        function fillModalSummary() {
-            document.getElementById("mMarketId").textContent = valOf("MarketId") || "-";
-            document.getElementById("mSelectionId").textContent = valOf("SelectionId") || "-";
-            document.getElementById("mSide").textContent = valOf("Side") || "-";
-            document.getElementById("mPrice").textContent = valOf("Price") || "-";
-            document.getElementById("mStakePercent").textContent = valOf("StakePercent") || "-";
-            document.getElementById("mBackEuro").textContent = valOf("BackStakeEuro") || "-";
+         function fillModalSummary() {
+            // Evento: titolo pagina (qui non abbiamo il vero nome match, quindi usiamo titolo)
+            const eventTitle =
+                document.querySelector("h1")?.textContent ||
+                document.querySelector(".ns-title")?.textContent ||
+                "Evento";
 
-            // reset check
+            // Runner: testo selezionato nella select
+            const sel = document.querySelector('select[name="SelectionId"]');
+            const runnerText = sel?.selectedOptions?.[0]?.textContent || "-";
+
+            // Riempimento campi visivi
+            const evEl = document.getElementById("mEventName");
+            const runEl = document.getElementById("mRunnerName");
+            if (evEl) evEl.textContent = "-";
+            if (runEl) runEl.textContent = runnerText.trim();
+
+            const priceEl = document.getElementById("mPrice");
+            const stakePctEl = document.getElementById("mStakePercent");
+            const backEuroEl = document.getElementById("mBackEuro");
+
+            if (priceEl) priceEl.textContent = valOf("Price") || "-";
+            if (stakePctEl) stakePctEl.textContent = valOf("StakePercent") || "-";
+            if (backEuroEl) backEuroEl.textContent = valOf("BackStakeEuro") || "-";
+
+            // ===== PUNTO 4: Badge BACK/LAY colorato =====
+            const side = (valOf("Side") || "").toUpperCase();
+            const badge = document.getElementById("mSideBadge");
+            if (badge) {
+                badge.classList.remove("badge-back", "badge-lay");
+
+                if (side === "LAY") {
+                    badge.classList.add("badge-lay");
+                    badge.textContent = "LAY";
+                } else {
+                    badge.classList.add("badge-back");
+                    badge.textContent = "BACK";
+                }
+            }
+
+            // reset check (sempre)
             if (chk) chk.checked = false;
             if (btnConfirm) btnConfirm.disabled = true;
+
+            // ===== PUNTO 5: Anti-errore (blocca invio se manca qualcosa) =====
+            const marketIdOk = !!valOf("MarketId");
+            const selectionOk = !!(sel?.value || valOf("SelectionId"));
+            const priceOk = !!valOf("Price");
+
+            const canProceed = marketIdOk && selectionOk && priceOk;
+
+            // Se manca qualcosa, non permettere comunque conferma
+            if (!canProceed) {
+                if (chk) chk.checked = false;
+                if (btnConfirm) btnConfirm.disabled = true;
+            }
         }
 
-        if (btnOpen && modalEl) {
-            const bsModal = new bootstrap.Modal(modalEl);
+                async function loadTeamsIntoModal() {
+            const marketId = valOf("MarketId");
+            const evEl = document.getElementById("mEventName");
+            if (!evEl) return;
 
-            btnOpen.addEventListener("click", () => {
-                fillModalSummary();
-                bsModal.show();
-            });
+            if (!marketId) {
+                evEl.textContent = "-";
+                return;
+            }
+
+            try {
+                // Mostro un testo temporaneo mentre carica
+                evEl.textContent = "Caricamento…";
+
+                const url = `/OrderPreview?handler=MarketInfo&marketId=${encodeURIComponent(marketId)}`;
+                const res = await fetch(url, { cache: "no-store" });
+                const data = await res.json();
+
+                if (!data.ok) {
+                    evEl.textContent = "-";
+                    return;
+                }
+
+                const home = (data.homeTeam || "").trim();
+                const away = (data.awayTeam || "").trim();
+
+                if (home && away) {
+                    evEl.textContent = `${home} vs ${away}`;
+                } else {
+                    // fallback se non riesce lo split
+                    evEl.textContent = (data.eventName || "-").trim();
+                }
+            } catch {
+                evEl.textContent = "-";
+            }
+        }
+
+
+            if (btnOpen && modalEl) {
+        const bsModal = new bootstrap.Modal(modalEl);
+
+        btnOpen.addEventListener("click", async () => {
+            fillModalSummary();
+            bsModal.show();
+
+            // dopo l'apertura, carico le squadre vere dal server
+            await loadTeamsIntoModal();
+        });
+
 
             if (chk && btnConfirm) {
                 chk.addEventListener("change", () => {

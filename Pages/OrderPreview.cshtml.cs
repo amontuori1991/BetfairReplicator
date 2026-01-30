@@ -570,6 +570,81 @@ public class OrderPreviewModel : PageModel
             errorCode = rep.errorCode
         });
     }
+    public async Task<IActionResult> OnGetMarketInfoAsync(string marketId)
+    {
+        if (string.IsNullOrWhiteSpace(marketId))
+            return new JsonResult(new { ok = false, error = "marketId mancante" });
+
+        // ✅ Driver = primo account nello store con token valido
+        var accounts = (await _accountStore.GetAllAsync())
+            .OrderBy(a => a.DisplayName)
+            .ToList();
+
+        BetfairAccountRecord? driver = null;
+        string? token = null;
+
+        foreach (var a in accounts)
+        {
+            var t = await _store.GetTokenAsync(a.DisplayName);
+            if (!string.IsNullOrWhiteSpace(t))
+            {
+                driver = a;
+                token = t;
+                break;
+            }
+        }
+
+        if (driver is null || string.IsNullOrWhiteSpace(token))
+            return new JsonResult(new { ok = false, error = "nessun account collegato" });
+
+        var catsRes = await _betting.GetMarketCatalogueByMarketIdAsync(driver.DisplayName, driver.AppKeyDelayed, token, marketId);
+
+        if (catsRes.Error != null)
+            return new JsonResult(new { ok = false, error = catsRes.Error });
+
+        var first = catsRes.Result?.FirstOrDefault();
+        if (first == null)
+            return new JsonResult(new { ok = false, error = "market non trovato" });
+
+        var eventName = first.marketName ?? "-";
+
+
+        var (home, away) = ParseTeamsFromEventName(eventName);
+
+        return new JsonResult(new
+        {
+            ok = true,
+            eventName,
+            homeTeam = home,
+            awayTeam = away
+        });
+    }
+
+    private static (string? home, string? away) ParseTeamsFromEventName(string? eventName)
+    {
+        if (string.IsNullOrWhiteSpace(eventName))
+            return (null, null);
+
+        var s = eventName.Trim();
+
+        // separatori comuni (Betfair spesso usa " v ")
+        string[] seps = { " v ", " vs ", " VS ", " - ", "–", "—" };
+
+        foreach (var sep in seps)
+        {
+            var idx = s.IndexOf(sep, StringComparison.OrdinalIgnoreCase);
+            if (idx > 0)
+            {
+                var left = s.Substring(0, idx).Trim();
+                var right = s.Substring(idx + sep.Length).Trim();
+                if (!string.IsNullOrWhiteSpace(left) && !string.IsNullOrWhiteSpace(right))
+                    return (left, right);
+            }
+        }
+
+        // fallback: se non riesco a splittare, almeno ritorno il nome evento
+        return (s, null);
+    }
 
     private static double ApplyBetfairMinStake(double rawStake)
     {
