@@ -4,10 +4,10 @@
     ViewData["Title"] = "Gestione Account Betfair";
 }
 
-<div class="d-flex justify-content-between align-items-center">
+<div class="bf-admin-header">
     <h1>Gestione Account Betfair</h1>
 
-    <form method="post" asp-page-handler="Logout">
+    <form method="post" asp-page-handler="Logout" class="m-0">
         <button class="btn btn-outline-secondary">Logout</button>
     </form>
 </div>
@@ -21,99 +21,171 @@
     <div class="alert alert-success mt-3">@Model.Success</div>
 }
 
-<hr />
-
-<h3>Aggiungi / Aggiorna Account</h3>
-
-<form method="post" asp-page-handler="Upsert" enctype="multipart/form-data" class="mt-3">
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label class="form-label">DisplayName (chiave)</label>
-            <input class="form-control" name="DisplayName" required />
-            <div class="form-text">Esempio: Alex, Luca, Luigi</div>
+<div class="card bf-admin-card mt-3">
+    <div class="card-body">
+        <h3 class="mb-1">Aggiungi / Aggiorna Account</h3>
+        <div class="text-muted small">
+            Compila i campi e salva. Puoi caricare il file .p12/.pfx oppure incollare Base64.
         </div>
 
-        <div class="col-md-8">
-            <label class="form-label">AppKeyDelayed (1.0-DELAY)</label>
-            <input class="form-control" name="AppKeyDelayed" required />
-        </div>
+        <form method="post" asp-page-handler="Upsert" enctype="multipart/form-data" class="mt-3">
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <label class="form-label">DisplayName (chiave)</label>
+                    <input class="form-control" name="DisplayName" required />
+                    <div class="form-text">Esempio: Alex, Luca, Luigi</div>
+                </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Carica file .p12 (consigliato)</label>
-            <input class="form-control" type="file" name="P12File" accept=".p12,.pfx" />
-            <div class="form-text">Se carichi il file, NON serve incollare Base64.</div>
-        </div>
+                <div class="col-12 col-md-8">
+                    <label class="form-label">AppKeyDelayed (1.0-DELAY)</label>
+                    <input class="form-control" name="AppKeyDelayed" required />
+                </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Password P12</label>
-            <input class="form-control" type="password" name="P12Password" required />
-        </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">Carica file .p12 (consigliato)</label>
+                    <input class="form-control" type="file" name="P12File" accept=".p12,.pfx" />
+                    <div class="form-text">Se carichi il file, NON serve incollare Base64.</div>
+                </div>
 
-        <div class="col-12">
-            <label class="form-label">Oppure incolla P12Base64 (solo se NON carichi il file)</label>
-            <textarea class="form-control" name="P12Base64" rows="4" placeholder="MIIJ1wIBAzCC..."></textarea>
-        </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">Password P12</label>
+                    <input class="form-control" type="password" name="P12Password" required />
+                </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Username Betfair (opzionale)</label>
-            <input class="form-control" name="Username" />
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Password Betfair (opzionale)</label>
-            <input class="form-control" type="password" name="Password" />
+                <div class="col-12">
+                    <label class="form-label">Oppure incolla P12Base64 (solo se NON carichi il file)</label>
+                    <textarea class="form-control" name="P12Base64" rows="4" placeholder="MIIJ1wIBAzCC..."></textarea>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label">Username Betfair (opzionale)</label>
+                    <input class="form-control" name="Username" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label">Password Betfair (opzionale)</label>
+                    <input class="form-control" type="password" name="Password" />
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100 mt-3">Salva</button>
+        </form>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3>Account presenti</h3>
+
+    <!-- =========================
+         MOBILE: CARDS
+         ========================= -->
+    <div class="bf-accounts-cards d-md-none">
+        <div class="row g-2">
+            @foreach (var a in Model.Accounts)
+            {
+                <div class="col-12 col-sm-6">
+                    <div class="bf-account-card">
+                        <div class="bf-account-top">
+                            <div>
+                                <div class="bf-account-name">@a.DisplayName</div>
+                                <div class="text-muted small mt-1">Account registrato</div>
+                            </div>
+                        </div>
+
+                        <div class="bf-kv">
+                            <div class="bf-kv-row">
+                                <div class="bf-k">AppKey</div>
+                                <div class="bf-v">
+                                    @if (string.IsNullOrWhiteSpace(a.AppKeyDelayed))
+                                    {
+                                        <span class="badge bg-warning text-dark">mancante</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">ok</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="bf-kv-row">
+                                <div class="bf-k">P12</div>
+                                <div class="bf-v">
+                                    @if (a.HasP12)
+                                    {
+                                        <span class="badge bg-success">ok</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">mancante</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bf-account-actions">
+                            <form method="post" asp-page-handler="Delete" class="m-0">
+                                <input type="hidden" name="displayName" value="@a.DisplayName" />
+                                <button class="btn btn-outline-danger w-100"
+                                        onclick="return confirm('Eliminare @a.DisplayName?')">
+                                    Elimina
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 
-    <button class="btn btn-primary mt-3">Salva</button>
-</form>
-
-<hr />
-
-<h3>Account presenti</h3>
-
-<table class="table mt-3">
-    <thead>
-        <tr>
-            <th>DisplayName</th>
-            <th>AppKey</th>
-            <th>P12</th>
-            <th class="text-end">Azioni</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var a in Model.Accounts)
-        {
-            <tr>
-                <td>@a.DisplayName</td>
-                <td>
-                    @if (string.IsNullOrWhiteSpace(a.AppKeyDelayed))
-                    {
-                        <span class="badge bg-warning text-dark">mancante</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-success">ok</span>
-                    }
-                </td>
-                <td>
-                    @if (a.HasP12)
-                    {
-                        <span class="badge bg-success">ok</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-warning text-dark">mancante</span>
-                    }
-                </td>
-                <td class="text-end">
-                    <form method="post" asp-page-handler="Delete" class="d-inline">
-                        <input type="hidden" name="displayName" value="@a.DisplayName" />
-                        <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminare @a.DisplayName?')">
-                            Elimina
-                        </button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- =========================
+         DESKTOP/TABLET: TABELLA
+         ========================= -->
+    <div class="bf-accounts-table d-none d-md-block">
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>DisplayName</th>
+                    <th>AppKey</th>
+                    <th>P12</th>
+                    <th class="text-end">Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Accounts)
+                {
+                    <tr>
+                        <td>@a.DisplayName</td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(a.AppKeyDelayed))
+                            {
+                                <span class="badge bg-warning text-dark">mancante</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">ok</span>
+                            }
+                        </td>
+                        <td>
+                            @if (a.HasP12)
+                            {
+                                <span class="badge bg-success">ok</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">mancante</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <form method="post" asp-page-handler="Delete" class="d-inline">
+                                <input type="hidden" name="displayName" value="@a.DisplayName" />
+                                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminare @a.DisplayName?')">
+                                    Elimina
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

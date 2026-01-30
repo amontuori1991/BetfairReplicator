@@ -508,3 +508,94 @@ a {
         display: none !important;
     }
 }
+/* ================================
+   Admin Accounts – mobile-first
+   ================================ */
+
+.bf-admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+    .bf-admin-header h1 {
+        margin: 0;
+    }
+
+.bf-admin-card {
+    border-radius: 18px !important;
+    box-shadow: 0 10px 22px rgba(0,0,0,.20);
+}
+
+    .bf-admin-card .card-body {
+        padding: 14px 14px;
+    }
+
+@media (max-width: 576px) {
+    .bf-admin-card .card-body {
+        padding: 12px 12px;
+    }
+
+    .bf-admin-card .btn {
+        border-radius: 14px !important;
+        font-weight: 900;
+        padding: 10px 12px;
+    }
+}
+
+/* Lista account: cards mobile */
+@media (max-width: 768px) {
+    .bf-accounts-table {
+        display: none !important;
+    }
+
+    .bf-accounts-cards {
+        display: block !important;
+    }
+
+    .bf-account-card {
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 18px;
+        background: rgba(0,0,0,.18);
+        padding: 14px;
+        margin: 12px 0;
+        box-shadow: 0 10px 22px rgba(0,0,0,.18);
+    }
+
+    .bf-account-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .bf-account-name {
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 1.1;
+    }
+
+    .bf-account-actions {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+        .bf-account-actions .btn {
+            border-radius: 14px !important;
+            font-weight: 900 !important;
+            padding: 10px 12px !important;
+        }
+}
+
+/* Desktop: nascondo cards */
+@media (min-width: 769px) {
+    .bf-accounts-cards {
+        display: none !important;
+    }
+}
