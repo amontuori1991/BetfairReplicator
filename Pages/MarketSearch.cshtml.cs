@@ -71,29 +71,49 @@ public class MarketSearchModel : PageModel
 
         if (string.IsNullOrWhiteSpace(EventId))
         {
-            var (events, err) = await _betting.ListEventsAsync(driver.DisplayName, driver.AppKeyDelayed, token, soccerEventTypeId, Q, from, to);
-
+            // 1) Prendo TUTTI gli eventi nel range (senza textQuery Betfair)
+            var (events, err) = await _betting.ListEventsAsync(
+                driver.DisplayName,
+                driver.AppKeyDelayed,
+                token,
+                soccerEventTypeId,
+                "", // <-- IMPORTANTISSIMO: niente Q a Betfair
+                from,
+                to);
 
             if (err != null)
             {
-                // Con auto-relogin: NON rimuovere il token.
-                // Se il relogin fallisce, arriva un messaggio esplicito e lo mostriamo.
                 if (err.Contains("RELOGIN_FAILED", StringComparison.OrdinalIgnoreCase))
                 {
                     Error = err;
                     return;
                 }
 
-
                 Error = err;
                 return;
             }
 
+            var list = events ?? new List<EventResult>();
 
-            Events = events ?? new();
+            // 2) Filtro "LIKE" lato nostro: trova anche se la squadra è away (es: "Juventus v Inter")
+            if (!string.IsNullOrWhiteSpace(Q))
+            {
+                var parts = Q.Trim()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                list = list.Where(e =>
+                {
+                    var name = e.Event?.name ?? "";
+                    return parts.Length == 0
+                        ? true
+                        : parts.Any(p => name.Contains(p, StringComparison.OrdinalIgnoreCase));
+                }).ToList();
+            }
+
+            Events = list;
             return;
-
         }
+
 
         var (markets, err2) = await _betting.ListAllMarketsByEventAsync(driver.DisplayName, driver.AppKeyDelayed, token, EventId);
 
@@ -123,7 +143,8 @@ public class MarketSearchModel : PageModel
         // 1) Nome evento: lo risolviamo tramite ListEvents (stesso range, nessuna chiamata "strana")
         try
         {
-            var (evs, evErr) = await _betting.ListEventsAsync(driver.DisplayName, driver.AppKeyDelayed, token, soccerEventTypeId, Q, from, to);
+            var (evs, evErr) = await _betting.ListEventsAsync(driver.DisplayName, driver.AppKeyDelayed, token, soccerEventTypeId, "", from, to);
+
 
 
             if (evErr == null && evs != null)
@@ -213,8 +234,6 @@ public class MarketSearchModel : PageModel
             return new JsonResult(new { ok = false, error = "Account non valido o mancante" });
 
 
-        if (driver == null)
-            return new JsonResult(new { ok = false, error = "Nessun account disponibile" });
 
         var token = await _store.GetTokenAsync(driver.DisplayName);
         if (string.IsNullOrWhiteSpace(token))
@@ -262,5 +281,54 @@ public class MarketSearchModel : PageModel
             runners = dict
         });
     }
+    public async Task<IActionResult> OnGetEventsAsync(string account, string q)
+    {
+        if (string.IsNullOrWhiteSpace(account))
+            account = _options.Accounts.FirstOrDefault()?.DisplayName ?? "";
+
+        var driver = _options.Accounts.FirstOrDefault(a => a.DisplayName == account);
+        if (driver is null)
+            return new JsonResult(new { ok = false, error = "Account non valido" });
+
+        var token = await _store.GetTokenAsync(driver.DisplayName);
+        if (string.IsNullOrWhiteSpace(token))
+            return new JsonResult(new { ok = false, error = "Account non collegato" });
+
+        var soccerEventTypeId = "1";
+        var from = DateTime.UtcNow.AddHours(-2);
+        var to = DateTime.UtcNow.AddDays(3);
+
+        // prendo tutti gli eventi e filtro lato nostro
+        var (events, err) = await _betting.ListEventsAsync(driver.DisplayName, driver.AppKeyDelayed, token, soccerEventTypeId, "", from, to);
+        if (err != null)
+            return new JsonResult(new { ok = false, error = err });
+
+        var list = events ?? new List<EventResult>();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var parts = q.Trim()
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            list = list.Where(e =>
+            {
+                var name = e.Event?.name ?? "";
+                return parts.Length == 0 ? true : parts.Any(p => name.Contains(p, StringComparison.OrdinalIgnoreCase));
+            }).ToList();
+        }
+
+        var payload = list
+            .OrderBy(x => x.Event?.openDate)
+            .Select(x => new
+            {
+                id = x.Event?.id,
+                name = x.Event?.name,
+                openDate = x.Event?.openDate
+            })
+            .ToList();
+
+        return new JsonResult(new { ok = true, events = payload });
+    }
+
 
 }

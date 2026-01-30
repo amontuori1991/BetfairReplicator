@@ -92,13 +92,19 @@
         </div>
 
         <div class="col-6 col-md-3 d-flex align-items-end">
-            <button class="btn btn-danger w-100"
-                    type="submit"
-                    asp-page-handler="Send"
-                    onclick="return confirm('CONFERMI INVIO ORDINE REALE su tutti gli account collegati?');">
+            <button type="button"
+                    class="btn btn-danger w-100"
+                    id="btnOpenSendModal">
                 INVIA ORDINE
             </button>
+
+            <button type="submit"
+                    class="d-none"
+                    id="btnSendHidden"
+                    asp-page-handler="Send">
+            </button>
         </div>
+
     </div>
 </form>
 
@@ -136,43 +142,43 @@
                             <span class="badge bg-secondary">NO</span>
                         }
                     </td>
-                    <td><div>@r.Status</div></td>
+                    <td>
+                        @{
+                            var s = (r.Status ?? "").ToUpperInvariant();
+                            var isOk = s.Contains("OK") || s.Contains("SUCCESS");
+                            var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
+                            var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
+                        }
+                        <span class="badge @cls">@r.Status</span>
+                    </td>
+
 
 
                     <td>@(r.BetId ?? "-")</td>
 
- <td>
-    @if (!string.IsNullOrWhiteSpace(r.BetId))
-    {
-        <div>
-            <span class="order-live"
-                  data-account="@r.DisplayName"
-                  data-betid="@r.BetId">…</span>
-        </div>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(r.BetId))
+                        {
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger btn-cancel"
+                                    data-account="@r.DisplayName"
+                                    data-betid="@r.BetId">
+                                Cancella ordine
+                            </button>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
 
-        <div class="small text-muted">
-            M:<span class="m"></span> R:<span class="r"></span> Avg:<span class="a"></span>
-        </div>
-
-        <button type="button"
-                class="btn btn-sm btn-outline-danger mt-1 btn-cancel"
-                data-account="@r.DisplayName"
-                data-betid="@r.BetId">
-            Cancella ordine
-        </button>
-    }
-    else
-    {
-        <span>-</span>
-    }
-</td>
 
                 </tr>
 
                 @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
                 {
                     <tr>
-                        <td colspan="8">
+                        <td colspan="7">
                             <details>
                                 <summary>JSON-RPC preview (@r.DisplayName)</summary>
                                 <pre class="mt-2">@r.JsonRpcPreview</pre>
@@ -186,6 +192,48 @@
 }
 
 <a class="btn btn-secondary" asp-page="/Funds">Indietro</a>
+<div class="modal fade" id="sendConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma invio ordine</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert-warning mb-3">
+                    <strong>Stai per inviare un ordine REALE</strong> su <strong>tutti</strong> gli account collegati.
+                </div>
+
+                <ul class="mb-0">
+                    <li><strong>MarketId:</strong> <span id="mMarketId">-</span></li>
+                    <li><strong>SelectionId:</strong> <span id="mSelectionId">-</span></li>
+                    <li><strong>Side:</strong> <span id="mSide">-</span></li>
+                    <li><strong>Price:</strong> <span id="mPrice">-</span></li>
+                    <li class="mt-2"><strong>Stake% (LAY):</strong> <span id="mStakePercent">-</span></li>
+                    <li><strong>Importo € (BACK):</strong> <span id="mBackEuro">-</span></li>
+                </ul>
+
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="chkFinalConfirm">
+                    <label class="form-check-label" for="chkFinalConfirm">
+                        Ho capito: voglio inviare davvero l’ordine
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Annulla
+                </button>
+
+                <button type="button" class="btn btn-danger" id="btnConfirmSend" disabled>
+                    Sì, invia ordine
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
@@ -208,7 +256,7 @@
             if (inpPct) inpPct.disabled = !isLay;
             if (inpBack) inpBack.disabled = isLay;
 
-            // (opzionale) required coerente
+            // required coerente
             if (inpPct) inpPct.required = isLay;
             if (inpBack) inpBack.required = !isLay;
 
@@ -226,44 +274,6 @@
         });
 
         (async function () {
-            const REFRESH_MS = 2500;
-
-            async function refreshOne(el) {
-                const account = el.dataset.account;
-                const betId = el.dataset.betid;
-
-                try {
-                    const url = `/OrderPreview?handler=OrderStatus&account=${encodeURIComponent(account)}&betId=${encodeURIComponent(betId)}`;
-                    const res = await fetch(url, { cache: "no-store" });
-                    const data = await res.json();
-
-                    if (!data.ok) {
-                        el.textContent = data.error || "ERR";
-                        return;
-                    }
-
-                    el.textContent = data.status || "-";
-
-                    const wrap = el.closest("td");
-                    if (!wrap) return;
-
-                    const m = wrap.querySelector(".m");
-                    const r = wrap.querySelector(".r");
-                    const a = wrap.querySelector(".a");
-
-                    if (m) m.textContent = (data.sizeMatched ?? "-");
-                    if (r) r.textContent = (data.sizeRemaining ?? "-");
-                    if (a) a.textContent = (data.avgPriceMatched ?? "-");
-                } catch {
-                    el.textContent = "NET";
-                }
-            }
-
-            async function refreshAll() {
-                const els = document.querySelectorAll(".order-live");
-                for (const el of els) await refreshOne(el);
-            }
-
             function getAntiForgeryToken() {
                 const el = document.querySelector('input[name="__RequestVerificationToken"]');
                 return el ? el.value : "";
@@ -303,8 +313,13 @@
                         btn.disabled = true;
                         try {
                             const data = await cancelOrder(account, betId);
-                            if (!data.ok) alert(data.error || "Errore cancellazione");
-                            await refreshAll();
+                            if (!data.ok) {
+                                alert(data.error || "Errore cancellazione");
+                                return;
+                            }
+
+                            // opzionale: dopo cancel, ricarica pagina per aggiornare tabella
+                            location.reload();
                         } finally {
                             btn.disabled = false;
                         }
@@ -313,9 +328,57 @@
             }
 
             bindCancelButtons();
-            await refreshAll();
-            setInterval(refreshAll, REFRESH_MS);
         })();
+                // ===== Modal invio ordine (Bootstrap) =====
+        const btnOpen = document.getElementById("btnOpenSendModal");
+        const btnHidden = document.getElementById("btnSendHidden");
+        const modalEl = document.getElementById("sendConfirmModal");
+        const chk = document.getElementById("chkFinalConfirm");
+        const btnConfirm = document.getElementById("btnConfirmSend");
+
+        function valOf(name) {
+            const el = document.querySelector(`[name="${name}"]`);
+            return el ? (el.value || "").trim() : "";
+        }
+
+        function fillModalSummary() {
+            document.getElementById("mMarketId").textContent = valOf("MarketId") || "-";
+            document.getElementById("mSelectionId").textContent = valOf("SelectionId") || "-";
+            document.getElementById("mSide").textContent = valOf("Side") || "-";
+            document.getElementById("mPrice").textContent = valOf("Price") || "-";
+            document.getElementById("mStakePercent").textContent = valOf("StakePercent") || "-";
+            document.getElementById("mBackEuro").textContent = valOf("BackStakeEuro") || "-";
+
+            // reset check
+            if (chk) chk.checked = false;
+            if (btnConfirm) btnConfirm.disabled = true;
+        }
+
+        if (btnOpen && modalEl) {
+            const bsModal = new bootstrap.Modal(modalEl);
+
+            btnOpen.addEventListener("click", () => {
+                fillModalSummary();
+                bsModal.show();
+            });
+
+            if (chk && btnConfirm) {
+                chk.addEventListener("change", () => {
+                    btnConfirm.disabled = !chk.checked;
+                });
+            }
+
+            if (btnConfirm && btnHidden) {
+                btnConfirm.addEventListener("click", () => {
+                    // evita doppi click
+                    btnConfirm.disabled = true;
+                    btnConfirm.textContent = "Invio in corso...";
+
+                    // invia davvero
+                    btnHidden.click();
+                });
+            }
+        }
+
     </script>
 }
-

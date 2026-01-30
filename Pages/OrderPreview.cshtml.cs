@@ -216,7 +216,7 @@ public class OrderPreviewModel : PageModel
                 Stake = stake,
                 Liability = liability,
                 MinStakeApplied = minApplied,
-                Status = "OK (preview)",
+                Status = "PREVIEW OK",
                 JsonRpcPreview = json
             });
         }

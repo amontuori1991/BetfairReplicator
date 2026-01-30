@@ -5,6 +5,16 @@
     ViewData["Title"] = "Cerca mercato";
 }
 
+<style>
+    /* Fix dropdown illeggibile (testo bianco su bianco) */
+    select.form-select,
+    select.form-select option {
+        color: #212529 !important;
+        background-color: #fff !important;
+    }
+</style>
+
+
 <h1>Cerca mercato</h1>
 <p class="text-muted">Calcio → Match Odds (1X2). Seleziona un evento, poi scegli il mercato.</p>
 
@@ -28,7 +38,7 @@
 
         <div class="col-12 col-md-5">
             <label class="form-label">Cerca evento</label>
-            <input class="form-control" name="Q" value="@Model.Q" placeholder="Es: Inter, Milan, Juventus..." />
+            <input class="form-control" id="eventQuery" name="Q" value="@Model.Q" placeholder="Es: Inter, Milan, Juventus..." />
         </div>
         <div class="col-12 col-md-2">
             <label class="form-label">Mercato</label>
@@ -78,7 +88,7 @@
                 <th></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="eventsTbody">
             @foreach (var e in (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate))
             {
                 <tr>
@@ -201,6 +211,62 @@ else
 
 @section Scripts {
     <script>
+                function debounce(fn, ms) {
+            let t;
+            return (...args) => {
+                clearTimeout(t);
+                t = setTimeout(() => fn(...args), ms);
+            };
+        }
+
+        async function refreshEventsRealtime() {
+            const qEl = document.getElementById("eventQuery");
+            const tbody = document.getElementById("eventsTbody");
+            if (!qEl || !tbody) return; // se sei nella view mercati, non esiste tabella eventi
+
+            const account = document.querySelector('input[name="Account"]')?.value || "";
+            const q = qEl.value || "";
+
+            const url = `/MarketSearch?handler=Events&account=${encodeURIComponent(account)}&q=${encodeURIComponent(q)}`;
+            const res = await fetch(url, { cache: "no-store" });
+            const data = await res.json();
+            if (!data.ok) return;
+
+            const events = data.events || [];
+            const qValue = q;
+
+            tbody.innerHTML = events.map(e => {
+                const dt = e.openDate
+                    ? new Date(e.openDate).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                    : "-";
+
+                const href =
+                    `/MarketSearch?Account=${encodeURIComponent(account)}` +
+                    `&Q=${encodeURIComponent(qValue)}` +
+                    `&EventId=${encodeURIComponent(e.id || "")}`;
+
+                return `
+                    <tr>
+                        <td>${(e.name || "")}</td>
+                        <td>${dt}</td>
+                        <td class="text-end">
+                            <a class="btn btn-outline-primary" href="${href}">Scegli</a>
+                        </td>
+                    </tr>`;
+            }).join("");
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // realtime eventi mentre scrivi
+            const qEl = document.getElementById("eventQuery");
+            if (qEl) qEl.addEventListener("input", debounce(refreshEventsRealtime, 300));
+
+            // refresh automatico al cambio filtro mercato
+            const sel = document.querySelector('select[name="MarketType"]');
+            const form = sel?.closest("form");
+            if (sel && form) sel.addEventListener("change", () => form.submit());
+        });
+
         (async function () {
             const REFRESH_MS = 2500;
 
