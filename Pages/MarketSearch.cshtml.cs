@@ -37,31 +37,36 @@ public class MarketSearchModel : PageModel
 
     public async Task OnGetAsync()
     {
-        // 1) se non specificato, metti il primo account configurato (solo per riempire input)
+        // 1) Se Account non è passato (perché lo hai nascosto in UI),
+        // scegliamo automaticamente il primo account che risulta collegato (ha token).
         if (string.IsNullOrWhiteSpace(Account))
-            Account = _options.Accounts.FirstOrDefault()?.DisplayName ?? "";
-
-        // 2) prova a usare l'account selezionato
-        BetfairAccountOptions? driver = _options.Accounts.FirstOrDefault(a => a.DisplayName == Account);
-        string? token = null;
-
-        if (driver != null)
-            token = await _store.GetTokenAsync(driver.DisplayName);
-
-        // 3) fallback: primo account con token valido
-        // 3) modalità CONTROLLATA: niente fallback automatico
-        if (string.IsNullOrWhiteSpace(token))
         {
-            Error = $"Account '{Account}' non collegato. Vai su Collega Betfair.";
+            foreach (var a in _options.Accounts)
+            {
+                var t = await _store.GetTokenAsync(a.DisplayName);
+                if (!string.IsNullOrWhiteSpace(t))
+                {
+                    Account = a.DisplayName;
+                    break;
+                }
+            }
+        }
+
+        // 2) Usa l'account selezionato/risolto
+        BetfairAccountOptions? driver = _options.Accounts.FirstOrDefault(a => a.DisplayName == Account);
+        if (driver is null)
+        {
+            Error = "Account non valido. Controlla configurazione.";
             return;
         }
 
-
-        if (driver is null || string.IsNullOrWhiteSpace(token))
+        var token = await _store.GetTokenAsync(driver.DisplayName);
+        if (string.IsNullOrWhiteSpace(token))
         {
             Error = "Nessun account collegato. Vai su Collega Betfair.";
             return;
         }
+
 
         // Calcio = eventTypeId "1"
         var soccerEventTypeId = "1";
@@ -307,7 +312,21 @@ public class MarketSearchModel : PageModel
     public async Task<IActionResult> OnGetEventsAsync(string account, string q)
     {
         if (string.IsNullOrWhiteSpace(account))
-            account = _options.Accounts.FirstOrDefault()?.DisplayName ?? "";
+        {
+            // scegli il primo account collegato (ha token)
+            foreach (var a in _options.Accounts)
+            {
+                var t = await _store.GetTokenAsync(a.DisplayName);
+                if (!string.IsNullOrWhiteSpace(t))
+                {
+                    account = a.DisplayName;
+                    break;
+                }
+            }
+        }
+        if (string.IsNullOrWhiteSpace(account))
+            return new JsonResult(new { ok = false, error = "Nessun account collegato" });
+
 
         var driver = _options.Accounts.FirstOrDefault(a => a.DisplayName == account);
         if (driver is null)
