@@ -5,24 +5,28 @@ using BetfairReplicator.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
+using static BetfairReplicator.Services.BetfairAccountStoreFile;
 
 namespace BetfairReplicator.Pages;
 
 public class OrderPreviewModel : PageModel
 {
-    private readonly BetfairOptions _options;
+    private readonly BetfairOptions _options; // lo lasciamo, ma NON lo useremo più per l’elenco account
     private readonly BetfairSessionStoreFile _store;
+    private readonly BetfairAccountStoreFile _accountStore;
     private readonly BetfairAccountApiService _accountApi;
     private readonly BetfairBettingApiService _betting;
 
     public OrderPreviewModel(
         IOptions<BetfairOptions> options,
         BetfairSessionStoreFile store,
+        BetfairAccountStoreFile accountStore,
         BetfairAccountApiService accountApi,
         BetfairBettingApiService betting)
     {
         _options = options.Value;
         _store = store;
+        _accountStore = accountStore;
         _accountApi = accountApi;
         _betting = betting;
     }
@@ -60,18 +64,11 @@ public class OrderPreviewModel : PageModel
     {
         public string DisplayName { get; set; } = "";
         public double? Balance { get; set; }
-
-        // size che inviamo a Betfair (per LAY = stake, per BACK = importo puntato)
         public double? Stake { get; set; }
-
-        // solo per LAY
         public double? Liability { get; set; }
-
         public bool MinStakeApplied { get; set; }
-
         public string Status { get; set; } = "";
 
-        // dopo invio reale
         public string? BetId { get; set; }
         public string? LiveStatus { get; set; }
         public double? SizeMatched { get; set; }
@@ -116,7 +113,6 @@ public class OrderPreviewModel : PageModel
             return Page();
         }
 
-        // Validazione input BACK (importo fisso)
         if (Side == "BACK")
         {
             if (!BackStakeEuro.HasValue)
@@ -134,7 +130,12 @@ public class OrderPreviewModel : PageModel
 
         StakePercent = Math.Clamp(StakePercent, 0.1, 100.0);
 
-        foreach (var acc in _options.Accounts)
+        // ✅ Fonte unica: store account (include anche Luigi)
+        var accounts = (await _accountStore.GetAllAsync())
+            .OrderBy(a => a.DisplayName)
+            .ToList();
+
+        foreach (var acc in accounts)
         {
             var token = await _store.GetTokenAsync(acc.DisplayName);
             if (string.IsNullOrWhiteSpace(token))
@@ -176,9 +177,7 @@ public class OrderPreviewModel : PageModel
 
             double? liability = null;
             if (Side == "LAY")
-            {
                 liability = Math.Round((Price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
-            }
 
             var place = new PlaceOrdersParams
             {
@@ -256,7 +255,6 @@ public class OrderPreviewModel : PageModel
             return Page();
         }
 
-        // Validazione input BACK (importo fisso)
         if (Side == "BACK")
         {
             if (!BackStakeEuro.HasValue)
@@ -274,10 +272,14 @@ public class OrderPreviewModel : PageModel
 
         StakePercent = Math.Clamp(StakePercent, 0.1, 100.0);
 
-        // customerRef base per questa “batch”
         var batchRef = $"BFR-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}".Substring(0, 32);
 
-        foreach (var acc in _options.Accounts)
+        // ✅ Fonte unica: store account (include anche Luigi)
+        var accounts = (await _accountStore.GetAllAsync())
+            .OrderBy(a => a.DisplayName)
+            .ToList();
+
+        foreach (var acc in accounts)
         {
             var token = await _store.GetTokenAsync(acc.DisplayName);
             if (string.IsNullOrWhiteSpace(token))
@@ -299,7 +301,6 @@ public class OrderPreviewModel : PageModel
 
             var balance = funds.availableToBetBalance.Value;
 
-            // blocco globale: se saldo < 1€ non può piazzare nulla
             if (balance < 1.0)
             {
                 Rows.Add(new PreviewRow
@@ -322,7 +323,6 @@ public class OrderPreviewModel : PageModel
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
 
-                // extra sicurezza: stake non può superare il saldo disponibile
                 if (stake > balance)
                 {
                     Rows.Add(new PreviewRow
@@ -348,7 +348,6 @@ public class OrderPreviewModel : PageModel
             {
                 liability = Math.Round((Price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
 
-                // consigliato: non bancare se liability supera il saldo
                 if (liability > balance)
                 {
                     Rows.Add(new PreviewRow
@@ -364,7 +363,6 @@ public class OrderPreviewModel : PageModel
                 }
             }
 
-            // customerRef UNICO per account (evita doppi invii se premi 2 volte)
             var customerRef = $"{batchRef}-{acc.DisplayName}".Replace(" ", "");
             if (customerRef.Length > 32) customerRef = customerRef.Substring(0, 32);
 
@@ -391,7 +389,6 @@ public class OrderPreviewModel : PageModel
 
             var (report, placeErr) = await _betting.PlaceOrdersAsync(acc.DisplayName, acc.AppKeyDelayed, token, placeParams);
 
-
             if (placeErr != null)
             {
                 Rows.Add(new PreviewRow
@@ -411,21 +408,12 @@ public class OrderPreviewModel : PageModel
 
             var status = report.status ?? "UNKNOWN";
             var errCode = report.errorCode ?? instr?.errorCode;
-            var orderStatus = instr?.orderStatus; // EXECUTABLE / EXECUTION_COMPLETE ecc.
+            var orderStatus = instr?.orderStatus;
 
             var msg = status;
-
-            if (!string.IsNullOrWhiteSpace(orderStatus))
-                msg += $" — {orderStatus}";
-
-            if (!string.IsNullOrWhiteSpace(errCode))
-                msg += $" ({errCode})";
-
-            if (!string.IsNullOrWhiteSpace(betId))
-                msg += $" — BetId: {betId}";
-
-
-
+            if (!string.IsNullOrWhiteSpace(orderStatus)) msg += $" — {orderStatus}";
+            if (!string.IsNullOrWhiteSpace(errCode)) msg += $" ({errCode})";
+            if (!string.IsNullOrWhiteSpace(betId)) msg += $" — BetId: {betId}";
 
             Rows.Add(new PreviewRow
             {
@@ -436,13 +424,11 @@ public class OrderPreviewModel : PageModel
                 MinStakeApplied = minApplied,
                 Status = msg,
                 BetId = betId,
-                AvgPriceMatched = instr?.averagePriceMatched,     // <-- ADD
-                SizeMatched = instr?.sizeMatched,                 // <-- ADD
-                SizeRemaining = instr?.sizeRemaining,             // <-- ADD
-
+                AvgPriceMatched = instr?.averagePriceMatched,
+                SizeMatched = instr?.sizeMatched,
+                SizeRemaining = instr?.sizeRemaining,
                 LiveStatus = string.IsNullOrWhiteSpace(betId) ? null : "…",
             });
-
         }
 
         return Page();
@@ -457,11 +443,15 @@ public class OrderPreviewModel : PageModel
         if (string.IsNullOrWhiteSpace(MarketId))
             return;
 
-        // Driver = primo account con token valido
-        BetfairAccountOptions? driver = null;
+        // ✅ Driver = primo account nello store con token valido
+        var accounts = (await _accountStore.GetAllAsync())
+            .OrderBy(a => a.DisplayName)
+            .ToList();
+
+        BetfairAccountRecord? driver = null;
         string? driverToken = null;
 
-        foreach (var a in _options.Accounts)
+        foreach (var a in accounts)
         {
             var t = await _store.GetTokenAsync(a.DisplayName);
             if (!string.IsNullOrWhiteSpace(t))
@@ -475,7 +465,6 @@ public class OrderPreviewModel : PageModel
         if (driver is null || string.IsNullOrWhiteSpace(driverToken))
             return;
 
-        // Runner list
         var catsRes = await _betting.GetMarketCatalogueByMarketIdAsync(driver.DisplayName, driver.AppKeyDelayed, driverToken, MarketId);
 
         var cats = catsRes.Result;
@@ -500,7 +489,6 @@ public class OrderPreviewModel : PageModel
             }
         }
 
-        // Quotes
         var bookRes = await _betting.ListMarketBookAsync(driver.DisplayName, driver.AppKeyDelayed, driverToken, MarketId);
 
         var books = bookRes.Result;
@@ -530,7 +518,8 @@ public class OrderPreviewModel : PageModel
         if (string.IsNullOrWhiteSpace(account) || string.IsNullOrWhiteSpace(betId))
             return new JsonResult(new { ok = false, error = "parametri mancanti" });
 
-        var acc = _options.Accounts.FirstOrDefault(a => a.DisplayName == account);
+        // ✅ prendo account dallo store (non da appsettings)
+        var acc = await _accountStore.GetAsync(account);
         if (acc is null)
             return new JsonResult(new { ok = false, error = "account non valido" });
 
@@ -549,14 +538,11 @@ public class OrderPreviewModel : PageModel
         return new JsonResult(new
         {
             ok = true,
-            status = ord.status,              // EXECUTABLE / EXECUTION_COMPLETE / ecc.
+            status = ord.status,
             sizeMatched = ord.sizeMatched,
             sizeRemaining = ord.sizeRemaining,
             avgPriceMatched = ord.averagePriceMatched
         });
-
-
-
     }
 
     public async Task<IActionResult> OnPostCancelOrderAsync(string account, string betId)
@@ -564,7 +550,8 @@ public class OrderPreviewModel : PageModel
         if (string.IsNullOrWhiteSpace(account) || string.IsNullOrWhiteSpace(betId))
             return new JsonResult(new { ok = false, error = "parametri mancanti" });
 
-        var acc = _options.Accounts.FirstOrDefault(a => a.DisplayName == account);
+        // ✅ prendo account dallo store (non da appsettings)
+        var acc = await _accountStore.GetAsync(account);
         if (acc is null)
             return new JsonResult(new { ok = false, error = "account non valido" });
 
@@ -586,7 +573,6 @@ public class OrderPreviewModel : PageModel
 
     private static double ApplyBetfairMinStake(double rawStake)
     {
-        // Betfair: stake minimo 1.00
         var stake = Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
         return stake < 1.0 ? 1.0 : stake;
     }
