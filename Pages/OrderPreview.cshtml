@@ -4,21 +4,108 @@
     ViewData["Title"] = "Ordine (preview)";
 }
 <style>
-    /* Forza colori leggibili SOLO nella modal di invio ordine */
-    #sendConfirmModal .modal-content,
-    #sendConfirmModal .modal-title,
+    /* ================================
+           Modal invio ordine – DARK theme
+           coerente col sito + non fullscreen
+           ================================ */
+
+    /* overlay leggermente più scuro */
+    .modal-backdrop.show {
+        opacity: .65;
+    }
+
+    /* dialog: margini reali su mobile, larghezza controllata */
+    #sendConfirmModal .modal-dialog {
+        margin: 14px auto;
+        max-width: 520px; /* desktop/tablet */
+    }
+
+    @@media (max-width: 576px) {
+        #sendConfirmModal .modal-dialog
+
+    {
+        margin: 12px; /* evita fullscreen */
+        max-width: calc(100% - 24px); /* bordo aria */
+    }
+
+    }
+
+    /* contenitore modal: come le card del sito */
+    #sendConfirmModal .modal-content {
+        background: rgba(255,255,255,.04) !important;
+        border: 1px solid rgba(255,255,255,.12) !important;
+        border-radius: 18px !important;
+        color: #f2f6ff !important;
+        box-shadow: 0 18px 40px rgba(0,0,0,.45);
+        overflow: hidden;
+    }
+
+    #sendConfirmModal .modal-header,
+    #sendConfirmModal .modal-footer {
+        border-color: rgba(255,255,255,.10) !important;
+        background: rgba(0,0,0,.10);
+    }
+
+    #sendConfirmModal .modal-title {
+        color: #ffcc00 !important;
+        font-weight: 900;
+        letter-spacing: .2px;
+        text-shadow: 0 0 14px rgba(255,204,0,.18);
+    }
+
+    /* X di chiusura visibile su dark */
+    #sendConfirmModal .btn-close {
+        filter: invert(1);
+        opacity: .85;
+    }
+
+    /* Testi e label dentro */
     #sendConfirmModal .modal-body,
     #sendConfirmModal .modal-body * {
-        color: #212529 !important;
+        color: #f2f6ff !important;
     }
 
-    #sendConfirmModal .modal-content,
-    #sendConfirmModal .modal-body,
-    #sendConfirmModal .modal-title {
-        opacity: 1 !important;
+    /* Box warning (giallo soft) coerente col tema */
+    #sendConfirmModal .risk-box {
+        border-radius: 14px;
+        border: 1px solid rgba(255,204,0,.28);
+        background: rgba(255,204,0,.10);
+        padding: 12px 12px;
     }
 
-    /* === Anti-errore stile banca === */
+    /* Summary come “bf-kv” ma dark */
+    #sendConfirmModal .bank-summary {
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(0,0,0,.18);
+        border-radius: 14px;
+        padding: 12px 12px;
+    }
+
+    #sendConfirmModal .bank-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px dashed rgba(255,255,255,.10);
+    }
+
+        #sendConfirmModal .bank-row:last-child {
+            border-bottom: none;
+        }
+
+    #sendConfirmModal .bank-k {
+        font-weight: 700;
+        color: rgba(242,246,255,.70) !important;
+        white-space: nowrap;
+    }
+
+    #sendConfirmModal .bank-v {
+        font-weight: 900;
+        text-align: right;
+        color: #f2f6ff !important;
+    }
+
+    /* Header con pallone (stile chip) */
     #sendConfirmModal .bank-header {
         display: flex;
         align-items: center;
@@ -32,78 +119,67 @@
         align-items: center;
         justify-content: center;
         border-radius: 10px;
-        background: rgba(13,110,253,.12); /* blu soft */
-        border: 1px solid rgba(13,110,253,.20);
+        background: rgba(255,204,0,.12);
+        border: 1px solid rgba(255,204,0,.22);
         font-size: 18px;
         line-height: 1;
     }
 
-    #sendConfirmModal .bank-summary {
-        border: 1px solid rgba(0,0,0,.08);
-        background: rgba(0,0,0,.02);
-        border-radius: 12px;
-        padding: 12px 12px;
-    }
-
-    #sendConfirmModal .bank-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 6px 0;
-        border-bottom: 1px dashed rgba(0,0,0,.08);
-    }
-
-        #sendConfirmModal .bank-row:last-child {
-            border-bottom: none;
-        }
-
-    #sendConfirmModal .bank-k {
-        font-weight: 600;
-        color: rgba(33,37,41,.80);
-        white-space: nowrap;
-    }
-
-    #sendConfirmModal .bank-v {
-        font-weight: 700;
-        text-align: right;
-    }
-
-    /* Badge BACK/LAY */
+    /* Badge BACK/LAY coerenti con site.css */
     #sendConfirmModal .badge-side {
-        font-weight: 700;
+        font-weight: 900;
         letter-spacing: .3px;
-        padding: .45rem .6rem;
+        padding: .45rem .7rem;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         gap: .35rem;
+        border: 1px solid rgba(255,255,255,.10);
     }
 
     #sendConfirmModal .badge-back {
-        background: rgba(13,110,253,.12);
-        color: #0d6efd;
-        border: 1px solid rgba(13,110,253,.25);
+        background: rgba(47,107,255,.14);
+        border-color: rgba(47,107,255,.35);
+        color: #f2f6ff !important;
     }
 
     #sendConfirmModal .badge-lay {
-        background: rgba(220,53,69,.12);
-        color: #dc3545;
-        border: 1px solid rgba(220,53,69,.25);
+        background: rgba(255,204,0,.14);
+        border-color: rgba(255,204,0,.35);
+        color: #f2f6ff !important;
     }
 
-    /* Pulsante invio: aspetto "banca" */
+    /* Checkbox più “app” */
+    #sendConfirmModal .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-top: .2rem;
+    }
+
+    /* Footer buttons: più “mobile tappabile” */
+    @@media (max-width: 576px) {
+        #sendConfirmModal .modal-footer
+
+    {
+        gap: 10px;
+    }
+
+    #sendConfirmModal .modal-footer .btn {
+        flex: 1 1 auto;
+        border-radius: 14px !important;
+        padding: 12px 12px !important;
+        font-weight: 900 !important;
+    }
+
+    }
+
+    /* disabilitato */
     #sendConfirmModal #btnConfirmSend[disabled] {
         opacity: .55;
         cursor: not-allowed;
     }
-
-    #sendConfirmModal .risk-box {
-        border-radius: 12px;
-        border: 1px solid rgba(255,193,7,.35);
-        background: rgba(255,193,7,.14);
-        padding: 10px 12px;
-    }
 </style>
+
 
 <h1>Ordine (preview)</h1>
 <p class="text-muted">
