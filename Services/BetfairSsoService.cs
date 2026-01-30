@@ -10,13 +10,22 @@ public class BetfairSsoService
 {
     private readonly BetfairHttpClientProvider _httpProvider;
     private readonly BetfairAccountStoreFile _accounts;
+    private readonly BetfairSessionStoreFile _sessions;
 
-    public BetfairSsoService(BetfairHttpClientProvider httpProvider, BetfairAccountStoreFile accounts)
+    public BetfairSsoService(
+        BetfairHttpClientProvider httpProvider,
+        BetfairAccountStoreFile accounts,
+        BetfairSessionStoreFile sessions)
     {
         _httpProvider = httpProvider;
         _accounts = accounts;
+        _sessions = sessions;
     }
 
+    /// <summary>
+    /// Login SSO cert (Italia) usando username/password passati.
+    /// NOTA: questo metodo NON salva automaticamente il token nello store: lo fa chi chiama.
+    /// </summary>
     public async Task<BetfairLoginResponse> LoginItalyAsync(string displayName, string username, string password)
     {
         var rec = await _accounts.GetAsync(displayName);
@@ -70,11 +79,9 @@ public class BetfairSsoService
             };
         }
 
-        // Normalizzazione aggressiva (BOM/spazi/; / newline)
         var body = Normalize(bodyRaw);
 
-        // 1) Querystring via ParseQueryString (case-insensitive su chiavi non garantito)
-        // quindi facciamo doppio tentativo: originale + lowercase
+        // 1) Querystring (robusto)
         {
             var parsed = HttpUtility.ParseQueryString(body);
             var status = parsed["status"] ?? parsed["Status"] ?? parsed["STATUS"];
@@ -85,7 +92,7 @@ public class BetfairSsoService
                 return new BetfairLoginResponse { status = status, token = token, error = error };
         }
 
-        // 2) Regex robusta (prende status/token/error anche se separatori strani)
+        // 2) Regex robusta
         {
             string? status = FindKey(body, "status");
             string? token = FindKey(body, "token");
@@ -95,10 +102,9 @@ public class BetfairSsoService
                 return new BetfairLoginResponse { status = status, token = token, error = error };
         }
 
-        // 3) JSON (2 possibili formati)
+        // 3) JSON (2 formati)
         try
         {
-            // Formato "vecchio" (se mai arriva)
             var obj = JsonSerializer.Deserialize<BetfairLoginResponse>(bodyRaw, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -107,7 +113,6 @@ public class BetfairSsoService
             if (obj != null && !string.IsNullOrWhiteSpace(obj.status))
                 return obj;
 
-            // Formato "nuovo" (quello che stai ricevendo ora)
             var certObj = JsonSerializer.Deserialize<BetfairCertLoginJson>(bodyRaw, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -128,9 +133,6 @@ public class BetfairSsoService
             // ignore
         }
 
-
-
-        // Fallback: includo snippet del body per capire cosa stiamo ricevendo
         var snippet = bodyRaw;
         if (snippet.Length > 180) snippet = snippet.Substring(0, 180) + "...";
 
@@ -141,20 +143,45 @@ public class BetfairSsoService
         };
     }
 
+    /// <summary>
+    /// AUTO-RELOGIN: usa le credenziali salvate in BetfairAccountStoreFile (cifrate),
+    /// effettua certlogin e salva il nuovo token in BetfairSessionStoreFile.
+    /// </summary>
+    public async Task<(string? Token, string? Error)> ReLoginFromStoredCredentialsAsync(string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+            return (null, "displayName mancante");
+
+        var rec = await _accounts.GetAsync(displayName);
+        if (rec is null)
+            return (null, $"ACCOUNT_NOT_FOUND ({displayName})");
+
+        var (u, p, _, _) = _accounts.UnprotectSecrets(rec);
+
+        if (string.IsNullOrWhiteSpace(u) || string.IsNullOrWhiteSpace(p))
+            return (null, "CREDENZIALI_MANCANTI (username/password non presenti nello store)");
+
+        var login = await LoginItalyAsync(displayName, u!, p!);
+
+        // SUCCESS = token valido
+        if (!string.Equals(login.status, "SUCCESS", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(login.token))
+        {
+            var why = login.error ?? "LOGIN_FAILED";
+            return (null, why);
+        }
+
+        await _sessions.SetTokenAsync(displayName, login.token!);
+        return (login.token, null);
+    }
+
     private static string Normalize(string s)
     {
         if (string.IsNullOrEmpty(s)) return "";
 
-        // rimuove BOM
         s = s.Trim().TrimStart('\uFEFF', '\u200B');
-
-        // Betfair o proxy a volte usano ; come separatore
         s = s.Replace(";", "&");
-
-        // newline -> &
         s = s.Replace("\r\n", "&").Replace("\n", "&").Replace("\r", "&");
-
-        // alcuni proxy mettono spazi
         s = s.Trim();
 
         return s;
@@ -162,8 +189,6 @@ public class BetfairSsoService
 
     private static string? FindKey(string body, string key)
     {
-        // cerca key=VALUE dove VALUE finisce su & o fine stringa
-        // case-insensitive
         var m = Regex.Match(body, $@"(?i)(?:^|[&\s]){Regex.Escape(key)}\s*=\s*([^&]+)");
         if (!m.Success) return null;
 
@@ -177,5 +202,4 @@ public class BetfairSsoService
         public string? loginStatus { get; set; }
         public string? lastLoginDate { get; set; }
     }
-
 }

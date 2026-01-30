@@ -47,24 +47,35 @@ public class FundsModel : PageModel
                 continue;
             }
 
-            var (result, error) = await _accountApi.GetAccountFundsAsync(acc.AppKeyDelayed, token);
+            var (result, error) = await _accountApi.GetAccountFundsAsync(acc.DisplayName, acc.AppKeyDelayed, token);
 
-            // ✅ Se token scaduto => lo rimuoviamo e rendiamo lo stato coerente
-            if (IsSessionExpired(error))
+            if (!string.IsNullOrWhiteSpace(error) &&
+                error.Contains("RELOGIN_FAILED", StringComparison.OrdinalIgnoreCase))
+
             {
-                await _sessionStore.RemoveTokenAsync(acc.DisplayName);
-
                 Rows.Add(new FundsRow
                 {
                     DisplayName = acc.DisplayName,
                     IsConnected = false,
-                    Error = "Sessione scaduta – ricollega"
+                    Error = error
+                });
+                continue;
+            }
+
+            // Qualsiasi altro errore => non posso dire “collegato”
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                Rows.Add(new FundsRow
+                {
+                    DisplayName = acc.DisplayName,
+                    IsConnected = false,
+                    Error = error
                 });
                 continue;
             }
 
             double? stakePreview = null;
-            if (error == null && result?.availableToBetBalance is double bal && bal > 0)
+            if (result?.availableToBetBalance is double bal && bal > 0)
             {
                 stakePreview = Math.Round(bal * (StakePercent / 100.0), 2, MidpointRounding.AwayFromZero);
             }
@@ -76,24 +87,12 @@ public class FundsModel : PageModel
                 AvailableToBetBalance = result?.availableToBetBalance,
                 Exposure = result?.exposure,
                 StakePreview = stakePreview,
-                Error = error
+                Error = null
             });
         }
+
     }
 
-    private static bool IsSessionExpired(string? err)
-    {
-        if (string.IsNullOrWhiteSpace(err)) return false;
-
-        var up = err.ToUpperInvariant();
-
-        // robusto (perché i testi possono variare)
-        return up.Contains("INVALID_SESSION")
-            || up.Contains("NO_SESSION")
-            || up.Contains("SESSION")
-            || up.Contains("TOKEN")
-            || up.Contains("ANGX-0003");
-    }
 
     public class FundsRow
     {

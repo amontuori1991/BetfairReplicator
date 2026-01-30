@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using BetfairReplicator.Models;
@@ -8,14 +9,37 @@ namespace BetfairReplicator.Services;
 public class BetfairAccountApiService
 {
     private readonly HttpClient _http;
+    private readonly BetfairSsoService _sso;
 
-    public BetfairAccountApiService(IHttpClientFactory httpFactory)
+    public BetfairAccountApiService(IHttpClientFactory httpFactory, BetfairSsoService sso)
     {
         _http = httpFactory.CreateClient("Betfair");
         _http.Timeout = TimeSpan.FromSeconds(30);
+        _sso = sso;
     }
 
     public async Task<(BetfairAccountFundsResult? Result, string? Error)> GetAccountFundsAsync(
+        string displayName,
+        string appKey,
+        string sessionToken)
+    {
+        var (res1, err1, retry) = await GetAccountFundsOnceAsync(appKey, sessionToken);
+
+        if (retry)
+        {
+            var (newToken, relogErr) = await _sso.ReLoginFromStoredCredentialsAsync(displayName);
+            if (relogErr != null || string.IsNullOrWhiteSpace(newToken))
+                return (null, $"RELOGIN_FAILED: {relogErr ?? "unknown"}");
+
+
+            var (res2, err2, _) = await GetAccountFundsOnceAsync(appKey, newToken);
+            return (res2, err2);
+        }
+
+        return (res1, err1);
+    }
+
+    private async Task<(BetfairAccountFundsResult? Result, string? Error, bool ShouldRetry)> GetAccountFundsOnceAsync(
         string appKey,
         string sessionToken)
     {
@@ -37,9 +61,16 @@ public class BetfairAccountApiService
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
         using var res = await _http.SendAsync(req);
-        var body = await res.Content.ReadAsStringAsync();
+        var body = await res.Content.ReadAsStringAsync() ?? "";
+        var ct = res.Content.Headers.ContentType?.ToString() ?? "(no content-type)";
 
-        // 1) prova parse "tipizzato" (come facevi tu)
+        // 401/403 = token non valido/scaduto (retry)
+        if (res.StatusCode == HttpStatusCode.Unauthorized || res.StatusCode == HttpStatusCode.Forbidden)
+            return (null, $"HTTP {(int)res.StatusCode} {res.StatusCode} (CT={ct})", true);
+
+        if (!res.IsSuccessStatusCode)
+            return (null, $"HTTP {(int)res.StatusCode} {res.StatusCode} (CT={ct})", false);
+
         try
         {
             var parsed = JsonSerializer.Deserialize<BetfairRpcResponse<BetfairAccountFundsResult>>(
@@ -49,77 +80,70 @@ public class BetfairAccountApiService
 
             if (parsed?.error != null)
             {
-                // normalizzazione robusta
                 var normalized = NormalizeBetfairError(body, parsed.error.message ?? "BETFAIR_ERROR");
-                return (null, normalized);
+
+                // token scaduto -> retry
+                if (LooksLikeSessionExpired(normalized) || LooksLikeSessionExpired(body))
+                    return (null, "INVALID_SESSION", true);
+
+                return (null, normalized, false);
             }
 
             if (parsed?.result == null)
-                return (null, "Risposta vuota da Betfair");
+                return (null, "Risposta vuota da Betfair", false);
 
-            return (parsed.result, null);
+            return (parsed.result, null, false);
         }
-        catch
+        catch (Exception ex)
         {
-            // 2) fallback: prova a capire se almeno è un errore di sessione
-            var normalized = NormalizeBetfairError(body, "Risposta non valida (JSON) da Betfair");
-            return (null, normalized);
+            Console.WriteLine("=== BETFAIR ACCOUNT JSON PARSE FAILED ===");
+            Console.WriteLine($"CT={ct}");
+            Console.WriteLine($"Exception: {ex.Message}");
+            Console.WriteLine(body.Length > 1200 ? body.Substring(0, 1200) : body);
+            Console.WriteLine("=== END ===");
+
+            // non possiamo sapere se è sessione -> niente retry qui
+            return (null, "Risposta Betfair non interpretabile (account parsing). Controlla i log server.", false);
         }
     }
 
     private static string NormalizeBetfairError(string rawBody, string fallbackMessage)
     {
-        // Se Betfair risponde con errori noti, proviamo a estrarre un errorCode "stabile".
-        // Se non troviamo nulla, ritorniamo il messaggio originale.
-
         try
         {
             using var doc = JsonDocument.Parse(rawBody);
 
-            // Betfair JSON-RPC tipico: { "jsonrpc":"2.0","error":{ "code":-32099,"message":"....","data":{...}},"id":1 }
             if (doc.RootElement.TryGetProperty("error", out var err))
             {
-                // message
                 var msg = err.TryGetProperty("message", out var m) ? m.GetString() : null;
 
-                // in alcuni casi c'è data.APINGException.errorCode oppure data.exceptionname ecc.
                 string? errorCode = null;
-
                 if (err.TryGetProperty("data", out var data))
                 {
-                    // data.APINGException.errorCode
                     if (data.TryGetProperty("APINGException", out var aping)
                         && aping.TryGetProperty("errorCode", out var ec1))
                         errorCode = ec1.GetString();
 
-                    // data.exceptionname (alcune varianti)
                     if (errorCode == null && data.TryGetProperty("exceptionname", out var exn))
                         errorCode = exn.GetString();
 
-                    // data.errorCode (varianti)
                     if (errorCode == null && data.TryGetProperty("errorCode", out var ec2))
                         errorCode = ec2.GetString();
                 }
 
                 var merged = $"{errorCode ?? ""} {msg ?? ""}".Trim();
 
-                // Session invalidata/scaduta: normalizziamo
                 if (LooksLikeSessionExpired(merged) || LooksLikeSessionExpired(rawBody))
                     return "INVALID_SESSION";
 
-                // altrimenti ritorniamo qualcosa di utile
                 if (!string.IsNullOrWhiteSpace(merged))
                     return merged;
 
                 return fallbackMessage;
             }
         }
-        catch
-        {
-            // ignore
-        }
+        catch { /* ignore */ }
 
-        // fallback: anche se non è JSON valido, cerchiamo pattern nel testo
         if (LooksLikeSessionExpired(rawBody) || LooksLikeSessionExpired(fallbackMessage))
             return "INVALID_SESSION";
 
@@ -134,6 +158,8 @@ public class BetfairAccountApiService
         return up.Contains("INVALID_SESSION")
             || up.Contains("NO_SESSION")
             || up.Contains("SESSION_EXPIRED")
+            || up.Contains("UNAUTHORIZED")
+            || up.Contains("NOT_AUTHORIZED")
             || up.Contains("EXPIRED")
             || up.Contains("TOKEN")
             || up.Contains("ANGX-0003");

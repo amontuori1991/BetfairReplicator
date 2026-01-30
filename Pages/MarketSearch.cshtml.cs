@@ -71,16 +71,19 @@ public class MarketSearchModel : PageModel
 
         if (string.IsNullOrWhiteSpace(EventId))
         {
-            var (events, err) = await _betting.ListEventsAsync(driver.AppKeyDelayed, token, soccerEventTypeId, Q, from, to);
+            var (events, err) = await _betting.ListEventsAsync(driver.DisplayName, driver.AppKeyDelayed, token, soccerEventTypeId, Q, from, to);
+
 
             if (err != null)
             {
-                if (IsSessionExpired(err))
+                // Con auto-relogin: NON rimuovere il token.
+                // Se il relogin fallisce, arriva un messaggio esplicito e lo mostriamo.
+                if (err.Contains("RELOGIN_FAILED", StringComparison.OrdinalIgnoreCase))
                 {
-                    await _store.RemoveTokenAsync(driver.DisplayName);
-                    Error = $"Sessione Betfair scaduta ({driver.DisplayName}). Ho scollegato l’account: ricollegalo da 'Collega Betfair'.";
+                    Error = err;
                     return;
                 }
+
 
                 Error = err;
                 return;
@@ -92,20 +95,22 @@ public class MarketSearchModel : PageModel
 
         }
 
-        var (markets, err2) = await _betting.ListAllMarketsByEventAsync(driver.AppKeyDelayed, token, EventId);
+        var (markets, err2) = await _betting.ListAllMarketsByEventAsync(driver.DisplayName, driver.AppKeyDelayed, token, EventId);
 
         if (err2 != null)
         {
-            if (IsSessionExpired(err2))
+            // Con auto-relogin: NON rimuovere il token.
+            // Se il relogin fallisce, arriva un messaggio esplicito e lo mostriamo.
+            if (err2.Contains("RELOGIN_FAILED", StringComparison.OrdinalIgnoreCase))
             {
-                await _store.RemoveTokenAsync(driver.DisplayName);
-                Error = $"Sessione Betfair scaduta ({driver.DisplayName}). Ho scollegato l’account: ricollegalo da 'Collega Betfair'.";
+                Error = err2;
                 return;
             }
 
             Error = err2;
             return;
         }
+
 
 
         Markets = markets ?? new();
@@ -118,7 +123,8 @@ public class MarketSearchModel : PageModel
         // 1) Nome evento: lo risolviamo tramite ListEvents (stesso range, nessuna chiamata "strana")
         try
         {
-            var (evs, evErr) = await _betting.ListEventsAsync(driver.AppKeyDelayed, token, soccerEventTypeId, Q, from, to);
+            var (evs, evErr) = await _betting.ListEventsAsync(driver.DisplayName, driver.AppKeyDelayed, token, soccerEventTypeId, Q, from, to);
+
 
             if (evErr == null && evs != null)
             {
@@ -132,17 +138,18 @@ public class MarketSearchModel : PageModel
         var firstMarketId = Markets.FirstOrDefault()?.marketId;
         if (!string.IsNullOrWhiteSpace(firstMarketId))
         {
-            var bookRes = await _betting.ListMarketBookAsync(driver.AppKeyDelayed, token, firstMarketId);
+            var bookRes = await _betting.ListMarketBookAsync(driver.DisplayName, driver.AppKeyDelayed, token, firstMarketId);
+
 
             if (bookRes.Error != null)
             {
-                if (IsSessionExpired(bookRes.Error))
+                if (bookRes.Error.Contains("RELOGIN_FAILED", StringComparison.OrdinalIgnoreCase))
                 {
-                    await _store.RemoveTokenAsync(driver.DisplayName);
-                    Error = $"Sessione Betfair scaduta ({driver.DisplayName}). Ho scollegato l’account: ricollegalo da 'Collega Betfair'.";
+                    Error = bookRes.Error;
                     return;
                 }
             }
+
             else
             {
                 var books = bookRes.Result;
@@ -189,18 +196,7 @@ public class MarketSearchModel : PageModel
 
         return filtered;
     }
-    private static bool IsSessionExpired(string? err)
-    {
-        if (string.IsNullOrWhiteSpace(err)) return false;
-        err = err.ToUpperInvariant();
-
-        return err.Contains("INVALID_SESSION")
-            || err.Contains("NO_SESSION")
-            || err.Contains("SESSION")
-            || err.Contains("TOKEN")
-            || err.Contains("ANGX-0003");
-    }
-
+    
     public async Task<IActionResult> OnGetQuotesAsync(string marketId, string? account)
     {
         if (string.IsNullOrWhiteSpace(marketId))
@@ -224,15 +220,16 @@ public class MarketSearchModel : PageModel
         if (string.IsNullOrWhiteSpace(token))
             return new JsonResult(new { ok = false, error = "Account non collegato" });
 
-        var result = await _betting.ListMarketBookAsync(driver.AppKeyDelayed, token, marketId);
+        var result = await _betting.ListMarketBookAsync(driver.DisplayName, driver.AppKeyDelayed, token, marketId);
+
         var books = result.Result;
         var err = result.Error;
 
-        if (err != null && IsSessionExpired(err))
+        if (err != null && err.Contains("RELOGIN_FAILED", StringComparison.OrdinalIgnoreCase))
         {
-            await _store.RemoveTokenAsync(driver.DisplayName);
-            return new JsonResult(new { ok = false, error = $"Sessione scaduta ({driver.DisplayName}). Ricollega da 'Collega Betfair'." });
+            return new JsonResult(new { ok = false, error = err });
         }
+
 
 
         if (err != null || books == null || books.Count == 0)

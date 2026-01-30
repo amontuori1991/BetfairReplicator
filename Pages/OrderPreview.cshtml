@@ -136,34 +136,37 @@
                             <span class="badge bg-secondary">NO</span>
                         }
                     </td>
-                    <td>@r.Status</td>
+                    <td><div>@r.Status</div></td>
+
+
                     <td>@(r.BetId ?? "-")</td>
 
-                    <td>
-                        @if (!string.IsNullOrWhiteSpace(r.BetId))
-                        {
-                            <span class="order-live"
-                                  data-account="@r.DisplayName"
-                                  data-betid="@r.BetId">
-                                …
-                            </span>
+ <td>
+    @if (!string.IsNullOrWhiteSpace(r.BetId))
+    {
+        <div>
+            <span class="order-live"
+                  data-account="@r.DisplayName"
+                  data-betid="@r.BetId">…</span>
+        </div>
 
-                            <div class="small text-muted">
-                                M:<span class="m"></span> R:<span class="r"></span> Avg:<span class="a"></span>
-                            </div>
+        <div class="small text-muted">
+            M:<span class="m"></span> R:<span class="r"></span> Avg:<span class="a"></span>
+        </div>
 
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-danger mt-1 btn-cancel"
-                                    data-account="@r.DisplayName"
-                                    data-betid="@r.BetId">
-                                Cancella ordine
-                            </button>
-                        }
-                        else
-                        {
-                            <span>-</span>
-                        }
-                    </td>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger mt-1 btn-cancel"
+                data-account="@r.DisplayName"
+                data-betid="@r.BetId">
+            Cancella ordine
+        </button>
+    }
+    else
+    {
+        <span>-</span>
+    }
+</td>
+
                 </tr>
 
                 @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
@@ -186,26 +189,41 @@
 
 @section Scripts {
     <script>
- function toggleSideFields() {
-    const side = (document.getElementById("sideSelect")?.value || "LAY").toUpperCase();
-    const grpStake = document.getElementById("grpStakePercent");
-    const grpBack = document.getElementById("grpBackStakeEuro");
+        function toggleSideFields() {
+            const side = (document.getElementById("sideSelect")?.value || "LAY").toUpperCase();
+            const grpStake = document.getElementById("grpStakePercent");
+            const grpBack = document.getElementById("grpBackStakeEuro");
 
-    const inpPct = document.querySelector('input[name="StakePercent"]');
-    const inpBack = document.querySelector('input[name="BackStakeEuro"]');
+            const inpPct = document.querySelector('input[name="StakePercent"]');
+            const inpBack = document.querySelector('input[name="BackStakeEuro"]');
 
-    if (!grpStake || !grpBack) return;
+            if (!grpStake || !grpBack) return;
 
-    const isLay = side === "LAY";
+            const isLay = side === "LAY";
 
-    grpStake.style.display = isLay ? "" : "none";
-    grpBack.style.display = isLay ? "none" : "";
+            grpStake.style.display = isLay ? "" : "none";
+            grpBack.style.display = isLay ? "none" : "";
 
-    // IMPORTANT: disabilita il campo non usato così non viene postato
-    if (inpPct) inpPct.disabled = !isLay;
-    if (inpBack) inpBack.disabled = isLay;
-}
+            // Disabilita il campo non usato così non viene postato
+            if (inpPct) inpPct.disabled = !isLay;
+            if (inpBack) inpBack.disabled = isLay;
 
+            // (opzionale) required coerente
+            if (inpPct) inpPct.required = isLay;
+            if (inpBack) inpBack.required = !isLay;
+
+            // Reset valori per UI “pulita”
+            if (isLay) {
+                if (inpBack) inpBack.value = "";
+            } else {
+                if (inpPct) inpPct.value = "";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            toggleSideFields();
+            document.getElementById("sideSelect")?.addEventListener("change", toggleSideFields);
+        });
 
         (async function () {
             const REFRESH_MS = 2500;
@@ -226,7 +244,7 @@
 
                     el.textContent = data.status || "-";
 
-                    const wrap = el.parentElement;
+                    const wrap = el.closest("td");
                     if (!wrap) return;
 
                     const m = wrap.querySelector(".m");
@@ -285,10 +303,7 @@
                         btn.disabled = true;
                         try {
                             const data = await cancelOrder(account, betId);
-                            if (!data.ok) {
-                                alert(data.error || "Errore cancellazione");
-                            }
-
+                            if (!data.ok) alert(data.error || "Errore cancellazione");
                             await refreshAll();
                         } finally {
                             btn.disabled = false;
@@ -300,7 +315,7 @@
             bindCancelButtons();
             await refreshAll();
             setInterval(refreshAll, REFRESH_MS);
-
         })();
     </script>
 }
+

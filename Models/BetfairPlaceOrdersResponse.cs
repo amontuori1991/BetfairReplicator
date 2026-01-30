@@ -11,15 +11,18 @@ public class PlaceExecutionReport
 
 public class PlaceInstructionReport
 {
-    public string? status { get; set; }                 // SUCCESS / FAILURE
+    public string? status { get; set; }
     public string? errorCode { get; set; }
     public PlaceInstructionReportResult? instruction { get; set; }
     public PlaceInstructionReportOutcome? outcome { get; set; }
     public string? betId { get; set; }
-    public double? placedDate { get; set; }            // a volte non c'è, dipende dalla response
+    public DateTime? placedDate { get; set; }
     public double? averagePriceMatched { get; set; }
     public double? sizeMatched { get; set; }
+    public double? sizeRemaining { get; set; }   // <—
+    public string? orderStatus { get; set; }      // <—
 }
+
 
 public class PlaceInstructionReportResult
 {

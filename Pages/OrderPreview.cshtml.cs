@@ -77,7 +77,6 @@ public class OrderPreviewModel : PageModel
         public double? SizeMatched { get; set; }
         public double? SizeRemaining { get; set; }
         public double? AvgPriceMatched { get; set; }
-
         public string? JsonRpcPreview { get; set; }
     }
 
@@ -144,7 +143,8 @@ public class OrderPreviewModel : PageModel
                 continue;
             }
 
-            var (funds, err) = await _accountApi.GetAccountFundsAsync(acc.AppKeyDelayed, token);
+            var (funds, err) = await _accountApi.GetAccountFundsAsync(acc.DisplayName, acc.AppKeyDelayed, token);
+
             if (err != null || funds?.availableToBetBalance is null)
             {
                 Rows.Add(new PreviewRow
@@ -286,7 +286,7 @@ public class OrderPreviewModel : PageModel
                 continue;
             }
 
-            var (funds, fundErr) = await _accountApi.GetAccountFundsAsync(acc.AppKeyDelayed, token);
+            var (funds, fundErr) = await _accountApi.GetAccountFundsAsync(acc.DisplayName, acc.AppKeyDelayed, token);
             if (fundErr != null || funds?.availableToBetBalance is null)
             {
                 Rows.Add(new PreviewRow
@@ -389,7 +389,8 @@ public class OrderPreviewModel : PageModel
                 customerRef = customerRef
             };
 
-            var (report, placeErr) = await _betting.PlaceOrdersAsync(acc.AppKeyDelayed, token, placeParams);
+            var (report, placeErr) = await _betting.PlaceOrdersAsync(acc.DisplayName, acc.AppKeyDelayed, token, placeParams);
+
 
             if (placeErr != null)
             {
@@ -410,10 +411,21 @@ public class OrderPreviewModel : PageModel
 
             var status = report.status ?? "UNKNOWN";
             var errCode = report.errorCode ?? instr?.errorCode;
+            var orderStatus = instr?.orderStatus; // EXECUTABLE / EXECUTION_COMPLETE ecc.
 
             var msg = status;
-            if (!string.IsNullOrWhiteSpace(errCode)) msg += $" ({errCode})";
-            if (!string.IsNullOrWhiteSpace(betId)) msg += $" — BetId: {betId}";
+
+            if (!string.IsNullOrWhiteSpace(orderStatus))
+                msg += $" — {orderStatus}";
+
+            if (!string.IsNullOrWhiteSpace(errCode))
+                msg += $" ({errCode})";
+
+            if (!string.IsNullOrWhiteSpace(betId))
+                msg += $" — BetId: {betId}";
+
+
+
 
             Rows.Add(new PreviewRow
             {
@@ -424,8 +436,13 @@ public class OrderPreviewModel : PageModel
                 MinStakeApplied = minApplied,
                 Status = msg,
                 BetId = betId,
+                AvgPriceMatched = instr?.averagePriceMatched,     // <-- ADD
+                SizeMatched = instr?.sizeMatched,                 // <-- ADD
+                SizeRemaining = instr?.sizeRemaining,             // <-- ADD
+
                 LiveStatus = string.IsNullOrWhiteSpace(betId) ? null : "…",
             });
+
         }
 
         return Page();
@@ -459,7 +476,8 @@ public class OrderPreviewModel : PageModel
             return;
 
         // Runner list
-        var catsRes = await _betting.GetMarketCatalogueByMarketIdAsync(driver.AppKeyDelayed, driverToken, MarketId);
+        var catsRes = await _betting.GetMarketCatalogueByMarketIdAsync(driver.DisplayName, driver.AppKeyDelayed, driverToken, MarketId);
+
         var cats = catsRes.Result;
         var err = catsRes.Error;
 
@@ -483,7 +501,8 @@ public class OrderPreviewModel : PageModel
         }
 
         // Quotes
-        var bookRes = await _betting.ListMarketBookAsync(driver.AppKeyDelayed, driverToken, MarketId);
+        var bookRes = await _betting.ListMarketBookAsync(driver.DisplayName, driver.AppKeyDelayed, driverToken, MarketId);
+
         var books = bookRes.Result;
         var qErr = bookRes.Error;
 
@@ -519,7 +538,7 @@ public class OrderPreviewModel : PageModel
         if (string.IsNullOrWhiteSpace(token))
             return new JsonResult(new { ok = false, error = "account non collegato" });
 
-        var (rep, err) = await _betting.ListCurrentOrdersAsync(acc.AppKeyDelayed, token, betId);
+        var (rep, err) = await _betting.ListCurrentOrdersAsync(acc.DisplayName, acc.AppKeyDelayed, token, betId);
         if (err != null)
             return new JsonResult(new { ok = false, error = err });
 
@@ -530,11 +549,14 @@ public class OrderPreviewModel : PageModel
         return new JsonResult(new
         {
             ok = true,
-            status = ord.status,
+            status = ord.status,              // EXECUTABLE / EXECUTION_COMPLETE / ecc.
             sizeMatched = ord.sizeMatched,
             sizeRemaining = ord.sizeRemaining,
             avgPriceMatched = ord.averagePriceMatched
         });
+
+
+
     }
 
     public async Task<IActionResult> OnPostCancelOrderAsync(string account, string betId)
@@ -550,7 +572,7 @@ public class OrderPreviewModel : PageModel
         if (string.IsNullOrWhiteSpace(token))
             return new JsonResult(new { ok = false, error = "account non collegato" });
 
-        var (rep, err) = await _betting.CancelOrderAsync(acc.AppKeyDelayed, token, betId);
+        var (rep, err) = await _betting.CancelOrderAsync(acc.DisplayName, acc.AppKeyDelayed, token, betId);
         if (err != null)
             return new JsonResult(new { ok = false, error = err });
 
