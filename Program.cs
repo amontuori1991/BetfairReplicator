@@ -43,7 +43,15 @@ namespace BetfairReplicator
             }
 
             // ✅ HttpClient factory
-            builder.Services.AddHttpClient();
+            // ✅ HttpClient factory
+            builder.Services.AddHttpClient(); // default
+
+            // ✅ Named client usato da CreateClient("Betfair")
+            builder.Services.AddHttpClient("Betfair", c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(30);
+            });
+
 
             builder.Services.Configure<BetfairOptions>(
                 builder.Configuration.GetSection("Betfair"));

@@ -46,12 +46,20 @@
                     @if (!string.IsNullOrWhiteSpace(r.Error))
                     {
                         <span class="badge bg-warning text-dark">@r.Error</span>
+
+                        @if (r.Error.Contains("ricollega", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-primary" asp-page="/ConnectBetfair">Vai a Collega</a>
+                            </div>
+                        }
                     }
                     else
                     {
                         <span class="badge bg-success">OK</span>
                     }
                 </td>
+
             </tr>
         }
     </tbody>

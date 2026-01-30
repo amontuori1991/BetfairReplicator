@@ -17,8 +17,11 @@ public class BetfairBettingApiService
 
 
     // NOTA: niente T? qui (evita CS8978)
-    protected async Task<(T Result, string? Error)> CallAsync<T>(string appKey, string sessionToken, object rpcRequest)
-        where T : class
+    protected async Task<(T Result, string? Error)> CallAsync<T>(
+       string appKey,
+       string sessionToken,
+       object rpcRequest)
+       where T : class
     {
         var url = "https://api.betfair.com/exchange/betting/json-rpc/v1";
         var json = JsonSerializer.Serialize(rpcRequest);
@@ -31,25 +34,72 @@ public class BetfairBettingApiService
 
         using var res = await _http.SendAsync(req);
         var body = await res.Content.ReadAsStringAsync();
+        var ct = res.Content.Headers.ContentType?.ToString() ?? "(no content-type)";
 
+        // Helper per mostrare un body "breve" nell'errore (senza spaccare UI/log)
+        static string Trunc(string? s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            s = s.Replace("\r", " ").Replace("\n", " ");
+            return s.Length <= 500 ? s : s.Substring(0, 500) + "...";
+        }
+
+        // Se status non OK, mostra body
+        if (!res.IsSuccessStatusCode)
+            return (null!, $"HTTP {(int)res.StatusCode} {res.StatusCode} CT={ct} BODY='{Trunc(body)}'");
+
+        // 1) prova a parse come oggetto singolo
         try
         {
             var parsed = JsonSerializer.Deserialize<BetfairRpcResponse<T>>(body,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             if (parsed?.error != null)
-                return (null!, parsed.error.message ?? "RPC error");
+            {
+                var code = parsed.error.code.ToString(); // se code è int
+                return (null!, $"RPC_ERROR: {parsed.error.message ?? code ?? "unknown"} | BODY='{Trunc(body)}'");
+            }
+
 
             if (parsed?.result == null)
-                return (null!, "Risposta vuota");
+                return (null!, $"EMPTY_RESULT | CT={ct} BODY='{Trunc(body)}'");
 
             return (parsed.result, null);
         }
         catch
         {
-            return (null!, "Risposta non valida (JSON)");
+            // ignore, proviamo array
+        }
+
+        // 2) prova a parse come array (batch JSON-RPC)
+        try
+        {
+            var arr = JsonSerializer.Deserialize<BetfairRpcResponse<T>[]>(body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            var first = arr?.FirstOrDefault();
+
+            if (first == null)
+                return (null!, $"JSON_PARSE_FAILED (empty array) CT={ct} BODY='{Trunc(body)}'");
+
+            if (first.error != null)
+            {
+                var code = first.error.code.ToString(); // se code è int
+                return (null!, $"RPC_ERROR: {first.error.message ?? code ?? "unknown"} | BODY='{Trunc(body)}'");
+            }
+
+
+            if (first.result == null)
+                return (null!, $"EMPTY_RESULT (array) | CT={ct} BODY='{Trunc(body)}'");
+
+            return (first.result, null);
+        }
+        catch (Exception ex)
+        {
+            return (null!, $"JSON_PARSE_FAILED: {ex.Message} | CT={ct} BODY='{Trunc(body)}'");
         }
     }
+
     private static bool IsSessionExpired(string? err)
     {
         if (string.IsNullOrWhiteSpace(err)) return false;
