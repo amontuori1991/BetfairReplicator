@@ -375,71 +375,41 @@ a {
     }
 }
 
-/* Mobile: trasformiamo la tabella runner in righe stacked */
 @media (max-width: 768px) {
 
-    /* Nascondo l'header tabella runner su mobile */
-    .bf-runner-table thead {
-        display: none;
+    /* Quote: due colonne 50/50, centrate (allineate ai bottoni) */
+    .bf-runner-table tbody tr.bf-runner-row td:nth-child(2),
+    .bf-runner-table tbody tr.bf-runner-row td:nth-child(3) {
+        display: inline-flex;
+        width: 50%;
+        padding: 0 !important;
+        margin: 0 !important;
+        justify-content: center; /* centra il valore */
+        align-items: center;
+        text-align: center !important; /* override dei text-end */
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 1.1;
     }
 
-    /* Ogni riga diventa una "card row" */
-    .bf-runner-table tbody tr.bf-runner-row {
-        display: block;
-        border: 1px solid rgba(255,255,255,.10);
-        background: rgba(0,0,0,.10);
-        border-radius: 14px;
-        padding: 10px 12px;
-        margin: 10px 0;
+    /* Riduce lo stacco tra quote e bottoni */
+    .bf-runner-table tbody tr.bf-runner-row td:nth-child(4) {
+        margin-top: 8px;
+        text-align: left !important;
     }
 
-        /* Celle stacked */
-        .bf-runner-table tbody tr.bf-runner-row td {
-            display: block;
-            border-top: none !important;
-            padding: 4px 0 !important;
+        /* Bottoni: griglia 2 colonne, stessa “geometria” delle quote */
+        .bf-runner-table tbody tr.bf-runner-row td:nth-child(4) .btn-group {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+            gap: 10px;
         }
 
-            /* Runner name più grande */
-            .bf-runner-table tbody tr.bf-runner-row td:first-child {
-                font-weight: 900;
-                padding-top: 0 !important;
-                margin-bottom: 6px;
-            }
-
-            /* Riga quote: BACK e LAY su una sola linea */
-            .bf-runner-table tbody tr.bf-runner-row td:nth-child(2),
-            .bf-runner-table tbody tr.bf-runner-row td:nth-child(3) {
-                display: inline-block;
-                width: 50%;
-                padding: 0 !important;
-                margin: 0;
-            }
-
-            .bf-runner-table tbody tr.bf-runner-row td:nth-child(2) {
-                text-align: left !important;
-            }
-
-            .bf-runner-table tbody tr.bf-runner-row td:nth-child(3) {
-                text-align: right !important;
-            }
-
-            /* Bottoni azione: sotto, full width */
-            .bf-runner-table tbody tr.bf-runner-row td:nth-child(4) {
-                margin-top: 10px;
-                text-align: left !important;
-            }
-
-                .bf-runner-table tbody tr.bf-runner-row td:nth-child(4) .btn-group {
-                    display: flex !important;
-                    width: 100%;
-                    gap: 10px;
-                }
-
-                .bf-runner-table tbody tr.bf-runner-row td:nth-child(4) .btn {
-                    flex: 1;
-                    border-radius: 14px !important;
-                    padding: 10px 12px !important;
-                    font-weight: 900 !important;
-                }
+        .bf-runner-table tbody tr.bf-runner-row td:nth-child(4) .btn {
+            width: 100%;
+            border-radius: 14px !important;
+            padding: 10px 12px !important;
+            font-weight: 900 !important;
+        }
 }
