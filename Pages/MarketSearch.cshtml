@@ -81,34 +81,64 @@
 {
     <h5>Eventi</h5>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Evento</th>
-                <th>Data</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody id="eventsTbody">
+    <!-- ===== MOBILE: cards eventi ===== -->
+    <div class="d-md-none">
+        <div class="row g-2" id="eventsCards">
             @foreach (var e in (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate))
             {
-                <tr>
-                    <td>@e.Event?.name</td>
-                    <td>@Model.ToRome(e.Event?.openDate)</td>
-                    <td class="text-end">
-                        <a class="btn btn-outline-primary"
-                           asp-page="/MarketSearch"
-                           asp-route-Account="@Model.Account"
-                           asp-route-Q="@Model.Q"
-                           asp-route-EventId="@e.Event?.id">
-                            Scegli
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
+                <div class="col-12 col-sm-6">
+                    <div class="card bf-mobile-card">
+                        <div class="card-body bf-card-body">
+                            <div class="fw-bold">@e.Event?.name</div>
+                            <div class="text-muted small mt-1">@Model.ToRome(e.Event?.openDate)</div>
 
-    </table>
+                            <div class="mt-3">
+                                <a class="btn btn-outline-primary w-100"
+                                   asp-page="/MarketSearch"
+                                   asp-route-Account="@Model.Account"
+                                   asp-route-Q="@Model.Q"
+                                   asp-route-EventId="@e.Event?.id">
+                                    Scegli
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== DESKTOP/TABLET: tabella eventi ===== -->
+    <div class="d-none d-md-block">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Evento</th>
+                    <th>Data</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="eventsTbody">
+                @foreach (var e in (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate))
+                {
+                    <tr>
+                        <td>@e.Event?.name</td>
+                        <td>@Model.ToRome(e.Event?.openDate)</td>
+                        <td class="text-end">
+                            <a class="btn btn-outline-primary"
+                               asp-page="/MarketSearch"
+                               asp-route-Account="@Model.Account"
+                               asp-route-Q="@Model.Q"
+                               asp-route-EventId="@e.Event?.id">
+                                Scegli
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
 }
 else
 {
@@ -157,7 +187,7 @@ else
                         <div class="fw-semibold mb-1">Runner / Quote</div>
 
                         <div class="table-responsive market-card" data-marketid="@m.marketId" data-account="@Model.Account">
-                            <table class="table table-sm align-middle mb-0">
+                            <table class="table table-sm align-middle mb-0 bf-runner-table">
                                 <thead>
                                     <tr>
                                         <th>Runner</th>
@@ -170,7 +200,7 @@ else
                                 <tbody>
                                     @foreach (var r in (m.runners ?? new List<RunnerCatalogue>()).OrderBy(x => x.runnerName))
                                     {
-                                        <tr class="runner-row" data-selectionid="@r.selectionId">
+                                        <tr class="runner-row bf-runner-row" data-selectionid="@r.selectionId">
                                             <td>@r.runnerName</td>
                                             <td class="text-end text-primary">
                                                 <span class="back-odds">-</span>
@@ -256,6 +286,32 @@ else
                             <a class="btn btn-outline-primary" href="${href}">Scegli</a>
                         </td>
                     </tr>`;
+            }).join("");
+        }
+                const cards = document.getElementById("eventsCards");
+        if (cards) {
+            cards.innerHTML = events.map(e => {
+                const dt = e.openDate
+                    ? new Date(e.openDate).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                    : "-";
+
+                const href =
+                    `/MarketSearch?Account=${encodeURIComponent(account)}` +
+                    `&Q=${encodeURIComponent(qValue)}` +
+                    `&EventId=${encodeURIComponent(e.id || "")}`;
+
+                return `
+                    <div class="col-12 col-sm-6">
+                        <div class="card bf-mobile-card">
+                            <div class="card-body bf-card-body">
+                                <div class="fw-bold">${(e.name || "")}</div>
+                                <div class="text-muted small mt-1">${dt}</div>
+                                <div class="mt-3">
+                                    <a class="btn btn-outline-primary w-100" href="${href}">Scegli</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
             }).join("");
         }
 
