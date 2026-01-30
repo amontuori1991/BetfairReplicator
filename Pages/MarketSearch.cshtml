@@ -12,11 +12,16 @@
         color: #212529 !important;
         background-color: #fff !important;
     }
+
+    .ns-hide-order-preview {
+        display: none !important;
+    }
+
 </style>
 
 
 <h1>Cerca mercato</h1>
-<p class="text-muted">Calcio → Match Odds (1X2). Seleziona un evento, poi scegli il mercato.</p>
+<p class="text-muted d-none">Calcio → Match Odds (1X2). Seleziona un evento, poi scegli il mercato.</p>
 
 @if (!string.IsNullOrWhiteSpace(Model.Error))
 {
@@ -25,16 +30,12 @@
 
 <form method="get" class="mb-3">
     <div class="row g-2">
-        <div class="col-12 col-md-3">
-            <label class="form-label">Account (per la ricerca)</label>
-            <input class="form-control" name="Account" value="@Model.Account" />
-            <div class="form-text">Usa un account collegato (serve token).</div>
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="form-label">Stake %</label>
-            <input class="form-control" type="number" step="0.1" min="0.1" max="100"
-                   id="stakePct" name="StakePercent" value="@Model.StakePercent" />
-        </div>
+        <input type="hidden" name="Account" value="@Model.Account" />
+
+
+        <input type="hidden" id="stakePct" name="StakePercent" value="@Model.StakePercent" />
+
+
 
         <div class="col-12 col-md-5">
             <label class="form-label">Cerca evento</label>
@@ -143,11 +144,13 @@ else
 
                         </div>
 
-                        <a class="btn btn-primary"
+                        <a class="btn btn-primary ns-hide-order-preview"
                            asp-page="/OrderPreview"
                            asp-route-MarketId="@m.marketId">
                             Apri in Ordine (preview)
                         </a>
+
+
                     </div>
 
                     <div class="mt-3">
