@@ -440,3 +440,71 @@ a {
     }
 }
 
+/* ================================
+   OrderPreview – mobile layout
+   ================================ */
+
+/* Mobile: nascondo tabella, mostro cards */
+@media (max-width: 768px) {
+    .bf-preview-table {
+        display: none !important;
+    }
+
+    .bf-preview-mobile {
+        display: block !important;
+    }
+
+    .bf-preview-card {
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 18px;
+        background: rgba(0,0,0,.18);
+        padding: 14px;
+        margin: 12px 0;
+        box-shadow: 0 10px 22px rgba(0,0,0,.18);
+    }
+
+    .bf-preview-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .bf-preview-name {
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 1.1;
+    }
+
+    .bf-preview-actions {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+        .bf-preview-actions .btn {
+            border-radius: 14px !important;
+            font-weight: 900 !important;
+            padding: 10px 12px !important;
+        }
+
+    .bf-preview-json pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: rgba(255,255,255,.04);
+        border: 1px solid rgba(255,255,255,.10);
+        border-radius: 12px;
+        padding: 10px;
+        font-size: 12px;
+        margin-top: 10px;
+    }
+}
+
+/* Desktop: nascondo cards */
+@media (min-width: 769px) {
+    .bf-preview-mobile {
+        display: none !important;
+    }
+}

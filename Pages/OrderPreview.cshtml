@@ -212,89 +212,166 @@
 
 @if (Model.Rows?.Any() == true)
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Account</th>
-                <th>Saldo</th>
-                <th>Stake/Importo</th>
-                <th>Liability (LAY)</th>
-                <th>Min 1€</th>
-                <th>Stato</th>
-                <th>BetId</th>
-                <th>Live</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var r in Model.Rows)
-            {
-                <tr>
-                    <td>@r.DisplayName</td>
-                    <td>@(r.Balance?.ToString("0.00") ?? "-")</td>
-                    <td>@(r.Stake?.ToString("0.00") ?? "-")</td>
-                    <td>@(r.Liability?.ToString("0.00") ?? "-")</td>
-                    <td>
+    <!-- =========================
+         MOBILE: CARDS
+         ========================= -->
+    <div class="bf-preview-mobile d-md-none">
+        @foreach (var r in Model.Rows)
+        {
+            <div class="bf-preview-card">
+                <div class="bf-preview-top">
+                    <div>
+                        <div class="bf-preview-name">@r.DisplayName</div>
+                        <div class="mt-2">
+                            @{
+                                var s = (r.Status ?? "").ToUpperInvariant();
+                                var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
+                                var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
+                                var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
+                            }
+                            <span class="badge @cls">@r.Status</span>
+                        </div>
+                    </div>
+
+                    <div class="text-end">
                         @if (r.MinStakeApplied)
                         {
-                            <span class="badge bg-warning text-dark">SI</span>
+                            <span class="badge bg-warning text-dark">Min 1€: SI</span>
                         }
                         else
                         {
-                            <span class="badge bg-secondary">NO</span>
+                            <span class="badge bg-secondary">Min 1€: NO</span>
                         }
-                    </td>
-                    <td>
-                        @{
-                            var s = (r.Status ?? "").ToUpperInvariant();
-                            var isOk = s.Contains("OK") || s.Contains("SUCCESS");
-                            var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
-                            var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
-                        }
-                        <span class="badge @cls">@r.Status</span>
-                    </td>
+                    </div>
+                </div>
 
+                <div class="bf-kv">
+                    <div class="bf-kv-row">
+                        <div class="bf-k">Saldo</div>
+                        <div class="bf-v">@(r.Balance?.ToString("0.00") ?? "-")</div>
+                    </div>
+                    <div class="bf-kv-row">
+                        <div class="bf-k">Stake/Importo</div>
+                        <div class="bf-v">@(r.Stake?.ToString("0.00") ?? "-")</div>
+                    </div>
+                    <div class="bf-kv-row">
+                        <div class="bf-k">Liability (LAY)</div>
+                        <div class="bf-v">@(r.Liability?.ToString("0.00") ?? "-")</div>
+                    </div>
+                    <div class="bf-kv-row">
+                        <div class="bf-k">BetId</div>
+                        <div class="bf-v">@(r.BetId ?? "-")</div>
+                    </div>
+                </div>
 
+                <div class="bf-preview-actions">
+                    @if (!string.IsNullOrWhiteSpace(r.BetId))
+                    {
+                        <button type="button"
+                                class="btn btn-outline-danger btn-cancel"
+                                data-account="@r.DisplayName"
+                                data-betid="@r.BetId">
+                            Cancella ordine
+                        </button>
+                    }
 
-                    <td>@(r.BetId ?? "-")</td>
+                    @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
+                    {
+                        <details class="bf-preview-json">
+                            <summary class="mt-1">JSON-RPC preview</summary>
+                            <pre>@r.JsonRpcPreview</pre>
+                        </details>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 
-                    <td>
-                        @if (!string.IsNullOrWhiteSpace(r.BetId))
-                        {
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-danger btn-cancel"
-                                    data-account="@r.DisplayName"
-                                    data-betid="@r.BetId">
-                                Cancella ordine
-                            </button>
-                        }
-                        else
-                        {
-                            <span>-</span>
-                        }
-                    </td>
-
-
+    <!-- =========================
+         DESKTOP/TABLET: TABELLA
+         ========================= -->
+    <div class="bf-preview-table d-none d-md-block">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th>Saldo</th>
+                    <th>Stake/Importo</th>
+                    <th>Liability (LAY)</th>
+                    <th>Min 1€</th>
+                    <th>Stato</th>
+                    <th>BetId</th>
+                    <th>Live</th>
                 </tr>
-
-                @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
                 {
                     <tr>
-                        <td colspan="7">
-                            <details>
-                                <summary>JSON-RPC preview (@r.DisplayName)</summary>
-                                <pre class="mt-2">@r.JsonRpcPreview</pre>
-                            </details>
+                        <td>@r.DisplayName</td>
+                        <td>@(r.Balance?.ToString("0.00") ?? "-")</td>
+                        <td>@(r.Stake?.ToString("0.00") ?? "-")</td>
+                        <td>@(r.Liability?.ToString("0.00") ?? "-")</td>
+                        <td>
+                            @if (r.MinStakeApplied)
+                            {
+                                <span class="badge bg-warning text-dark">SI</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">NO</span>
+                            }
+                        </td>
+                        <td>
+                            @{
+                                var s = (r.Status ?? "").ToUpperInvariant();
+                                var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
+                                var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
+                                var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
+                            }
+                            <span class="badge @cls">@r.Status</span>
+                        </td>
+
+                        <td>@(r.BetId ?? "-")</td>
+
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(r.BetId))
+                            {
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger btn-cancel"
+                                        data-account="@r.DisplayName"
+                                        data-betid="@r.BetId">
+                                    Cancella ordine
+                                </button>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
                         </td>
                     </tr>
+
+                    @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
+                    {
+                        <tr>
+                            <td colspan="8">
+                                <details>
+                                    <summary>JSON-RPC preview (@r.DisplayName)</summary>
+                                    <pre class="mt-2">@r.JsonRpcPreview</pre>
+                                </details>
+                            </td>
+                        </tr>
+                    }
                 }
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 }
+
 
 <a class="btn btn-secondary" asp-page="/Funds">Indietro</a>
 <div class="modal fade" id="sendConfirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content shadow text-dark">
             <div class="modal-header">
                 <div class="bank-header">
