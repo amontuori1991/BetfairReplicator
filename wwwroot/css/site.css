@@ -308,3 +308,26 @@ a {
 .ns-tile {
     -webkit-tap-highlight-color: transparent;
 }
+/* ================================
+   Mobile cards (tables -> cards)
+   ================================ */
+.bf-mobile-card {
+    border-radius: 18px !important;
+    box-shadow: 0 10px 22px rgba(0,0,0,.22);
+}
+
+.bf-card-body {
+    padding: 14px 14px;
+}
+
+@media (max-width: 576px) {
+    .bf-card-body {
+        padding: 12px 12px;
+    }
+
+    .bf-mobile-card .btn {
+        border-radius: 14px !important;
+        font-weight: 800;
+        padding: 10px 12px;
+    }
+}
