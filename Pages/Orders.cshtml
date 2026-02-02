@@ -1,0 +1,172 @@
+﻿@page
+@model BetfairReplicator.Pages.OrdersModel
+@{
+    ViewData["Title"] = "Ordini";
+    var minDate = "2026-01-30";
+    var maxDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+}
+
+<div class="ns-page">
+    <div class="ns-header-card">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="ns-title h4 mb-1">Ordini</h1>
+                <div class="ns-subtitle">
+                    Tracking su account master • Open + Settled
+                    @if (!string.IsNullOrWhiteSpace(Model.MasterUsed))
+                    {
+                        <span class="text-muted">— master: <strong>@Model.MasterUsed</strong></span>
+                    }
+                </div>
+            </div>
+
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/Index">Home</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-danger">@Model.Error</div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small text-muted mb-1">Master</label>
+                        <select class="form-select" name="Master">
+                            @foreach (var a in Model.ConnectedAccounts)
+                            {
+                                <option value="@a" selected="@(string.Equals(a, Model.MasterUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
+                            }
+                        </select>
+                        <div class="form-text">Default: primo account collegato.</div>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small text-muted mb-1">Da (min @minDate)</label>
+                        <input type="date" class="form-control"
+                               name="From"
+                               min="@minDate"
+                               max="@maxDate"
+                               value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small text-muted mb-1">A</label>
+                        <input type="date" class="form-control"
+                               name="To"
+                               min="@minDate"
+                               max="@maxDate"
+                               value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-12 col-md-2 d-flex gap-2">
+                        <button class="btn btn-primary w-100" type="submit">Applica</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="fw-semibold mb-2">Ordini aperti</div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Market</th>
+                                        <th>SelId</th>
+                                        <th>Side</th>
+                                        <th class="text-end">Price</th>
+                                        <th class="text-end">Size</th>
+                                        <th>Stato</th>
+                                        <th>BetId</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @if (Model.OpenOrders.Count == 0)
+                                {
+                                    <tr><td colspan="8" class="text-muted">Nessun ordine aperto.</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var o in Model.OpenOrders)
+                                    {
+                                        <tr>
+                                            <td class="text-nowrap">@((o.DateUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")) ?? "-")</td>
+                                            <td class="text-nowrap">@o.MarketId</td>
+                                            <td>@(o.SelectionId?.ToString() ?? "-")</td>
+                                            <td>@o.Side</td>
+                                            <td class="text-end">@((o.Price?.ToString("0.00")) ?? "-")</td>
+                                            <td class="text-end">@((o.Size?.ToString("0.00")) ?? "-")</td>
+                                            <td>@o.Status</td>
+                                            <td class="text-nowrap">@o.BetId</td>
+                                        </tr>
+                                    }
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-muted small mt-2">
+                            Fonte: listCurrentOrders (master).
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="fw-semibold mb-2">Ordini settled</div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Market</th>
+                                        <th>Side</th>
+                                        <th class="text-end">Stake</th>
+                                        <th class="text-end">Profit</th>
+                                        <th>BetId</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @if (Model.SettledOrders.Count == 0)
+                                {
+                                    <tr><td colspan="6" class="text-muted">Nessun dato nel periodo selezionato.</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var o in Model.SettledOrders)
+                                    {
+                                        <tr>
+                                            <td class="text-nowrap">@((o.DateUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")) ?? "-")</td>
+                                            <td class="text-nowrap">@o.MarketId</td>
+                                            <td>@o.Side</td>
+                                            <td class="text-end">@((o.Stake?.ToString("0.00")) ?? "-")</td>
+                                            <td class="text-end">@((o.Profit?.ToString("0.00")) ?? "-")</td>
+                                            <td class="text-nowrap">@o.BetId</td>
+                                        </tr>
+                                    }
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-muted small mt-2">
+                            Fonte: listClearedOrders (master) • periodo clampato min @minDate.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

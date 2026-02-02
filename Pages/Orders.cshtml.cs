@@ -1,0 +1,189 @@
+﻿using BetfairReplicator.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace BetfairReplicator.Pages
+{
+    public class OrdersModel : PageModel
+    {
+        private readonly BetfairSessionStoreFile _sessionStore;
+        private readonly BetfairAccountStoreFile _accountStore;
+        private readonly BetfairBettingApiService _bettingApi;
+
+        // vincolo come Statistiche
+        private static readonly DateTime MinFromUtc = new DateTime(2026, 1, 30, 0, 0, 0, DateTimeKind.Utc);
+
+        public OrdersModel(
+            BetfairSessionStoreFile sessionStore,
+            BetfairAccountStoreFile accountStore,
+            BetfairBettingApiService bettingApi)
+        {
+            _sessionStore = sessionStore;
+            _accountStore = accountStore;
+            _bettingApi = bettingApi;
+        }
+
+        // 🔹 query params
+        [BindProperty(SupportsGet = true)]
+        public string? Master { get; set; } // displayName scelto
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? From { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? To { get; set; }
+
+        // UI
+        public string? Error { get; private set; }
+        public List<string> ConnectedAccounts { get; private set; } = new();
+        public string? MasterUsed { get; private set; }
+
+        public DateTime FromUtcUsed { get; private set; }
+        public DateTime ToUtcUsed { get; private set; }
+
+        public List<OrderRow> OpenOrders { get; private set; } = new();
+        public List<OrderRow> SettledOrders { get; private set; } = new();
+
+        public sealed class OrderRow
+        {
+            public string Source { get; set; } = ""; // OPEN / SETTLED
+            public string? BetId { get; set; }
+            public string? MarketId { get; set; }
+            public long? SelectionId { get; set; }
+            public string? Side { get; set; } // BACK/LAY
+            public double? Price { get; set; }
+            public double? Size { get; set; }
+
+            public DateTime? DateUtc { get; set; } // placed o settled
+            public string? Status { get; set; }
+
+            public double? Profit { get; set; } // solo settled
+            public double? Stake { get; set; }  // sizeSettled su settled
+        }
+
+        public async Task OnGetAsync()
+        {
+            // 1) range date con clamp
+            var nowUtc = DateTime.UtcNow;
+
+            var fromUtc = From.HasValue
+                ? DateTime.SpecifyKind(From.Value.Date, DateTimeKind.Utc)
+                : MinFromUtc;
+
+            var toUtc = To.HasValue
+                ? DateTime.SpecifyKind(To.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
+                : nowUtc;
+
+            if (fromUtc < MinFromUtc) fromUtc = MinFromUtc;
+            if (toUtc > nowUtc) toUtc = nowUtc;
+            if (toUtc < fromUtc) toUtc = fromUtc;
+
+            FromUtcUsed = fromUtc;
+            ToUtcUsed = toUtc;
+
+            // 2) trova account collegati (token + appkey)
+            var accounts = await _accountStore.GetAllAsync();
+            var usable = new List<BetfairAccountStoreFile.BetfairAccountRecord>();
+
+            foreach (var a in accounts.OrderBy(x => x.DisplayName))
+            {
+                var token = await _sessionStore.GetTokenAsync(a.DisplayName);
+                if (!string.IsNullOrWhiteSpace(token) && !string.IsNullOrWhiteSpace(a.AppKeyDelayed))
+                    usable.Add(a);
+            }
+
+            ConnectedAccounts = usable.Select(x => x.DisplayName).ToList();
+
+            if (usable.Count == 0)
+            {
+                Error = "Nessun account utilizzabile (serve token + AppKeyDelayed). Vai su 'Collega' e/o 'Accounts'.";
+                return;
+            }
+
+            // 3) scegli master: query ?Master=... altrimenti primo collegato
+            var masterAcc = !string.IsNullOrWhiteSpace(Master)
+                ? usable.FirstOrDefault(x => x.DisplayName.Equals(Master, StringComparison.OrdinalIgnoreCase))
+                : null;
+
+            masterAcc ??= usable.First();
+
+            MasterUsed = masterAcc.DisplayName;
+
+            var masterToken = await _sessionStore.GetTokenAsync(MasterUsed);
+            if (string.IsNullOrWhiteSpace(masterToken))
+            {
+                Error = $"Token mancante per master '{MasterUsed}'.";
+                return;
+            }
+
+            var appKey = masterAcc.AppKeyDelayed;
+
+            // 4) OPEN orders (currentOrders)
+            var (curRep, curErr) = await _bettingApi.ListCurrentOrdersAllAsync(
+                displayName: MasterUsed,
+                appKey: appKey,
+                sessionToken: masterToken,
+                fromUtc: null,
+                toUtc: null,
+                fromRecord: 0,
+                recordCount: 1000
+            );
+
+            if (curErr != null)
+            {
+                Error = curErr;
+                return;
+            }
+
+            // NOTE: qui assumiamo che il tuo model BetfairCurrentOrders abbia proprietà tipiche:
+            // currentOrders[] con betId, marketId, selectionId, side, priceSize.price, priceSize.size, placedDate, status
+            var open = curRep?.currentOrders ?? new List<dynamic>();
+
+            OpenOrders = open.Select(o => new OrderRow
+            {
+                Source = "OPEN",
+                BetId = o.betId,
+                MarketId = o.marketId,
+                SelectionId = o.selectionId,
+                Side = o.side,
+                Price = o.priceSize?.price,
+                Size = o.priceSize?.size,
+                DateUtc = o.placedDate,
+                Status = o.status
+            })
+            .OrderByDescending(x => x.DateUtc ?? DateTime.MinValue)
+            .ToList();
+
+            // 5) SETTLED orders (clearedOrders) nel range date
+            var (settled, sErr) = await _bettingApi.FetchClearedOrdersAsync(
+                displayName: MasterUsed,
+                appKey: appKey,
+                sessionToken: masterToken,
+                fromUtc: fromUtc,
+                toUtc: toUtc
+            );
+
+            if (sErr != null)
+            {
+                Error = sErr;
+                return;
+            }
+
+            SettledOrders = (settled ?? new List<BetfairBettingApiService.ClearedOrderSummary>())
+                .Where(x => x.settledDate.HasValue)
+                .Select(x => new OrderRow
+                {
+                    Source = "SETTLED",
+                    BetId = x.betId,
+                    MarketId = x.marketId,
+                    Side = x.side,
+                    Stake = x.sizeSettled,
+                    Profit = x.profit,
+                    DateUtc = x.settledDate,
+                    Status = "SETTLED"
+                })
+                .OrderByDescending(x => x.DateUtc ?? DateTime.MinValue)
+                .ToList();
+        }
+    }
+}

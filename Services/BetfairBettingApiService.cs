@@ -538,5 +538,56 @@ public class BetfairBettingApiService
 
         return (all, null);
     }
+    // ============================================================
+    // ✅ NUOVO: LIST CURRENT ORDERS (tutti gli ordini aperti)
+    // ============================================================
+
+    public class ListCurrentOrdersParams2
+    {
+        public List<string>? betIds { get; set; }
+        public List<string>? marketIds { get; set; }
+        public TimeRange? placedDateRange { get; set; }
+        public string? orderProjection { get; set; } = "ALL"; // ALL / EXECUTABLE / EXECUTION_COMPLETE
+        public string? sortDir { get; set; } = "EARLIEST_TO_LATEST";
+        public int? fromRecord { get; set; } = 0;
+        public int? recordCount { get; set; } = 1000;
+    }
+
+    public Task<(CurrentOrderSummaryReport Result, string? Error)> ListCurrentOrdersAllAsync(
+        string displayName,
+        string appKey,
+        string sessionToken,
+        DateTime? fromUtc = null,
+        DateTime? toUtc = null,
+        int fromRecord = 0,
+        int recordCount = 1000)
+    {
+        TimeRange? range = null;
+
+        if (fromUtc.HasValue || toUtc.HasValue)
+        {
+            range = new TimeRange
+            {
+                from = fromUtc.HasValue ? DateTime.SpecifyKind(fromUtc.Value, DateTimeKind.Utc) : null,
+                to = toUtc.HasValue ? DateTime.SpecifyKind(toUtc.Value, DateTimeKind.Utc) : null
+            };
+        }
+
+        var rpc = new BetfairRpcRequest<ListCurrentOrdersParams2>
+        {
+            method = "SportsAPING/v1.0/listCurrentOrders",
+            @params = new ListCurrentOrdersParams2
+            {
+                placedDateRange = range,
+                orderProjection = "ALL",
+                fromRecord = fromRecord,
+                recordCount = recordCount,
+                sortDir = "EARLIEST_TO_LATEST"
+            },
+            id = 1
+        };
+
+        return CallAsync<CurrentOrderSummaryReport>(displayName, appKey, sessionToken, rpc);
+    }
 
 }
