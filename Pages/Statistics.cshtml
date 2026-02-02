@@ -72,6 +72,17 @@
                         <div class="text-muted small">Ultimi 12 mesi</div>
                     </div>
                 </div>
+@if (Model.MonthlyRows != null && Model.MonthlyRows.Count > 0)
+{
+    var chartRowsJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.MonthlyRows.Select(r => new { label = r.MonthLabel, profit = r.Profit, roi = r.RoiPct })
+    );
+
+    <div class="mt-2 mb-3">
+        <canvas id="monthlyPnlChart" height="110" data-rows='@chartRowsJson'></canvas>
+    </div>
+}
+
 
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
@@ -115,3 +126,69 @@
         </div>
     }
 </div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        (function () {
+const el = document.getElementById('monthlyPnlChart');
+if (!el) return;
+
+const raw = el.getAttribute('data-rows');
+if (!raw) return;
+
+let rows;
+try { rows = JSON.parse(raw); } catch { return; }
+
+
+            if (!rows || rows.length === 0) return;
+
+            const labels = rows.map(x => x.label);
+            const profits = rows.map(x => x.profit);
+            const rois = rows.map(x => x.roi);
+
+            
+
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Profitto',
+                            data: profits,
+                            yAxisID: 'yProfit'
+                        },
+                        {
+                            label: 'ROI %',
+                            data: rois,
+                            type: 'line',
+                            yAxisID: 'yRoi',
+                            tension: 0.25,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true }
+                    },
+                    scales: {
+                        yProfit: {
+                            position: 'left',
+                            title: { display: true, text: 'Profitto' }
+                        },
+                        yRoi: {
+                            position: 'right',
+                            title: { display: true, text: 'ROI %' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+}
