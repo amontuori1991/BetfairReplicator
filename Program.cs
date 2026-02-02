@@ -13,6 +13,10 @@ namespace BetfairReplicator
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            // ✅ Logging su console (visibile in flyctl logs)
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.SetMinimumLevel(LogLevel.Information);
 
             // ✅ Razor Pages + protezione folder Admin
             builder.Services.AddRazorPages()
