@@ -139,14 +139,35 @@ public class BetfairBettingApiService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("=== BETFAIR JSON PARSE FAILED ===");
-            Console.WriteLine($"CT={ct}");
-            Console.WriteLine($"Exception: {ex.Message}");
-            Console.WriteLine($"BODY: {Trunc(body, 2000)}");
-            Console.WriteLine("=== END ===");
+            // Provo a leggere il "method" dal tuo rpcRequest (BetfairRpcRequest<> lo ha)
+            string rpcMethod = "?";
+            try
+            {
+                var p = rpcRequest.GetType().GetProperty("method");
+                if (p != null)
+                {
+                    rpcMethod = p.GetValue(rpcRequest)?.ToString() ?? "?";
+                }
+            }
+            catch { /* ignore */ }
+
+            var msg =
+                "=== BETFAIR JSON PARSE FAILED ===\n" +
+                $"Method: {rpcMethod}\n" +
+                $"HTTP Status: {(int)res.StatusCode} {res.StatusCode}\n" +
+                $"CT: {ct}\n\n" +
+                "RAW RESPONSE (truncated):\n" +
+                Trunc(body, 8000) + "\n\n" +
+                "EXCEPTION:\n" +
+                ex + "\n" +
+                "=== END ===";
+
+            Console.WriteLine(msg);
+            PersistentLogger.Log(msg);
 
             return (null!, "Risposta Betfair non interpretabile (errore parsing). Controlla i log server.", false);
         }
+
     }
 
     private static bool IsSessionExpired(string? err)
