@@ -381,20 +381,22 @@ public class BetfairBettingApiService
 
     public class ListClearedOrdersParams
     {
-        public ClearedOrderFilter? filter { get; set; }
-        public string? sort { get; set; } = "SETTLED_DATE";
-        public string? orderBy { get; set; } = "SETTLED_DATE";
-        public string? sortDir { get; set; } = "EARLIEST_TO_LATEST";
+        // ✅ OBBLIGATORIO: deve stare qui (non dentro filter)
+        public string betStatus { get; set; } = "SETTLED";
+
+        // ✅ Date range settled (sempre nei params root)
+        public TimeRange? settledDateRange { get; set; }
+
+        // Opzionali utili
+        public string? groupBy { get; set; } = "BET"; // oppure "NONE"
         public int? fromRecord { get; set; } = 0;
         public int? recordCount { get; set; } = 1000;
         public bool? includeItemDescription { get; set; } = false;
+
+        // Sort (valori tipici: EARLIEST_TO_LATEST / LATEST_TO_EARLIEST)
+        public string? sort { get; set; } = "EARLIEST_TO_LATEST";
     }
 
-    public class ClearedOrderFilter
-    {
-        public string? betStatus { get; set; } = "SETTLED";
-        public TimeRange? settledDateRange { get; set; }
-    }
 
     public class ClearedOrderSummary
     {
@@ -414,33 +416,30 @@ public class BetfairBettingApiService
     }
 
     public Task<(ClearedOrderSummaryReport Result, string? Error)> ListClearedOrdersAsync(
-        string displayName,
-        string appKey,
-        string sessionToken,
-        DateTime fromUtc,
-        DateTime toUtc,
-        int fromRecord = 0,
-        int recordCount = 1000)
+       string displayName,
+       string appKey,
+       string sessionToken,
+       DateTime fromUtc,
+       DateTime toUtc,
+       int fromRecord = 0,
+       int recordCount = 1000)
     {
         var rpc = new BetfairRpcRequest<ListClearedOrdersParams>
         {
             method = "SportsAPING/v1.0/listClearedOrders",
             @params = new ListClearedOrdersParams
             {
+                betStatus = "SETTLED",
                 fromRecord = fromRecord,
                 recordCount = recordCount,
                 includeItemDescription = false,
-                filter = new ClearedOrderFilter
+                sort = "EARLIEST_TO_LATEST",
+                groupBy = "BET",
+                settledDateRange = new TimeRange
                 {
-                    betStatus = "SETTLED",
-                    settledDateRange = new TimeRange
-                    {
-                        from = DateTime.SpecifyKind(fromUtc, DateTimeKind.Utc),
-                        to = DateTime.SpecifyKind(toUtc, DateTimeKind.Utc)
-                    }
-                },
-                orderBy = "SETTLED_DATE",
-                sortDir = "EARLIEST_TO_LATEST"
+                    from = DateTime.SpecifyKind(fromUtc, DateTimeKind.Utc),
+                    to = DateTime.SpecifyKind(toUtc, DateTimeKind.Utc)
+                }
             },
             id = 1
         };
