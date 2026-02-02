@@ -404,10 +404,14 @@ public class BetfairBettingApiService
         public string? marketId { get; set; }
         public DateTime? settledDate { get; set; }
 
+        // ✅ BACK / LAY (ci serve per separare)
+        public string? side { get; set; }
+
         // campi economici (sufficienti per stats)
         public double? profit { get; set; }
         public double? sizeSettled { get; set; }
     }
+
 
     public class ClearedOrderSummaryReport
     {
@@ -506,4 +510,33 @@ public class BetfairBettingApiService
 
         return (groups, null);
     }
+    public async Task<(List<ClearedOrderSummary> Orders, string? Error)> FetchClearedOrdersAsync(
+    string displayName,
+    string appKey,
+    string sessionToken,
+    DateTime fromUtc,
+    DateTime toUtc,
+    int maxPages = 20)
+    {
+        var all = new List<ClearedOrderSummary>();
+        var fromRecord = 0;
+        var pageSize = 1000;
+
+        for (var page = 0; page < maxPages; page++)
+        {
+            var (rep, err) = await ListClearedOrdersAsync(displayName, appKey, sessionToken, fromUtc, toUtc, fromRecord, pageSize);
+            if (err != null) return (new List<ClearedOrderSummary>(), err);
+
+            var batch = rep?.clearedOrders ?? new List<ClearedOrderSummary>();
+            all.AddRange(batch);
+
+            var more = rep?.moreAvailable == true;
+            if (!more || batch.Count == 0) break;
+
+            fromRecord += pageSize;
+        }
+
+        return (all, null);
+    }
+
 }

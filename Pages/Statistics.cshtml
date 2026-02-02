@@ -2,6 +2,8 @@
 @model BetfairReplicator.Pages.StatisticsModel
 @{
     ViewData["Title"] = "Statistiche";
+    var minDate = "2026-01-30";
+    var maxDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
 }
 
 <div class="ns-page">
@@ -10,11 +12,8 @@
             <div>
                 <h1 class="ns-title h4 mb-1">Statistiche</h1>
                 <div class="ns-subtitle">
-                    Storico P/L e ROI mensile (Betfair)
-                    @if (!string.IsNullOrWhiteSpace(Model.MasterDisplayName))
-                    {
-                        <span class="text-muted">— master: <strong>@Model.MasterDisplayName</strong></span>
-                    }
+                    Multi-account • Storico P/L, ROI, BACK/LAY, Equity
+                    <span class="text-muted">— account: <strong>@Model.ConnectedAccounts</strong></span>
                 </div>
             </div>
 
@@ -28,15 +27,56 @@
     }
     else
     {
+        <!-- Date picker con limite minimo -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small text-muted mb-1">Da (min @minDate)</label>
+                        <input type="date" class="form-control"
+                               name="From"
+                               min="@minDate"
+                               max="@maxDate"
+                               value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small text-muted mb-1">A (max oggi)</label>
+                        <input type="date" class="form-control"
+                               name="To"
+                               min="@minDate"
+                               max="@maxDate"
+                               value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-12 col-md-4 d-flex gap-2">
+                        <button class="btn btn-primary w-100" type="submit">Applica</button>
+                        <a class="btn btn-outline-secondary w-100"
+                           asp-page="/Statistics"
+                           asp-route-From="@minDate"
+                           asp-route-To="@maxDate">Reset</a>
+                    </div>
+                </form>
+
+                <div class="small text-muted mt-2">
+                    Periodo usato: <strong>@Model.FromUtcUsed.ToString("yyyy-MM-dd")</strong> → <strong>@Model.ToUtcUsed.ToString("yyyy-MM-dd")</strong>
+                </div>
+
+                @if (Model.ConnectedAccountNames?.Count > 0)
+                {
+                    <div class="small text-muted mt-1">
+                        Account inclusi: @string.Join(", ", Model.ConnectedAccountNames)
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- KPI Totali + BACK/LAY -->
         <div class="row g-3">
             <div class="col-12 col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="text-muted small">Profitto mese</div>
-                        <div class="fs-4 fw-semibold">
-                            @(Model.CurrentMonthProfit.HasValue ? Model.CurrentMonthProfit.Value.ToString("0.00") : "—")
-                        </div>
-                        <div class="text-muted small mt-1">Da ordini settled (listClearedOrders)</div>
+                        <div class="text-muted small">Totale Profitto</div>
+                        <div class="fs-4 fw-semibold">@Model.TotalProfit.ToString("0.00")</div>
+                        <div class="text-muted small mt-1">Stake: @Model.TotalStake.ToString("0.00") • ROI: @Model.TotalRoiPct.ToString("0.00")% • Bets: @Model.TotalBets</div>
                     </div>
                 </div>
             </div>
@@ -44,11 +84,9 @@
             <div class="col-12 col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="text-muted small">ROI % mese</div>
-                        <div class="fs-4 fw-semibold">
-                            @(Model.CurrentMonthRoiPct.HasValue ? Model.CurrentMonthRoiPct.Value.ToString("0.00") + "%" : "—")
-                        </div>
-                        <div class="text-muted small mt-1">Profitto / stake</div>
+                        <div class="text-muted small">BACK</div>
+                        <div class="fs-4 fw-semibold">@Model.BackKpi.Profit.ToString("0.00")</div>
+                        <div class="text-muted small mt-1">Stake: @Model.BackKpi.Stake.ToString("0.00") • ROI: @Model.BackKpi.RoiPct.ToString("0.00")% • Bets: @Model.BackKpi.Bets</div>
                     </div>
                 </div>
             </div>
@@ -56,33 +94,57 @@
             <div class="col-12 col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="text-muted small">Numero scommesse</div>
-                        <div class="fs-4 fw-semibold">@Model.CurrentMonthBets</div>
-                        <div class="text-muted small mt-1">Ordini settled</div>
+                        <div class="text-muted small">LAY</div>
+                        <div class="fs-4 fw-semibold">@Model.LayKpi.Profit.ToString("0.00")</div>
+                        <div class="text-muted small mt-1">Stake: @Model.LayKpi.Stake.ToString("0.00") • ROI: @Model.LayKpi.RoiPct.ToString("0.00")% • Bets: @Model.LayKpi.Bets</div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Grafici -->
         <div class="card shadow-sm mt-3">
             <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div>
-                        <div class="fw-semibold">Andamento mensile</div>
-                        <div class="text-muted small">Ultimi 12 mesi</div>
-                    </div>
+                <div class="fw-semibold mb-1">Grafici</div>
+                <div class="text-muted small mb-3">
+                    1) Profitto mensile + ROI • 2) BACK vs LAY mensile • 3) Equity cumulata (giorno per giorno)
                 </div>
-@if (Model.MonthlyRows != null && Model.MonthlyRows.Count > 0)
-{
-    var chartRowsJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.MonthlyRows.Select(r => new { label = r.MonthLabel, profit = r.Profit, roi = r.RoiPct })
-    );
 
-    <div class="mt-2 mb-3">
-        <canvas id="monthlyPnlChart" height="110" data-rows='@chartRowsJson'></canvas>
-    </div>
-}
+                @{
+                    var monthlyTotalJson = System.Text.Json.JsonSerializer.Serialize(
+                        Model.MonthlyTotal.Select(r => new { label = r.Label, profit = r.Profit, roi = r.RoiPct })
+                    );
+                    var monthlyBackLayJson = System.Text.Json.JsonSerializer.Serialize(new {
+                        labels = Model.MonthlyTotal.Select(r => r.Label).ToList(),
+                        back = Model.MonthlyBack.ToDictionary(r => r.Label, r => r.Profit),
+                        lay = Model.MonthlyLay.ToDictionary(r => r.Label, r => r.Profit)
+                    });
+                    var equityJson = System.Text.Json.JsonSerializer.Serialize(
+                        Model.Equity.Select(p => new { date = p.Date, cum = p.CumProfit })
+                    );
+                }
 
+                <div class="mb-3">
+                    <canvas id="chartMonthly" height="110"
+                            data-rows='@monthlyTotalJson'></canvas>
+                </div>
+
+                <div class="mb-3">
+                    <canvas id="chartBackLay" height="110"
+                            data-rows='@monthlyBackLayJson'></canvas>
+                </div>
+
+                <div>
+                    <canvas id="chartEquity" height="110"
+                            data-rows='@equityJson'></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabelle -->
+        <div class="card shadow-sm mt-3">
+            <div class="card-body">
+                <div class="fw-semibold mb-2">Dettaglio mensile (Totale)</div>
 
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
@@ -96,7 +158,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @if (Model.MonthlyRows == null || Model.MonthlyRows.Count == 0)
+                            @if (Model.MonthlyTotal == null || Model.MonthlyTotal.Count == 0)
                             {
                                 <tr>
                                     <td colspan="5" class="text-muted">Nessun dato disponibile nel periodo selezionato.</td>
@@ -104,10 +166,10 @@
                             }
                             else
                             {
-                                @foreach (var r in Model.MonthlyRows)
+                                @foreach (var r in Model.MonthlyTotal)
                                 {
                                     <tr>
-                                        <td>@r.MonthLabel</td>
+                                        <td>@r.Label</td>
                                         <td class="text-end">@r.Profit.ToString("0.00")</td>
                                         <td class="text-end">@r.Stake.ToString("0.00")</td>
                                         <td class="text-end">@r.RoiPct.ToString("0.00")%</td>
@@ -120,75 +182,105 @@
                 </div>
 
                 <div class="alert alert-secondary mt-3 mb-0">
-                    Step successivo: grafico mese-per-mese + pagina “Ordini” unificata (master).
+                    Nota: i dati sono la somma di tutti gli account connessi nel periodo selezionato, aggregati da listClearedOrders.
                 </div>
             </div>
         </div>
     }
 </div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        function parseCanvasJson(id) {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const raw = el.getAttribute('data-rows');
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch { return null; }
+        }
+
         (function () {
-const el = document.getElementById('monthlyPnlChart');
-if (!el) return;
+            // 1) Mensile: Profit + ROI
+            const rowsMonthly = parseCanvasJson('chartMonthly');
+            if (rowsMonthly && rowsMonthly.length > 0) {
+                const labels = rowsMonthly.map(x => x.label);
+                const profits = rowsMonthly.map(x => x.profit);
+                const rois = rowsMonthly.map(x => x.roi);
 
-const raw = el.getAttribute('data-rows');
-if (!raw) return;
-
-let rows;
-try { rows = JSON.parse(raw); } catch { return; }
-
-
-            if (!rows || rows.length === 0) return;
-
-            const labels = rows.map(x => x.label);
-            const profits = rows.map(x => x.profit);
-            const rois = rows.map(x => x.roi);
-
-            
-
-            new Chart(el, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Profitto',
-                            data: profits,
-                            yAxisID: 'yProfit'
-                        },
-                        {
-                            label: 'ROI %',
-                            data: rois,
-                            type: 'line',
-                            yAxisID: 'yRoi',
-                            tension: 0.25,
-                            pointRadius: 2
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { display: true }
+                new Chart(document.getElementById('chartMonthly'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'Profitto', data: profits, yAxisID: 'yProfit' },
+                            { label: 'ROI %', data: rois, type: 'line', yAxisID: 'yRoi', tension: 0.25, pointRadius: 2 }
+                        ]
                     },
-                    scales: {
-                        yProfit: {
-                            position: 'left',
-                            title: { display: true, text: 'Profitto' }
-                        },
-                        yRoi: {
-                            position: 'right',
-                            title: { display: true, text: 'ROI %' },
-                            grid: { drawOnChartArea: false }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            yProfit: { position: 'left', title: { display: true, text: 'Profitto' } },
+                            yRoi: { position: 'right', title: { display: true, text: 'ROI %' }, grid: { drawOnChartArea: false } }
                         }
                     }
-                }
-            });
+                });
+            }
+
+            // 2) Mensile: BACK vs LAY (profitto)
+            const backLay = parseCanvasJson('chartBackLay');
+            if (backLay && backLay.labels && backLay.labels.length > 0) {
+                const labels = backLay.labels;
+                const backProfit = labels.map(l => (backLay.back && backLay.back[l] != null) ? backLay.back[l] : 0);
+                const layProfit = labels.map(l => (backLay.lay && backLay.lay[l] != null) ? backLay.lay[l] : 0);
+
+                new Chart(document.getElementById('chartBackLay'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'BACK Profitto', data: backProfit },
+                            { label: 'LAY Profitto', data: layProfit }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { title: { display: true, text: 'Profitto' } }
+                        }
+                    }
+                });
+            }
+
+            // 3) Equity line (cumulata)
+            const eq = parseCanvasJson('chartEquity');
+            if (eq && eq.length > 0) {
+                const labels = eq.map(x => x.date);
+                const cum = eq.map(x => x.cum);
+
+                new Chart(document.getElementById('chartEquity'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'Equity (Profitto cumulato)', data: cum, tension: 0.25, pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { title: { display: true, text: 'Profitto cumulato' } }
+                        }
+                    }
+                });
+            }
         })();
     </script>
 }
