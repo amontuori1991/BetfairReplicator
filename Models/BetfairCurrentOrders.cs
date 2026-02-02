@@ -21,6 +21,8 @@ public class CurrentOrderSummary
     public string? status { get; set; }        // EXECUTABLE / EXECUTION_COMPLETE
     public double? priceSize { get; set; }     // non sempre presente: dipende dalla response
     public double? sizeRemaining { get; set; }
+    public DateTime? placedDate { get; set; }
+
     public double? sizeMatched { get; set; }
     public double? averagePriceMatched { get; set; }
 }

@@ -1,4 +1,5 @@
-﻿using BetfairReplicator.Services;
+﻿using BetfairReplicator.Models;
+using BetfairReplicator.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -135,9 +136,7 @@ namespace BetfairReplicator.Pages
                 return;
             }
 
-            // NOTE: qui assumiamo che il tuo model BetfairCurrentOrders abbia proprietà tipiche:
-            // currentOrders[] con betId, marketId, selectionId, side, priceSize.price, priceSize.size, placedDate, status
-            var open = curRep?.currentOrders ?? new List<dynamic>();
+            var open = curRep?.currentOrders ?? new List<CurrentOrderSummary>();
 
             OpenOrders = open.Select(o => new OrderRow
             {
@@ -146,13 +145,23 @@ namespace BetfairReplicator.Pages
                 MarketId = o.marketId,
                 SelectionId = o.selectionId,
                 Side = o.side,
-                Price = o.priceSize?.price,
-                Size = o.priceSize?.size,
+
+                // Nel tuo model priceSize è double? -> lo trattiamo come prezzo (best effort)
+                Price = o.priceSize,
+
+                // per OPEN è utile vedere quanto resta ancora da prendere
+                Size = o.sizeRemaining,
+
+                // Nel tuo model non c'è placedDate: per ora null (non rompe nulla)
                 DateUtc = o.placedDate,
+
                 Status = o.status
             })
-            .OrderByDescending(x => x.DateUtc ?? DateTime.MinValue)
+            // senza DateUtc non ha senso ordinare per data: ordiniamo per MarketId/BetId (stabile)
+            .OrderByDescending(x => x.BetId ?? "")
             .ToList();
+
+
 
             // 5) SETTLED orders (clearedOrders) nel range date
             var (settled, sErr) = await _bettingApi.FetchClearedOrdersAsync(
