@@ -40,14 +40,13 @@ public class BetfairBettingApiService
             if (relogErr != null || string.IsNullOrWhiteSpace(newToken))
                 return (null!, $"RELOGIN_FAILED: {relogErr ?? "unknown"}");
 
-
-
             var (result2, error2, _) = await CallOnceAsync<T>(appKey, newToken!, rpcRequest);
             return (result2, error2);
         }
 
         return (result, error);
     }
+
     private async Task<(string? Token, string? Error)> EnsureReloginSingleFlightAsync(string displayName)
     {
         var sem = _reloginLocks.GetOrAdd(displayName, _ => new SemaphoreSlim(1, 1));
@@ -55,10 +54,6 @@ public class BetfairBettingApiService
         await sem.WaitAsync();
         try
         {
-            // 1) magari un'altra request ha già fatto relogin mentre io aspettavo
-            // quindi prima guardo nello store
-            // NB: qui non hai accesso al SessionStore, quindi facciamo solo relogin "vero".
-            // La logica di riuso token la puoi fare direttamente nel SsoService (vedi nota sotto).
             return await _sso.ReLoginFromStoredCredentialsAsync(displayName);
         }
         finally
@@ -96,11 +91,9 @@ public class BetfairBettingApiService
         // HTTP 401/403 -> quasi sempre token scaduto / non valido
         if (res.StatusCode == HttpStatusCode.Unauthorized || res.StatusCode == HttpStatusCode.Forbidden)
         {
-            // retry
             return (null!, $"HTTP {(int)res.StatusCode} {res.StatusCode}", true);
         }
 
-        // 1) altri HTTP error
         if (!res.IsSuccessStatusCode)
             return (null!, $"HTTP {(int)res.StatusCode} {res.StatusCode} (CT={ct}) — {Trunc(body)}", false);
 
@@ -117,8 +110,6 @@ public class BetfairBettingApiService
                 var codeStr = rpc.error.code.ToString();
                 var msg = string.IsNullOrWhiteSpace(rpc.error.message) ? "RPC error" : rpc.error.message!;
                 var err = $"BETFAIR RPC ERROR: {codeStr} - {msg}";
-
-                // session expired?
                 return (null!, err, IsSessionExpired(err));
             }
 
@@ -128,7 +119,6 @@ public class BetfairBettingApiService
             return (rpc.result, null, false);
         }
 
-        // 2) Parse robusto
         try
         {
             if (trimmed.StartsWith("["))
@@ -149,14 +139,12 @@ public class BetfairBettingApiService
         }
         catch (Exception ex)
         {
-            // log dettagliato
             Console.WriteLine("=== BETFAIR JSON PARSE FAILED ===");
             Console.WriteLine($"CT={ct}");
             Console.WriteLine($"Exception: {ex.Message}");
             Console.WriteLine($"BODY: {Trunc(body, 2000)}");
             Console.WriteLine("=== END ===");
 
-            // UI user-friendly (non retry: qui non sappiamo se è sessione)
             return (null!, "Risposta Betfair non interpretabile (errore parsing). Controlla i log server.", false);
         }
     }
@@ -167,7 +155,6 @@ public class BetfairBettingApiService
 
         err = err.ToUpperInvariant();
 
-        // NB: includo match "robusti"
         return err.Contains("INVALID_SESSION")
             || err.Contains("NO_SESSION")
             || err.Contains("UNAUTHORIZED")
@@ -386,5 +373,138 @@ public class BetfairBettingApiService
         };
 
         return CallAsync<CancelExecutionReport>(displayName, appKey, sessionToken, rpc);
+    }
+
+    // ============================================================
+    // ✅ NUOVO: CLEARED ORDERS (storico settled) + stats mensili
+    // ============================================================
+
+    public class ListClearedOrdersParams
+    {
+        public ClearedOrderFilter? filter { get; set; }
+        public string? sort { get; set; } = "SETTLED_DATE";
+        public string? orderBy { get; set; } = "SETTLED_DATE";
+        public string? sortDir { get; set; } = "EARLIEST_TO_LATEST";
+        public int? fromRecord { get; set; } = 0;
+        public int? recordCount { get; set; } = 1000;
+        public bool? includeItemDescription { get; set; } = false;
+    }
+
+    public class ClearedOrderFilter
+    {
+        public string? betStatus { get; set; } = "SETTLED";
+        public TimeRange? settledDateRange { get; set; }
+    }
+
+    public class ClearedOrderSummary
+    {
+        public string? betId { get; set; }
+        public string? marketId { get; set; }
+        public DateTime? settledDate { get; set; }
+
+        // campi economici (sufficienti per stats)
+        public double? profit { get; set; }
+        public double? sizeSettled { get; set; }
+    }
+
+    public class ClearedOrderSummaryReport
+    {
+        public List<ClearedOrderSummary>? clearedOrders { get; set; }
+        public bool? moreAvailable { get; set; }
+    }
+
+    public Task<(ClearedOrderSummaryReport Result, string? Error)> ListClearedOrdersAsync(
+        string displayName,
+        string appKey,
+        string sessionToken,
+        DateTime fromUtc,
+        DateTime toUtc,
+        int fromRecord = 0,
+        int recordCount = 1000)
+    {
+        var rpc = new BetfairRpcRequest<ListClearedOrdersParams>
+        {
+            method = "SportsAPING/v1.0/listClearedOrders",
+            @params = new ListClearedOrdersParams
+            {
+                fromRecord = fromRecord,
+                recordCount = recordCount,
+                includeItemDescription = false,
+                filter = new ClearedOrderFilter
+                {
+                    betStatus = "SETTLED",
+                    settledDateRange = new TimeRange
+                    {
+                        from = DateTime.SpecifyKind(fromUtc, DateTimeKind.Utc),
+                        to = DateTime.SpecifyKind(toUtc, DateTimeKind.Utc)
+                    }
+                },
+                orderBy = "SETTLED_DATE",
+                sortDir = "EARLIEST_TO_LATEST"
+            },
+            id = 1
+        };
+
+        return CallAsync<ClearedOrderSummaryReport>(displayName, appKey, sessionToken, rpc);
+    }
+
+    public class MonthlyPnlRow
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public double Profit { get; set; }
+        public double Stake { get; set; }
+        public int Bets { get; set; }
+
+        public string MonthLabel => new DateTime(Year, Month, 1).ToString("yyyy-MM");
+        public double RoiPct => Stake == 0 ? 0 : (Profit / Stake) * 100.0;
+    }
+
+    public async Task<(List<MonthlyPnlRow> Rows, string? Error)> GetMonthlyPnlAsync(
+        string displayName,
+        string appKey,
+        string sessionToken,
+        DateTime fromUtc,
+        DateTime toUtc,
+        int maxPages = 10)
+    {
+        var all = new List<ClearedOrderSummary>();
+        var fromRecord = 0;
+        var pageSize = 1000;
+
+        for (var page = 0; page < maxPages; page++)
+        {
+            var (rep, err) = await ListClearedOrdersAsync(displayName, appKey, sessionToken, fromUtc, toUtc, fromRecord, pageSize);
+            if (err != null) return (new List<MonthlyPnlRow>(), err);
+
+            var batch = rep?.clearedOrders ?? new List<ClearedOrderSummary>();
+            all.AddRange(batch);
+
+            var more = rep?.moreAvailable == true;
+            if (!more || batch.Count == 0) break;
+
+            fromRecord += pageSize;
+        }
+
+        // aggrego per mese sulla settledDate (UTC)
+        var groups = all
+            .Where(x => x.settledDate.HasValue)
+            .GroupBy(x =>
+            {
+                var d = x.settledDate!.Value;
+                return new { d.Year, d.Month };
+            })
+            .Select(g => new MonthlyPnlRow
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                Profit = g.Sum(x => x.profit ?? 0),
+                Stake = g.Sum(x => x.sizeSettled ?? 0),
+                Bets = g.Count()
+            })
+            .OrderBy(x => x.Year).ThenBy(x => x.Month)
+            .ToList();
+
+        return (groups, null);
     }
 }

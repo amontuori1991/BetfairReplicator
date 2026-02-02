@@ -14,7 +14,6 @@
     <link rel="apple-touch-icon" href="~/brand/apple-touch-icon.png" asp-append-version="true" />
     <link rel="manifest" href="~/brand/site.webmanifest" asp-append-version="true" />
     <meta name="theme-color" content="#07101f" />
-
 </head>
 <body>
     <header>
@@ -29,6 +28,7 @@
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
+
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
@@ -43,6 +43,12 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-page="/MarketSearch">Mercati</a>
                         </li>
+
+                        <!-- ✅ NUOVO LINK: STATISTICHE -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-page="/Statistics">Statistiche</a>
+                        </li>
+
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-page="/Admin/Accounts">Accounts</a>
                         </li>
@@ -63,6 +69,7 @@
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

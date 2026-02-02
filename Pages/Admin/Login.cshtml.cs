@@ -8,6 +8,13 @@ namespace BetfairReplicator.Pages.Admin;
 
 public class LoginModel : PageModel
 {
+    private readonly IConfiguration _cfg;
+
+    public LoginModel(IConfiguration cfg)
+    {
+        _cfg = cfg;
+    }
+
     public string? Error { get; private set; }
 
     public void OnGet()
@@ -16,11 +23,16 @@ public class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(string? password, bool remember, string? returnUrl)
     {
-        var adminPwd = Environment.GetEnvironmentVariable("Admin__Password");
+        // ✅ Legge da IConfiguration:
+        // - in locale: User Secrets (Development)
+        // - in produzione: Environment Variables (Admin__Password)
+        var adminPwd =
+            _cfg["Admin:Password"]               // user secrets / json style
+            ?? _cfg["Admin__Password"];          // fallback (se qualcuno l'ha messa così)
 
         if (string.IsNullOrWhiteSpace(adminPwd))
         {
-            Error = "ADMIN_PASSWORD non configurata sul server.";
+            Error = "Admin password non configurata (Admin:Password o Admin__Password).";
             return Page();
         }
 
@@ -31,9 +43,9 @@ public class LoginModel : PageModel
         }
 
         var claims = new List<Claim>
-    {
-        new(ClaimTypes.Name, "admin")
-    };
+        {
+            new(ClaimTypes.Name, "admin")
+        };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
@@ -56,5 +68,4 @@ public class LoginModel : PageModel
 
         return RedirectToPage("/Index");
     }
-
 }

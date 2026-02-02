@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BetfairReplicator.Pages
@@ -14,7 +13,6 @@ namespace BetfairReplicator.Pages
 
         public void OnGet()
         {
-
         }
     }
 }
