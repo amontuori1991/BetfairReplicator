@@ -12,6 +12,13 @@ public class CurrentOrderSummaryReport
     public List<CurrentOrderSummary>? currentOrders { get; set; }
 }
 
+public class CurrentOrderPriceSize
+{
+    public double? price { get; set; }
+    public double? size { get; set; }
+}
+
+
 public class CurrentOrderSummary
 {
     public string? betId { get; set; }
@@ -19,7 +26,9 @@ public class CurrentOrderSummary
     public long? selectionId { get; set; }
     public string? side { get; set; }          // BACK / LAY
     public string? status { get; set; }        // EXECUTABLE / EXECUTION_COMPLETE
-    public double? priceSize { get; set; }     // non sempre presente: dipende dalla response
+
+    public CurrentOrderPriceSize? priceSize { get; set; }
+
     public double? sizeRemaining { get; set; }
     public DateTime? placedDate { get; set; }
 

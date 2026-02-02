@@ -147,7 +147,7 @@ namespace BetfairReplicator.Pages
                 Side = o.side,
 
                 // Nel tuo model priceSize è double? -> lo trattiamo come prezzo (best effort)
-                Price = o.priceSize,
+                Price = o.priceSize?.price,
 
                 // per OPEN è utile vedere quanto resta ancora da prendere
                 Size = o.sizeRemaining,
