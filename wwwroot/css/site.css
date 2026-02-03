@@ -672,3 +672,44 @@ a {
         opacity: 1;
     }
 }
+/* ================================
+   Orders – mobile cards (no horizontal scroll)
+   ================================ */
+
+.bf-order-card {
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 18px;
+    background: rgba(0,0,0,.18);
+    padding: 14px;
+    box-shadow: 0 10px 22px rgba(0,0,0,.18);
+}
+
+.bf-order-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 12px;
+}
+
+.bf-order-title {
+    font-weight: 900;
+    font-size: 15px;
+    line-height: 1.15;
+}
+
+.bf-order-sub {
+    line-height: 1.2;
+}
+
+.bf-order-badges {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.bf-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    word-break: break-all;
+}

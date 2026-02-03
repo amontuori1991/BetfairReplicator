@@ -20,7 +20,7 @@
                 </div>
             </div>
 
-            <a class="btn btn-outline-secondary btn-sm" asp-page="/Index">Home</a>
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/Index" data-loading="Torno alla Home…">Home</a>
         </div>
     </div>
 
@@ -70,52 +70,119 @@
         </div>
 
         <div class="row g-3">
+
+            <!-- =====================================================
+                 OPEN ORDERS
+                 ===================================================== -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="fw-semibold mb-2">Ordini aperti</div>
 
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Evento</th>
-                                        <th>Giocata</th>
-                                        <th>Side</th>
-                                        <th class="text-end">Price</th>
-                                        <th class="text-end">Size</th>
-                                        <th>Stato</th>
-                                        <th>BetId</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <!-- =========================
+                             MOBILE: CARDS
+                             ========================= -->
+                        <div class="bf-orders-open-cards d-md-none">
+                            <div class="row g-2">
                                 @if (Model.OpenOrders.Count == 0)
                                 {
-                                    <tr><td colspan="8" class="text-muted">Nessun ordine aperto.</td></tr>
+                                    <div class="col-12">
+                                        <div class="text-muted">Nessun ordine aperto.</div>
+                                    </div>
                                 }
                                 else
                                 {
-                                    foreach (var o in Model.OpenOrders)
+                                    @foreach (var o in Model.OpenOrders)
                                     {
-                                        <tr>
-                                            <td class="text-nowrap">@(Model.FormatRome(o.DateUtc))</td>
-                                            <td class="text-nowrap">
-                                                @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
-                                            </td>
-                                            <td class="text-nowrap">
-                                                @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))
-                                            </td>
-                                            <td>@o.Side</td>
-                                            <td class="text-end">@((o.Price?.ToString("0.00")) ?? "-")</td>
-                                            <td class="text-end">@((o.Size?.ToString("0.00")) ?? "-")</td>
-                                            <td>@o.Status</td>
-                                            <td class="text-nowrap">@o.BetId</td>
-                                        </tr>
+                                        <div class="col-12 col-sm-6">
+                                            <div class="bf-order-card">
+                                                <div class="bf-order-top">
+                                                    <div>
+                                                        <div class="bf-order-title">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</div>
+                                                        <div class="bf-order-sub text-muted small mt-1">
+                                                            @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))
+                                                        </div>
+                                                    </div>
+                                                    <div class="bf-order-badges">
+                                                        <span class="@o.ResultClass">@o.ResultBadge</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="bf-kv mt-2">
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Data</div>
+                                                        <div class="bf-v">@Model.FormatRome(o.DateUtc)</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Side</div>
+                                                        <div class="bf-v">@o.Side</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Price</div>
+                                                        <div class="bf-v">@((o.Price?.ToString("0.00")) ?? "-")</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Size</div>
+                                                        <div class="bf-v">@((o.Size?.ToString("0.00")) ?? "-")</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Stato</div>
+                                                        <div class="bf-v">@o.Status</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">BetId</div>
+                                                        <div class="bf-v bf-mono">@o.BetId</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     }
                                 }
-                                </tbody>
-                            </table>
+                            </div>
+                        </div>
+
+                        <!-- =========================
+                             DESKTOP/TABLET: TABELLA
+                             ========================= -->
+                        <div class="bf-orders-open-table d-none d-md-block">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Evento</th>
+                                            <th>Giocata</th>
+                                            <th>Side</th>
+                                            <th class="text-end">Price</th>
+                                            <th class="text-end">Size</th>
+                                            <th>Stato</th>
+                                            <th>BetId</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @if (Model.OpenOrders.Count == 0)
+                                    {
+                                        <tr><td colspan="8" class="text-muted">Nessun ordine aperto.</td></tr>
+                                    }
+                                    else
+                                    {
+                                        foreach (var o in Model.OpenOrders)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">@Model.FormatRome(o.DateUtc)</td>
+                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</td>
+                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))</td>
+                                                <td>@o.Side</td>
+                                                <td class="text-end">@((o.Price?.ToString("0.00")) ?? "-")</td>
+                                                <td class="text-end">@((o.Size?.ToString("0.00")) ?? "-")</td>
+                                                <td>@o.Status</td>
+                                                <td class="text-nowrap">@o.BetId</td>
+                                            </tr>
+                                        }
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <div class="text-muted small mt-2">
@@ -125,54 +192,115 @@
                 </div>
             </div>
 
+
+            <!-- =====================================================
+                 SETTLED ORDERS
+                 ===================================================== -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="fw-semibold mb-2">Ordini settled</div>
 
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Esito</th>
-                                        <th>Evento</th>
-                                        <th>Giocata</th>
-                                        <th>Side</th>
-                                        <th class="text-end">Stake</th>
-                                        <th class="text-end">Profit</th>
-                                        <th>BetId</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <!-- =========================
+                             MOBILE: CARDS
+                             ========================= -->
+                        <div class="bf-orders-settled-cards d-md-none">
+                            <div class="row g-2">
                                 @if (Model.SettledOrders.Count == 0)
                                 {
-                                    <tr><td colspan="8" class="text-muted">Nessun dato nel periodo selezionato.</td></tr>
+                                    <div class="col-12">
+                                        <div class="text-muted">Nessun dato nel periodo selezionato.</div>
+                                    </div>
                                 }
                                 else
                                 {
-                                    foreach (var o in Model.SettledOrders)
+                                    @foreach (var o in Model.SettledOrders)
                                     {
-                                        <tr>
-                                            <td class="text-nowrap">@(Model.FormatRome(o.DateUtc))</td>
-                                            <td class="text-nowrap">
-                                                <span class="@o.ResultClass">@o.ResultBadge</span>
-                                            </td>
-                                            <td class="text-nowrap">
-                                                @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
-                                            </td>
-                                            <td class="text-nowrap">
-                                                @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")
-                                            </td>
-                                            <td>@o.Side</td>
-                                            <td class="text-end">@((o.Stake?.ToString("0.00")) ?? "-")</td>
-                                            <td class="text-end">@((o.Profit?.ToString("0.00")) ?? "-")</td>
-                                            <td class="text-nowrap">@o.BetId</td>
-                                        </tr>
+                                        <div class="col-12 col-sm-6">
+                                            <div class="bf-order-card">
+                                                <div class="bf-order-top">
+                                                    <div>
+                                                        <div class="bf-order-title">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</div>
+                                                        <div class="bf-order-sub text-muted small mt-1">
+                                                            @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")
+                                                        </div>
+                                                    </div>
+                                                    <div class="bf-order-badges">
+                                                        <span class="@o.ResultClass">@o.ResultBadge</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="bf-kv mt-2">
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Data</div>
+                                                        <div class="bf-v">@Model.FormatRome(o.DateUtc)</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Side</div>
+                                                        <div class="bf-v">@o.Side</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Stake</div>
+                                                        <div class="bf-v">@((o.Stake?.ToString("0.00")) ?? "-")</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">Profit</div>
+                                                        <div class="bf-v">@((o.Profit?.ToString("0.00")) ?? "-")</div>
+                                                    </div>
+                                                    <div class="bf-kv-row">
+                                                        <div class="bf-k">BetId</div>
+                                                        <div class="bf-v bf-mono">@o.BetId</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     }
                                 }
-                                </tbody>
-                            </table>
+                            </div>
+                        </div>
+
+                        <!-- =========================
+                             DESKTOP/TABLET: TABELLA
+                             ========================= -->
+                        <div class="bf-orders-settled-table d-none d-md-block">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Esito</th>
+                                            <th>Evento</th>
+                                            <th>Giocata</th>
+                                            <th>Side</th>
+                                            <th class="text-end">Stake</th>
+                                            <th class="text-end">Profit</th>
+                                            <th>BetId</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @if (Model.SettledOrders.Count == 0)
+                                    {
+                                        <tr><td colspan="8" class="text-muted">Nessun dato nel periodo selezionato.</td></tr>
+                                    }
+                                    else
+                                    {
+                                        foreach (var o in Model.SettledOrders)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">@Model.FormatRome(o.DateUtc)</td>
+                                                <td class="text-nowrap"><span class="@o.ResultClass">@o.ResultBadge</span></td>
+                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</td>
+                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")</td>
+                                                <td>@o.Side</td>
+                                                <td class="text-end">@((o.Stake?.ToString("0.00")) ?? "-")</td>
+                                                <td class="text-end">@((o.Profit?.ToString("0.00")) ?? "-")</td>
+                                                <td class="text-nowrap">@o.BetId</td>
+                                            </tr>
+                                        }
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <div class="text-muted small mt-2">
@@ -181,6 +309,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     }
 </div>
