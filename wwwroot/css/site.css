@@ -599,3 +599,76 @@ a {
         display: none !important;
     }
 }
+/* ================================
+   Global Loader Overlay (Betfair theme)
+   ================================ */
+
+.bf-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none; /* default hidden */
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(7,16,31,.62);
+    backdrop-filter: blur(10px);
+}
+
+    .bf-loader.is-visible {
+        display: flex;
+    }
+
+.bf-loader-card {
+    width: min(420px, 92vw);
+    border-radius: 20px;
+    padding: 18px 16px;
+    text-align: center;
+    background: radial-gradient(280px 180px at 20% 15%, rgba(47,107,255,.22), transparent 55%), radial-gradient(280px 180px at 80% 20%, rgba(255,204,0,.22), transparent 60%), rgba(255,255,255,.03);
+    border: 1px solid rgba(255,204,0,.22);
+    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+}
+
+.bf-loader-spinner {
+    width: 58px;
+    height: 58px;
+    margin: 2px auto 12px;
+    border-radius: 999px;
+    border: 4px solid rgba(255,255,255,.10);
+    border-top-color: rgba(255,204,0,.95);
+    box-shadow: 0 0 0 6px rgba(255,204,0,.08);
+    animation: bfSpin .85s linear infinite;
+}
+
+@keyframes bfSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.bf-loader-title {
+    font-weight: 900;
+    color: var(--bf-yellow);
+    text-shadow: 0 0 18px rgba(255,204,0,.18);
+    margin: 0;
+}
+
+.bf-loader-sub {
+    margin-top: 6px;
+    color: rgba(242,246,255,.72);
+    font-size: 13px;
+}
+
+/* small motion feedback (optional) */
+.bf-loader-card {
+    transform: translateY(6px);
+    opacity: 0;
+    animation: bfPop .18s ease forwards;
+}
+
+@keyframes bfPop {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

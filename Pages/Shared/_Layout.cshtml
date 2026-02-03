@@ -4,9 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BetfairReplicator</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BetfairReplicator.styles.css" asp-append-version="true" />
+
     <link rel="icon" type="image/svg+xml" href="~/brand/favicon.svg" asp-append-version="true" />
     <link rel="icon" type="image/png" sizes="96x96" href="~/brand/favicon-96x96.png" asp-append-version="true" />
     <link rel="icon" type="image/x-icon" href="~/brand/favicon.ico" asp-append-version="true" />
@@ -17,14 +19,17 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <!-- ✅ Navbar coerente col tema dark -->
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="/Index">
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="/Index" data-loading="Torno alla Home…">
                     <img src="~/brand/favicon-96x96.png" alt="Logo" style="width:26px;height:26px;border-radius:8px;" />
                     <span>BetfairReplicator</span>
                 </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                <button class="navbar-toggler" type="button"
+                        data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -32,25 +37,25 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Index">Home</a>
+                            <a class="nav-link" asp-page="/Index" data-loading="Apro la Home…">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/ConnectBetfair">Collega</a>
+                            <a class="nav-link" asp-page="/ConnectBetfair" data-loading="Apro collegamento Betfair…">Collega</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Funds">Fondi</a>
+                            <a class="nav-link" asp-page="/Funds" data-loading="Recupero fondi e saldo…">Fondi</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/MarketSearch">Mercati</a>
+                            <a class="nav-link" asp-page="/MarketSearch" data-loading="Carico mercati e runner…">Mercati</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Statistics">Statistiche</a>
+                            <a class="nav-link" asp-page="/Statistics" data-loading="Apro statistiche…">Statistiche</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Orders">Ordini</a>
+                            <a class="nav-link" asp-page="/Orders" data-loading="Apro ordini…">Ordini</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Admin/Accounts">Accounts</a>
+                            <a class="nav-link" asp-page="/Admin/Accounts" data-loading="Apro gestione accounts…">Accounts</a>
                         </li>
                     </ul>
 
@@ -78,9 +83,18 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - BetfairReplicator - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            &copy; 2026 - BetfairReplicator - <a asp-area="" asp-page="/Privacy" data-loading="Apro privacy…">Privacy</a>
         </div>
     </footer>
+
+    <!-- ✅ Global Page Loader (meglio qui, prima degli script) -->
+    <div id="bf-loader" class="bf-loader" aria-hidden="true">
+        <div class="bf-loader-card">
+            <div class="bf-loader-spinner" aria-hidden="true"></div>
+            <div class="bf-loader-title">Caricamento…</div>
+            <div class="bf-loader-sub">Sto aprendo la sezione</div>
+        </div>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
