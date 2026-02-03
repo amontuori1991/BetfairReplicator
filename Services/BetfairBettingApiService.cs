@@ -315,7 +315,8 @@ public class BetfairBettingApiService
                 {
                     marketIds = new HashSet<string> { marketId }
                 },
-                marketProjection = new HashSet<string> { "RUNNER_DESCRIPTION" },
+                marketProjection = new HashSet<string> { "RUNNER_DESCRIPTION", "EVENT" },
+
                 sort = "FIRST_TO_START",
                 maxResults = 1
             },

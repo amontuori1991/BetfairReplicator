@@ -94,9 +94,11 @@ namespace BetfairReplicator.Pages
 
                 var mi = new MarketInfo
                 {
-                    // spesso è già “TeamA v TeamB”, altrimenti comunque è un testo utile
-                    EventName = cat.marketName
+                    // ✅ Nomi squadre (es: "Inter v Milan")
+                    // fallback: se EVENT non arriva, uso marketName
+                    EventName = cat.@event?.name ?? cat.marketName
                 };
+
 
                 if (cat.runners != null)
                 {

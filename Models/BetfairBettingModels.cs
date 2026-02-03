@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Reflection;
+using System.Text.Json.Serialization;
 namespace BetfairReplicator.Models;
 
 // ----- listEventTypes -----
@@ -50,7 +51,15 @@ public class MarketCatalogue
     public string? marketName { get; set; }
     public DateTime? marketStartTime { get; set; }
     public List<RunnerCatalogue>? runners { get; set; }
+    public EventInfo? @event { get; set; }
+
 }
+public class EventInfo
+{
+    public string? id { get; set; }
+    public string? name { get; set; }
+}
+
 public class RunnerCatalogue
 {
     public long selectionId { get; set; }
