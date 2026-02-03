@@ -54,12 +54,63 @@ namespace BetfairReplicator.Pages
             public string? Side { get; set; } // BACK/LAY
             public double? Price { get; set; }
             public double? Size { get; set; }
+            public string? EventName { get; set; }
+            public string? RunnerName { get; set; }
+            public string? ResultBadge { get; set; } // OPEN / WIN / LOSS / EVEN
+            public string? ResultClass { get; set; } // css class per badge
 
             public DateTime? DateUtc { get; set; } // placed o settled
             public string? Status { get; set; }
 
             public double? Profit { get; set; } // solo settled
             public double? Stake { get; set; }  // sizeSettled su settled
+        }
+        private sealed class MarketInfo
+        {
+            public string? EventName { get; set; }
+            public Dictionary<long, string> RunnerBySelectionId { get; set; } = new();
+        }
+        private async Task<Dictionary<string, MarketInfo>> LoadMarketInfosAsync(
+    string displayName,
+    string appKey,
+    string token,
+    IEnumerable<string?> marketIds)
+        {
+            var dict = new Dictionary<string, MarketInfo>(StringComparer.OrdinalIgnoreCase);
+
+            var ids = marketIds
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var mid in ids)
+            {
+                var catsRes = await _bettingApi.GetMarketCatalogueByMarketIdAsync(displayName, appKey, token, mid);
+                if (catsRes.Error != null) continue;
+
+                var cat = catsRes.Result?.FirstOrDefault();
+                if (cat == null) continue;
+
+                var mi = new MarketInfo
+                {
+                    // spesso è già “TeamA v TeamB”, altrimenti comunque è un testo utile
+                    EventName = cat.marketName
+                };
+
+                if (cat.runners != null)
+                {
+                    foreach (var r in cat.runners)
+                    {
+                        var name = r.runnerName ?? r.selectionId.ToString();
+                        mi.RunnerBySelectionId[r.selectionId] = name;
+                    }
+                }
+
+                dict[mid] = mi;
+            }
+
+            return dict;
         }
 
         public async Task OnGetAsync()
@@ -161,6 +212,28 @@ namespace BetfairReplicator.Pages
             .OrderByDescending(x => x.BetId ?? "")
             .ToList();
 
+            // ✅ Enrich OPEN: MarketId + SelectionId -> EventName + RunnerName
+            var marketInfos = await LoadMarketInfosAsync(
+                displayName: MasterUsed,
+                appKey: appKey,
+                token: masterToken,
+                marketIds: OpenOrders.Select(x => x.MarketId)
+            );
+
+            foreach (var o in OpenOrders)
+            {
+                if (!string.IsNullOrWhiteSpace(o.MarketId) && marketInfos.TryGetValue(o.MarketId, out var mi))
+                {
+                    o.EventName = mi.EventName;
+
+                    if (o.SelectionId.HasValue && mi.RunnerBySelectionId.TryGetValue(o.SelectionId.Value, out var rn))
+                        o.RunnerName = rn;
+                }
+
+                // Badge per OPEN
+                o.ResultBadge = "OPEN";
+                o.ResultClass = "badge bg-secondary";
+            }
 
 
             // 5) SETTLED orders (clearedOrders) nel range date
@@ -178,21 +251,60 @@ namespace BetfairReplicator.Pages
                 return;
             }
 
-            SettledOrders = (settled ?? new List<BetfairBettingApiService.ClearedOrderSummary>())
-                .Where(x => x.settledDate.HasValue)
-                .Select(x => new OrderRow
+            var settledList = (settled ?? new List<BetfairBettingApiService.ClearedOrderSummary>())
+               .Where(x => x.settledDate.HasValue)
+               .ToList();
+
+            // ✅ carico info mercati per avere EventName + RunnerName anche sui SETTLED
+            var settledMarketInfos = await LoadMarketInfosAsync(
+                displayName: MasterUsed,
+                appKey: appKey,
+                token: masterToken,
+                marketIds: settledList.Select(x => x.marketId)
+            );
+
+            SettledOrders = settledList
+                .Select(x =>
                 {
-                    Source = "SETTLED",
-                    BetId = x.betId,
-                    MarketId = x.marketId,
-                    Side = x.side,
-                    Stake = x.sizeSettled,
-                    Profit = x.profit,
-                    DateUtc = x.settledDate,
-                    Status = "SETTLED"
+                    var p = x.profit ?? 0.0;
+
+                    var badge = p > 0.0001 ? "WIN" : (p < -0.0001 ? "LOSS" : "EVEN");
+                    var cls = p > 0.0001 ? "badge bg-success"
+                            : (p < -0.0001 ? "badge bg-danger"
+                            : "badge bg-warning text-dark");
+
+                    string? eventName = x.marketId;
+                    string? runnerName = null;
+
+                    if (!string.IsNullOrWhiteSpace(x.marketId) && settledMarketInfos.TryGetValue(x.marketId, out var mi))
+                    {
+                        eventName = mi.EventName ?? x.marketId;
+
+                        // nei clearedOrders non hai selectionId, quindi runnerName potrebbe restare null
+                        // se in futuro aggiungi selectionId anche nei ClearedOrderSummary, qui lo risolviamo.
+                    }
+
+                    return new OrderRow
+                    {
+                        Source = "SETTLED",
+                        BetId = x.betId,
+                        MarketId = x.marketId,
+                        Side = x.side,
+                        Stake = x.sizeSettled,
+                        Profit = x.profit,
+                        DateUtc = x.settledDate,
+                        Status = "SETTLED",
+
+                        EventName = eventName,
+                        RunnerName = runnerName,
+
+                        ResultBadge = badge,
+                        ResultClass = cls
+                    };
                 })
                 .OrderByDescending(x => x.DateUtc ?? DateTime.MinValue)
                 .ToList();
+
         }
     }
 }

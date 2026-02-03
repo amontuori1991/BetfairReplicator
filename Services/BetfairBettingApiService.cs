@@ -431,6 +431,7 @@ public class BetfairBettingApiService
         // campi economici (sufficienti per stats)
         public double? profit { get; set; }
         public double? sizeSettled { get; set; }
+        public ItemDescription? itemDescription { get; set; }
     }
 
 
@@ -470,6 +471,14 @@ public class BetfairBettingApiService
         };
 
         return CallAsync<ClearedOrderSummaryReport>(displayName, appKey, sessionToken, rpc);
+    }
+    public ItemDescription? itemDescription { get; set; }
+
+    public class ItemDescription
+    {
+        public string? eventDesc { get; set; }
+        public string? marketDesc { get; set; }
+        public string? runnerDesc { get; set; }
     }
 
     public class MonthlyPnlRow
