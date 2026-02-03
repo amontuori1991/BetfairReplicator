@@ -81,8 +81,7 @@
                                     <tr>
                                         <th>Data</th>
                                         <th>Evento</th>
-<th>Giocata</th>
-
+                                        <th>Giocata</th>
                                         <th>Side</th>
                                         <th class="text-end">Price</th>
                                         <th class="text-end">Size</th>
@@ -100,14 +99,13 @@
                                     foreach (var o in Model.OpenOrders)
                                     {
                                         <tr>
-                                            <td class="text-nowrap">@((o.DateUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")) ?? "-")</td>
-<td class="text-nowrap">
-    @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
-</td>
-<td class="text-nowrap">
-    @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))
-</td>
-
+                                            <td class="text-nowrap">@(Model.FormatRome(o.DateUtc))</td>
+                                            <td class="text-nowrap">
+                                                @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
+                                            </td>
+                                            <td class="text-nowrap">
+                                                @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))
+                                            </td>
                                             <td>@o.Side</td>
                                             <td class="text-end">@((o.Price?.ToString("0.00")) ?? "-")</td>
                                             <td class="text-end">@((o.Size?.ToString("0.00")) ?? "-")</td>
@@ -138,10 +136,9 @@
                                     <tr>
                                         <th>Data</th>
                                         <th>Esito</th>
-<th>Evento</th>
-<th>Giocata</th>
-<th>Side</th>
-
+                                        <th>Evento</th>
+                                        <th>Giocata</th>
+                                        <th>Side</th>
                                         <th class="text-end">Stake</th>
                                         <th class="text-end">Profit</th>
                                         <th>BetId</th>
@@ -157,18 +154,17 @@
                                     foreach (var o in Model.SettledOrders)
                                     {
                                         <tr>
-                                            <td class="text-nowrap">@((o.DateUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")) ?? "-")</td>
-                                           <td class="text-nowrap">
-    <span class="@o.ResultClass">@o.ResultBadge</span>
-</td>
-<td class="text-nowrap">
-    @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
-</td>
-<td class="text-nowrap">
-    @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")
-</td>
-<td>@o.Side</td>
-
+                                            <td class="text-nowrap">@(Model.FormatRome(o.DateUtc))</td>
+                                            <td class="text-nowrap">
+                                                <span class="@o.ResultClass">@o.ResultBadge</span>
+                                            </td>
+                                            <td class="text-nowrap">
+                                                @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
+                                            </td>
+                                            <td class="text-nowrap">
+                                                @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")
+                                            </td>
+                                            <td>@o.Side</td>
                                             <td class="text-end">@((o.Stake?.ToString("0.00")) ?? "-")</td>
                                             <td class="text-end">@((o.Profit?.ToString("0.00")) ?? "-")</td>
                                             <td class="text-nowrap">@o.BetId</td>

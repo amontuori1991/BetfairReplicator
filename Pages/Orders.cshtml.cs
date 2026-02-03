@@ -14,6 +14,34 @@ namespace BetfairReplicator.Pages
         // vincolo come Statistiche
         private static readonly DateTime MinFromUtc = new DateTime(2026, 1, 30, 0, 0, 0, DateTimeKind.Utc);
 
+        // ✅ Timezone Europe/Rome (Render/Linux) + fallback Windows
+        private static readonly TimeZoneInfo RomeTz = ResolveRomeTimeZone();
+
+        private static TimeZoneInfo ResolveRomeTimeZone()
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome"); }
+            catch
+            {
+                // Windows fallback
+                try { return TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time"); }
+                catch { return TimeZoneInfo.Utc; }
+            }
+        }
+
+        // ✅ helper per UI: stampa sempre ora di Roma
+        public string FormatRome(DateTime? utc)
+        {
+            if (!utc.HasValue) return "-";
+
+            // garantisco Kind UTC (se arriva Unspecified)
+            var u = utc.Value.Kind == DateTimeKind.Utc
+                ? utc.Value
+                : DateTime.SpecifyKind(utc.Value, DateTimeKind.Utc);
+
+            var local = TimeZoneInfo.ConvertTimeFromUtc(u, RomeTz);
+            return local.ToString("yyyy-MM-dd HH:mm");
+        }
+
         public OrdersModel(
             BetfairSessionStoreFile sessionStore,
             BetfairAccountStoreFile accountStore,
@@ -65,16 +93,18 @@ namespace BetfairReplicator.Pages
             public double? Profit { get; set; } // solo settled
             public double? Stake { get; set; }  // sizeSettled su settled
         }
+
         private sealed class MarketInfo
         {
             public string? EventName { get; set; }
             public Dictionary<long, string> RunnerBySelectionId { get; set; } = new();
         }
+
         private async Task<Dictionary<string, MarketInfo>> LoadMarketInfosAsync(
-    string displayName,
-    string appKey,
-    string token,
-    IEnumerable<string?> marketIds)
+            string displayName,
+            string appKey,
+            string token,
+            IEnumerable<string?> marketIds)
         {
             var dict = new Dictionary<string, MarketInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -94,11 +124,8 @@ namespace BetfairReplicator.Pages
 
                 var mi = new MarketInfo
                 {
-                    // ✅ Nomi squadre (es: "Inter v Milan")
-                    // fallback: se EVENT non arriva, uso marketName
                     EventName = cat.@event?.name ?? cat.marketName
                 };
-
 
                 if (cat.runners != null)
                 {
@@ -117,16 +144,34 @@ namespace BetfairReplicator.Pages
 
         public async Task OnGetAsync()
         {
-            // 1) range date con clamp
+            // 1) range date con clamp (✅ interpretate come date di ROMA, poi convertite in UTC)
             var nowUtc = DateTime.UtcNow;
 
-            var fromUtc = From.HasValue
-                ? DateTime.SpecifyKind(From.Value.Date, DateTimeKind.Utc)
-                : MinFromUtc;
+            DateTime fromUtc;
+            if (From.HasValue)
+            {
+                // From.Value è una "date" (senza ora): la considero 00:00 di Roma
+                var fromLocal = new DateTime(From.Value.Year, From.Value.Month, From.Value.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, RomeTz);
+            }
+            else
+            {
+                fromUtc = MinFromUtc;
+            }
 
-            var toUtc = To.HasValue
-                ? DateTime.SpecifyKind(To.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
-                : nowUtc;
+            DateTime toUtc;
+            if (To.HasValue)
+            {
+                // To.Value "date": considero fine giornata di Roma 23:59:59.9999999
+                var endLocal = new DateTime(To.Value.Year, To.Value.Month, To.Value.Day, 23, 59, 59, 999, DateTimeKind.Unspecified);
+                // aggiungo i tick per arrivare al massimo possibile del millisecondo
+                endLocal = endLocal.AddTicks(9999);
+                toUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, RomeTz);
+            }
+            else
+            {
+                toUtc = nowUtc;
+            }
 
             if (fromUtc < MinFromUtc) fromUtc = MinFromUtc;
             if (toUtc > nowUtc) toUtc = nowUtc;
@@ -198,23 +243,15 @@ namespace BetfairReplicator.Pages
                 MarketId = o.marketId,
                 SelectionId = o.selectionId,
                 Side = o.side,
-
-                // Nel tuo model priceSize è double? -> lo trattiamo come prezzo (best effort)
                 Price = o.priceSize?.price,
-
-                // per OPEN è utile vedere quanto resta ancora da prendere
                 Size = o.sizeRemaining,
-
-                // Nel tuo model non c'è placedDate: per ora null (non rompe nulla)
                 DateUtc = o.placedDate,
-
                 Status = o.status
             })
-            // senza DateUtc non ha senso ordinare per data: ordiniamo per MarketId/BetId (stabile)
             .OrderByDescending(x => x.BetId ?? "")
             .ToList();
 
-            // ✅ Enrich OPEN: MarketId + SelectionId -> EventName + RunnerName
+            // Enrich OPEN: MarketId + SelectionId -> EventName + RunnerName
             var marketInfos = await LoadMarketInfosAsync(
                 displayName: MasterUsed,
                 appKey: appKey,
@@ -232,11 +269,9 @@ namespace BetfairReplicator.Pages
                         o.RunnerName = rn;
                 }
 
-                // Badge per OPEN
                 o.ResultBadge = "OPEN";
                 o.ResultClass = "badge bg-secondary";
             }
-
 
             // 5) SETTLED orders (clearedOrders) nel range date
             var (settled, sErr) = await _bettingApi.FetchClearedOrdersAsync(
@@ -254,9 +289,8 @@ namespace BetfairReplicator.Pages
             }
 
             var settledList = (settled ?? new List<BetfairBettingApiService.ClearedOrderSummary>())
-               .Where(x => x.settledDate.HasValue)
-               .ToList();
-
+                .Where(x => x.settledDate.HasValue)
+                .ToList();
 
             SettledOrders = settledList
                 .Select(x =>
@@ -278,22 +312,16 @@ namespace BetfairReplicator.Pages
                         Profit = x.profit,
                         DateUtc = x.settledDate,
                         Status = "SETTLED",
-
-                        // ✅ descrizioni umane da itemDescription (richiede includeItemDescription=true)
                         EventName = x.itemDescription?.eventDesc
                                  ?? x.itemDescription?.marketDesc
                                  ?? x.marketId,
-
                         RunnerName = x.itemDescription?.runnerDesc,
-
                         ResultBadge = badge,
                         ResultClass = cls
                     };
                 })
                 .OrderByDescending(x => x.DateUtc ?? DateTime.MinValue)
                 .ToList();
-
-
         }
     }
 }
