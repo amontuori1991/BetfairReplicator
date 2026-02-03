@@ -412,7 +412,8 @@ public class BetfairBettingApiService
         public string? groupBy { get; set; } = "BET"; // oppure "NONE"
         public int? fromRecord { get; set; } = 0;
         public int? recordCount { get; set; } = 1000;
-        public bool? includeItemDescription { get; set; } = false;
+        public bool? includeItemDescription { get; set; } = true;
+
 
         // Sort (valori tipici: EARLIEST_TO_LATEST / LATEST_TO_EARLIEST)
         public string? sort { get; set; } = "EARLIEST_TO_LATEST";
@@ -458,7 +459,8 @@ public class BetfairBettingApiService
                 betStatus = "SETTLED",
                 fromRecord = fromRecord,
                 recordCount = recordCount,
-                includeItemDescription = false,
+                includeItemDescription = true,
+
                 sort = "EARLIEST_TO_LATEST",
                 groupBy = "BET",
                 settledDateRange = new TimeRange
@@ -472,7 +474,7 @@ public class BetfairBettingApiService
 
         return CallAsync<ClearedOrderSummaryReport>(displayName, appKey, sessionToken, rpc);
     }
-    public ItemDescription? itemDescription { get; set; }
+
 
     public class ItemDescription
     {

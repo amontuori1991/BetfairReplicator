@@ -255,13 +255,6 @@ namespace BetfairReplicator.Pages
                .Where(x => x.settledDate.HasValue)
                .ToList();
 
-            // ✅ carico info mercati per avere EventName + RunnerName anche sui SETTLED
-            var settledMarketInfos = await LoadMarketInfosAsync(
-                displayName: MasterUsed,
-                appKey: appKey,
-                token: masterToken,
-                marketIds: settledList.Select(x => x.marketId)
-            );
 
             SettledOrders = settledList
                 .Select(x =>
@@ -272,17 +265,6 @@ namespace BetfairReplicator.Pages
                     var cls = p > 0.0001 ? "badge bg-success"
                             : (p < -0.0001 ? "badge bg-danger"
                             : "badge bg-warning text-dark");
-
-                    string? eventName = x.marketId;
-                    string? runnerName = null;
-
-                    if (!string.IsNullOrWhiteSpace(x.marketId) && settledMarketInfos.TryGetValue(x.marketId, out var mi))
-                    {
-                        eventName = mi.EventName ?? x.marketId;
-
-                        // nei clearedOrders non hai selectionId, quindi runnerName potrebbe restare null
-                        // se in futuro aggiungi selectionId anche nei ClearedOrderSummary, qui lo risolviamo.
-                    }
 
                     return new OrderRow
                     {
@@ -295,8 +277,12 @@ namespace BetfairReplicator.Pages
                         DateUtc = x.settledDate,
                         Status = "SETTLED",
 
-                        EventName = eventName,
-                        RunnerName = runnerName,
+                        // ✅ descrizioni umane da itemDescription (richiede includeItemDescription=true)
+                        EventName = x.itemDescription?.eventDesc
+                                 ?? x.itemDescription?.marketDesc
+                                 ?? x.marketId,
+
+                        RunnerName = x.itemDescription?.runnerDesc,
 
                         ResultBadge = badge,
                         ResultClass = cls
@@ -304,6 +290,7 @@ namespace BetfairReplicator.Pages
                 })
                 .OrderByDescending(x => x.DateUtc ?? DateTime.MinValue)
                 .ToList();
+
 
         }
     }
