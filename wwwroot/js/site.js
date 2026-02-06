@@ -13,6 +13,7 @@
         }
         loader.classList.add("is-visible");
         loader.setAttribute("aria-hidden", "false");
+        loader.offsetHeight; // <-- aggiungi
     }
 
     function hideLoader() {
@@ -32,7 +33,7 @@
 
         // ignorare: new tab, download, ancore, link esterni, javascript:
         if (e.defaultPrevented) return;
-        if (e.button !== 0) return; // solo click sinistro
+        if (e.button != null && e.button !== 0) return;
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         if (a.hasAttribute("download")) return;
 
@@ -59,6 +60,7 @@
 
 
         showLoader(label);
+
     }, true);
 
     // Intercetto submit di form (es. Logout)

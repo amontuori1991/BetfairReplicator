@@ -606,28 +606,30 @@ a {
 .bf-loader {
     position: fixed;
     inset: 0;
-    z-index: 2000;
-    display: none; /* default hidden */
+    z-index: 99999;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 18px;
     background: rgba(7,16,31,.62);
-    backdrop-filter: blur(10px);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease, visibility .12s ease;
+    -webkit-backface-visibility: hidden;
+    will-change: opacity;
 }
 
     .bf-loader.is-visible {
-        display: flex;
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
     }
 
 .bf-loader-card {
-    width: min(420px, 92vw);
-    border-radius: 20px;
-    padding: 18px 16px;
-    text-align: center;
-    background: radial-gradient(280px 180px at 20% 15%, rgba(47,107,255,.22), transparent 55%), radial-gradient(280px 180px at 80% 20%, rgba(255,204,0,.22), transparent 60%), rgba(255,255,255,.03);
-    border: 1px solid rgba(255,204,0,.22);
-    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    will-change: transform, opacity;
 }
+
 
 .bf-loader-spinner {
     width: 58px;
@@ -638,6 +640,18 @@ a {
     border-top-color: rgba(255,204,0,.95);
     box-shadow: 0 0 0 6px rgba(255,204,0,.08);
     animation: bfSpin .85s linear infinite;
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .bf-loader {
+        background: rgba(7,16,31,.85); /* più scuro senza blur */
+    }
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .bf-loader {
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+    }
 }
 
 @keyframes bfSpin {
@@ -712,4 +726,8 @@ a {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 12px;
     word-break: break-all;
+}
+.footer {
+    position: static !important;
+    line-height: normal !important;
 }
