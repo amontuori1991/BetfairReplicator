@@ -9,6 +9,8 @@ namespace BetfairReplicator.Pages
         private readonly BetfairSessionStoreFile _sessionStore;
         private readonly BetfairAccountStoreFile _accountStore;
         private readonly BetfairBettingApiService _bettingApi;
+        private readonly BankrollStoreFile _bankrollStore;
+
 
         private static readonly DateTime MinFromUtc = new DateTime(2026, 1, 30, 0, 0, 0, DateTimeKind.Utc);
 
@@ -26,17 +28,18 @@ namespace BetfairReplicator.Pages
         public StatisticsModel(
             BetfairSessionStoreFile sessionStore,
             BetfairAccountStoreFile accountStore,
-            BetfairBettingApiService bettingApi)
+            BetfairBettingApiService bettingApi,
+            BankrollStoreFile bankrollStore)
         {
             _sessionStore = sessionStore;
             _accountStore = accountStore;
             _bettingApi = bettingApi;
+            _bankrollStore = bankrollStore;
         }
+
 
         // query
         [BindProperty(SupportsGet = true)]
-
-        public double? Bankroll { get; set; }
         public string? Account { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -44,6 +47,10 @@ namespace BetfairReplicator.Pages
 
         [BindProperty(SupportsGet = true)]
         public DateTime? To { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public double? Bankroll { get; set; }
+
 
         public string? Error { get; private set; }
 
@@ -60,8 +67,10 @@ namespace BetfairReplicator.Pages
         public int TotalBets { get; private set; }
         public double TotalRoiPct => TotalStake == 0 ? 0 : (TotalProfit / TotalStake) * 100.0;
 
-        public double StartingBankroll { get; private set; } // valore “usato” (deriva da Bankroll querystring)
-        public double TotalRoiBankrollPct => StartingBankroll <= 0 ? 0 : (TotalProfit / StartingBankroll) * 100.0;
+        // Bankroll (saldo iniziale) - per ROI su capitale (per account)
+        public double StartingBankroll { get; private set; }
+        public double TotalRoiBankrollPct => StartingBankroll == 0 ? 0 : (TotalProfit / StartingBankroll) * 100.0;
+
 
         public double BackRoiBankrollPct => StartingBankroll <= 0 ? 0 : (BackKpi.Profit / StartingBankroll) * 100.0;
         public double LayRoiBankrollPct => StartingBankroll <= 0 ? 0 : (LayKpi.Profit / StartingBankroll) * 100.0;
@@ -152,10 +161,7 @@ namespace BetfairReplicator.Pages
 
             FromUtcUsed = fromUtc;
             ToUtcUsed = toUtc;
-            // 1b) Bankroll inserito manualmente dall’utente (se non valido => 0, così ROI bankroll resta 0)
-            StartingBankroll = (Bankroll.HasValue && Bankroll.Value > 0)
-                ? Bankroll.Value
-                : 0;
+
 
             // 2) account collegati
             var accounts = await _accountStore.GetAllAsync();
@@ -183,6 +189,16 @@ namespace BetfairReplicator.Pages
 
             acc ??= usable.First();
             AccountUsed = acc.DisplayName;
+            // ✅ Bankroll: priorità a querystring (?Bankroll=), altrimenti da JSON per account
+            if (Bankroll.HasValue && Bankroll.Value >= 0)
+            {
+                StartingBankroll = Bankroll.Value;
+                await _bankrollStore.SetAsync(AccountUsed!, StartingBankroll);
+            }
+            else
+            {
+                StartingBankroll = await _bankrollStore.GetAsync(AccountUsed!) ?? 0.0;
+            }
 
             var tokenUsed = await _sessionStore.GetTokenAsync(AccountUsed);
             if (string.IsNullOrWhiteSpace(tokenUsed))

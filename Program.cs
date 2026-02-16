@@ -86,10 +86,14 @@ namespace BetfairReplicator
             // ✅ Store sessioni (token Betfair)
             builder.Services.AddSingleton<BetfairSessionStoreFile>();
 
+            // ✅ Store bankroll iniziale per account (App_Data/bankrolls.json)
+            builder.Services.AddSingleton<BankrollStoreFile>();
+
             // ✅ Store account + per-account cert/client
             builder.Services.AddSingleton<BetfairAccountStoreFile>();
             builder.Services.AddSingleton<BetfairCertificateProvider>();
             builder.Services.AddSingleton<BetfairHttpClientProvider>();
+
 
             // ✅ Servizi applicativi
             builder.Services.AddScoped<BetfairSsoService>();
