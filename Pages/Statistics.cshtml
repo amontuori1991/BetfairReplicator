@@ -12,8 +12,12 @@
             <div>
                 <h1 class="ns-title h4 mb-1">Statistiche</h1>
                 <div class="ns-subtitle">
-                    Multi-account • Storico P/L, ROI, BACK/LAY, Equity
-                    <span class="text-muted">— account: <strong>@Model.ConnectedAccounts</strong></span>
+                    Storico P/L, ROI, BACK/LAY, Equity
+                    @if (!string.IsNullOrWhiteSpace(Model.AccountUsed))
+                    {
+                        <span class="text-muted">— account: <strong>@Model.AccountUsed</strong></span>
+                    }
+
                 </div>
             </div>
 
@@ -21,16 +25,83 @@
         </div>
     </div>
 
+    <style>
+        .stat-kpi {
+            border: 1px solid rgba(0,0,0,.06);
+            border-radius: 14px;
+            padding: 14px;
+            background: #fff;
+            box-shadow: 0 6px 20px rgba(0,0,0,.06);
+        }
+        .stat-kpi .label { font-size: .78rem; color: #6c757d; }
+        .stat-kpi .value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+        .stat-kpi .meta  { font-size: .78rem; color: #6c757d; margin-top: 6px; }
+
+        .chart-card {
+            border: 1px solid rgba(0,0,0,.06);
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 6px 20px rgba(0,0,0,.06);
+        }
+        .chart-card .head {
+            padding: 14px 16px 0 16px;
+        }
+        .chart-card .body {
+            padding: 10px 16px 16px 16px;
+        }
+        .chart-title { font-weight: 700; }
+        .chart-sub   { font-size: .82rem; color: #6c757d; }
+
+        .nav-pills .nav-link {
+            border-radius: 999px;
+            padding: .35rem .8rem;
+        }
+
+        .chart-wrap { height: 320px; }
+       @@media (max-width: 768px) {
+            .chart-wrap { height: 260px; }
+        }
+    </style>
+
     @if (!string.IsNullOrWhiteSpace(Model.Error))
     {
         <div class="alert alert-danger">@Model.Error</div>
     }
-    else
-    {
-        <!-- Date picker con limite minimo -->
-        <div class="card shadow-sm mb-3">
+else
+{
+    var monthlyJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.MonthlyTotal.Select(r => new { label = r.Label, profit = r.Profit, stake = r.Stake, bets = r.Bets, roi = r.RoiPct })
+    );
+
+    var monthlyBackLayJson = System.Text.Json.JsonSerializer.Serialize(new {
+        labels = Model.MonthlyTotal.Select(r => r.Label).ToList(),
+        back = Model.MonthlyBack.ToDictionary(r => r.Label, r => r.Profit),
+        lay  = Model.MonthlyLay.ToDictionary(r => r.Label, r => r.Profit)
+    });
+
+    var dailyJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.DailyProfit.Select(p => new { date = p.Date, profit = p.Profit })
+    );
+
+    var equityJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Equity.Select(p => new { date = p.Date, cum = p.CumProfit, dd = p.Drawdown })
+    );
+
+    <!-- Filtri -->
+    <div class="card shadow-sm mb-3">
             <div class="card-body">
                 <form method="get" class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small text-muted mb-1">Account</label>
+                        <select class="form-select" name="Account">
+                            @foreach (var a in Model.ConnectedAccounts)
+                            {
+                                <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
+                            }
+                        </select>
+                        <div class="form-text">Default: primo account collegato.</div>
+                    </div>
+
                     <div class="col-12 col-md-4">
                         <label class="form-label small text-muted mb-1">Da (min @minDate)</label>
                         <input type="date" class="form-control"
@@ -39,6 +110,7 @@
                                max="@maxDate"
                                value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
                     </div>
+
                     <div class="col-12 col-md-4">
                         <label class="form-label small text-muted mb-1">A (max oggi)</label>
                         <input type="date" class="form-control"
@@ -47,104 +119,136 @@
                                max="@maxDate"
                                value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
                     </div>
-                    <div class="col-12 col-md-4 d-flex gap-2">
+
+                    <div class="col-12 d-flex gap-2 mt-1">
                         <button class="btn btn-primary w-100" type="submit">Applica</button>
                         <a class="btn btn-outline-secondary w-100"
                            asp-page="/Statistics"
+                           asp-route-Account="@Model.AccountUsed"
                            asp-route-From="@minDate"
                            asp-route-To="@maxDate">Reset</a>
                     </div>
                 </form>
 
                 <div class="small text-muted mt-2">
-                    Periodo usato: <strong>@Model.FromUtcUsed.ToString("yyyy-MM-dd")</strong> → <strong>@Model.ToUtcUsed.ToString("yyyy-MM-dd")</strong>
+                    Periodo usato (UTC): <strong>@Model.FromUtcUsed.ToString("yyyy-MM-dd")</strong> → <strong>@Model.ToUtcUsed.ToString("yyyy-MM-dd")</strong>
                 </div>
-
-                @if (Model.ConnectedAccountNames?.Count > 0)
-                {
-                    <div class="small text-muted mt-1">
-                        Account inclusi: @string.Join(", ", Model.ConnectedAccountNames)
-                    </div>
-                }
             </div>
         </div>
 
-        <!-- KPI Totali + BACK/LAY -->
+        <!-- KPI -->
         <div class="row g-3">
             <div class="col-12 col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Totale Profitto</div>
-                        <div class="fs-4 fw-semibold">@Model.TotalProfit.ToString("0.00")</div>
-                        <div class="text-muted small mt-1">Stake: @Model.TotalStake.ToString("0.00") • ROI: @Model.TotalRoiPct.ToString("0.00")% • Bets: @Model.TotalBets</div>
+                <div class="stat-kpi">
+                    <div class="label">Totale Profitto</div>
+                    <div class="value">@Model.TotalProfit.ToString("0.00")</div>
+                    <div class="meta">Stake: @Model.TotalStake.ToString("0.00") • ROI: @Model.TotalRoiPct.ToString("0.00")% • Bets: @Model.TotalBets</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="stat-kpi">
+                    <div class="label">BACK</div>
+                    <div class="value">@Model.BackKpi.Profit.ToString("0.00")</div>
+                    <div class="meta">Stake: @Model.BackKpi.Stake.ToString("0.00") • ROI: @Model.BackKpi.RoiPct.ToString("0.00")% • Bets: @Model.BackKpi.Bets</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="stat-kpi">
+                    <div class="label">LAY</div>
+                    <div class="value">@Model.LayKpi.Profit.ToString("0.00")</div>
+                    <div class="meta">Stake: @Model.LayKpi.Stake.ToString("0.00") • ROI: @Model.LayKpi.RoiPct.ToString("0.00")% • Bets: @Model.LayKpi.Bets</div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- TABS -->
+        <div class="chart-card mt-3">
+            <div class="head">
+                <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <div>
+                        <div class="chart-title">Dashboard grafici</div>
+                        <div class="chart-sub">Sezioni pensate per essere “leggibili al primo colpo”.</div>
                     </div>
+
+                    <ul class="nav nav-pills" id="statsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tab-overview" data-bs-toggle="pill" data-bs-target="#pane-overview" type="button" role="tab">Panoramica</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-month" data-bs-toggle="pill" data-bs-target="#pane-month" type="button" role="tab">Mensile</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-day" data-bs-toggle="pill" data-bs-target="#pane-day" type="button" role="tab">Giornaliero</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-equity" data-bs-toggle="pill" data-bs-target="#pane-equity" type="button" role="tab">Equity</button>
+                        </li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="col-12 col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">BACK</div>
-                        <div class="fs-4 fw-semibold">@Model.BackKpi.Profit.ToString("0.00")</div>
-                        <div class="text-muted small mt-1">Stake: @Model.BackKpi.Stake.ToString("0.00") • ROI: @Model.BackKpi.RoiPct.ToString("0.00")% • Bets: @Model.BackKpi.Bets</div>
+            <div class="body tab-content" id="statsTabsContent">
+                <!-- PANORAMICA -->
+                <div class="tab-pane fade show active" id="pane-overview" role="tabpanel">
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <div class="chart-title small mb-2">Profitto mensile (verde/rosso)</div>
+                            <div class="chart-wrap">
+                                <canvas id="chartMonthlyProfit" data-rows='@monthlyJson'></canvas>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="chart-title small mb-2">Equity cumulata (area) + Drawdown</div>
+                            <div class="chart-wrap">
+                                <canvas id="chartEquity" data-rows='@equityJson'></canvas>
+                            </div>
+                            <div class="small text-muted mt-1">Max Drawdown: <strong>@Model.MaxDrawdown.ToString("0.00")</strong></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-12 col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">LAY</div>
-                        <div class="fs-4 fw-semibold">@Model.LayKpi.Profit.ToString("0.00")</div>
-                        <div class="text-muted small mt-1">Stake: @Model.LayKpi.Stake.ToString("0.00") • ROI: @Model.LayKpi.RoiPct.ToString("0.00")% • Bets: @Model.LayKpi.Bets</div>
+                <!-- MENSILE -->
+                <div class="tab-pane fade" id="pane-month" role="tabpanel">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="chart-title small mb-2">ROI mensile (linea)</div>
+                            <div class="chart-wrap">
+                                <canvas id="chartMonthlyRoi" data-rows='@monthlyJson'></canvas>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="chart-title small mb-2">BACK vs LAY (profitto mensile)</div>
+                            <div class="chart-wrap">
+                                <canvas id="chartBackLay" data-rows='@monthlyBackLayJson'></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GIORNALIERO -->
+                <div class="tab-pane fade" id="pane-day" role="tabpanel">
+                    <div class="chart-title small mb-2">Profitto giornaliero + media mobile (7)</div>
+                    <div class="chart-wrap">
+                        <canvas id="chartDaily" data-rows='@dailyJson'></canvas>
+                    </div>
+                </div>
+
+                <!-- EQUITY -->
+                <div class="tab-pane fade" id="pane-equity" role="tabpanel">
+                    <div class="chart-title small mb-2">Equity cumulata (zoom visivo, griglia leggera)</div>
+                    <div class="chart-wrap">
+                        <canvas id="chartEquityOnly" data-rows='@equityJson'></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Grafici -->
+        <!-- Tabella -->
         <div class="card shadow-sm mt-3">
             <div class="card-body">
-                <div class="fw-semibold mb-1">Grafici</div>
-                <div class="text-muted small mb-3">
-                    1) Profitto mensile + ROI • 2) BACK vs LAY mensile • 3) Equity cumulata (giorno per giorno)
-                </div>
-
-                @{
-                    var monthlyTotalJson = System.Text.Json.JsonSerializer.Serialize(
-                        Model.MonthlyTotal.Select(r => new { label = r.Label, profit = r.Profit, roi = r.RoiPct })
-                    );
-                    var monthlyBackLayJson = System.Text.Json.JsonSerializer.Serialize(new {
-                        labels = Model.MonthlyTotal.Select(r => r.Label).ToList(),
-                        back = Model.MonthlyBack.ToDictionary(r => r.Label, r => r.Profit),
-                        lay = Model.MonthlyLay.ToDictionary(r => r.Label, r => r.Profit)
-                    });
-                    var equityJson = System.Text.Json.JsonSerializer.Serialize(
-                        Model.Equity.Select(p => new { date = p.Date, cum = p.CumProfit })
-                    );
-                }
-
-                <div class="mb-3">
-                    <canvas id="chartMonthly" height="110"
-                            data-rows='@monthlyTotalJson'></canvas>
-                </div>
-
-                <div class="mb-3">
-                    <canvas id="chartBackLay" height="110"
-                            data-rows='@monthlyBackLayJson'></canvas>
-                </div>
-
-                <div>
-                    <canvas id="chartEquity" height="110"
-                            data-rows='@equityJson'></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabelle -->
-        <div class="card shadow-sm mt-3">
-            <div class="card-body">
-                <div class="fw-semibold mb-2">Dettaglio mensile (Totale)</div>
+                <div class="fw-semibold mb-2">Dettaglio mensile</div>
 
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
@@ -182,7 +286,7 @@
                 </div>
 
                 <div class="alert alert-secondary mt-3 mb-0">
-                    Nota: i dati sono la somma di tutti gli account connessi nel periodo selezionato, aggregati da listClearedOrders.
+                    Fonte: listClearedOrders (account selezionato).
                 </div>
             </div>
         </div>
@@ -190,7 +294,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 
     <script>
         function parseCanvasJson(id) {
@@ -201,36 +305,142 @@
             try { return JSON.parse(raw); } catch { return null; }
         }
 
-        (function () {
-            // 1) Mensile: Profit + ROI
-            const rowsMonthly = parseCanvasJson('chartMonthly');
-            if (rowsMonthly && rowsMonthly.length > 0) {
-                const labels = rowsMonthly.map(x => x.label);
-                const profits = rowsMonthly.map(x => x.profit);
-                const rois = rowsMonthly.map(x => x.roi);
+        // Baseline y=0
+        const zeroLinePlugin = {
+            id: 'zeroLine',
+            afterDraw(chart) {
+                const y = chart.scales?.y;
+                if (!y) return;
+                const y0 = y.getPixelForValue(0);
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(chartArea.left, y0);
+                ctx.lineTo(chartArea.right, y0);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
 
-                new Chart(document.getElementById('chartMonthly'), {
+        // Tema “pulito”
+        Chart.defaults.font.family = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial";
+        Chart.defaults.color = "rgba(33,37,41,.75)";
+        Chart.defaults.plugins.legend.labels.boxWidth = 10;
+        Chart.defaults.plugins.legend.labels.boxHeight = 10;
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 10;
+        Chart.defaults.interaction.mode = "index";
+        Chart.defaults.interaction.intersect = false;
+
+        function money(x) { return (Number(x) || 0).toFixed(2); }
+        function pct(x) { return (Number(x) || 0).toFixed(2) + "%"; }
+
+        function movingAverage(values, period) {
+            const res = [];
+            for (let i = 0; i < values.length; i++) {
+                let start = Math.max(0, i - period + 1);
+                let slice = values.slice(start, i + 1);
+                let avg = slice.reduce((a, b) => a + b, 0) / slice.length;
+                res.push(avg);
+            }
+            return res;
+        }
+
+        Chart.register(zeroLinePlugin);
+
+        (function () {
+            // 1) Profitto mensile (verde/rosso)
+            const monthly = parseCanvasJson('chartMonthlyProfit');
+            if (monthly && monthly.length > 0) {
+                const labels = monthly.map(x => x.label);
+                const profits = monthly.map(x => x.profit);
+                const stakes = monthly.map(x => x.stake);
+                const bets = monthly.map(x => x.bets);
+                const rois = monthly.map(x => x.roi);
+
+                const colors = profits.map(p => p >= 0 ? "rgba(25,135,84,0.85)" : "rgba(220,53,69,0.85)");
+
+                new Chart(document.getElementById('chartMonthlyProfit'), {
                     type: 'bar',
                     data: {
                         labels,
-                        datasets: [
-                            { label: 'Profitto', data: profits, yAxisID: 'yProfit' },
-                            { label: 'ROI %', data: rois, type: 'line', yAxisID: 'yRoi', tension: 0.25, pointRadius: 2 }
-                        ]
+                        datasets: [{
+                            label: 'Profitto',
+                            data: profits,
+                            backgroundColor: colors,
+                            borderRadius: 10,
+                            maxBarThickness: 40
+                        }]
                     },
                     options: {
-                        responsive: true,
                         maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => items?.[0]?.label ?? "",
+                                    label: (ctx) => ` Profitto: ${money(ctx.raw)}`,
+                                    afterBody: (items) => {
+                                        const i = items?.[0]?.dataIndex ?? 0;
+                                        return [
+                                            ` Stake: ${money(stakes[i])}`,
+                                            ` ROI: ${pct(rois[i])}`,
+                                            ` Bets: ${bets[i]}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
                         scales: {
-                            yProfit: { position: 'left', title: { display: true, text: 'Profitto' } },
-                            yRoi: { position: 'right', title: { display: true, text: 'ROI %' }, grid: { drawOnChartArea: false } }
+                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                            y: { title: { display: true, text: 'Profitto' } }
                         }
                     }
                 });
             }
 
-            // 2) Mensile: BACK vs LAY (profitto)
+            // 2) ROI mensile
+            const monthlyRoi = parseCanvasJson('chartMonthlyRoi');
+            if (monthlyRoi && monthlyRoi.length > 0) {
+                const labels = monthlyRoi.map(x => x.label);
+                const rois = monthlyRoi.map(x => x.roi);
+
+                new Chart(document.getElementById('chartMonthlyRoi'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'ROI %',
+                            data: rois,
+                            borderColor: "rgba(13,110,253,0.95)",
+                            backgroundColor: "rgba(13,110,253,0.15)",
+                            fill: true,
+                            tension: 0.25,
+                            pointRadius: 2
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` ROI: ${pct(ctx.raw)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                            y: { title: { display: true, text: 'ROI %' } }
+                        }
+                    }
+                });
+            }
+
+            // 3) BACK vs LAY mensile
             const backLay = parseCanvasJson('chartBackLay');
             if (backLay && backLay.labels && backLay.labels.length > 0) {
                 const labels = backLay.labels;
@@ -242,40 +452,143 @@
                     data: {
                         labels,
                         datasets: [
-                            { label: 'BACK Profitto', data: backProfit },
-                            { label: 'LAY Profitto', data: layProfit }
+                            { label: 'BACK', data: backProfit, backgroundColor: "rgba(32,201,151,0.75)", borderRadius: 10, maxBarThickness: 34 },
+                            { label: 'LAY', data: layProfit, backgroundColor: "rgba(255,193,7,0.75)", borderRadius: 10, maxBarThickness: 34 }
                         ]
                     },
                     options: {
-                        responsive: true,
                         maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            tooltip: {
+                                callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` }
+                            }
+                        },
                         scales: {
+                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
                             y: { title: { display: true, text: 'Profitto' } }
                         }
                     }
                 });
             }
 
-            // 3) Equity line (cumulata)
+            // 4) Daily profit + MA7
+            const daily = parseCanvasJson('chartDaily');
+            if (daily && daily.length > 0) {
+                const labels = daily.map(x => x.date);
+                const profits = daily.map(x => x.profit);
+                const ma7 = movingAverage(profits, 7);
+
+                const barColors = profits.map(p => p >= 0 ? "rgba(25,135,84,0.65)" : "rgba(220,53,69,0.65)");
+
+                new Chart(document.getElementById('chartDaily'), {
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                type: "bar",
+                                label: "Profitto giornaliero",
+                                data: profits,
+                                backgroundColor: barColors,
+                                borderRadius: 8,
+                                maxBarThickness: 22
+                            },
+                            {
+                                type: "line",
+                                label: "Media mobile (7)",
+                                data: ma7,
+                                borderColor: "rgba(13,110,253,0.95)",
+                                tension: 0.25,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                            y: { title: { display: true, text: 'Profitto' } }
+                        }
+                    }
+                });
+            }
+
+            // 5) Equity (area) + Drawdown
             const eq = parseCanvasJson('chartEquity');
             if (eq && eq.length > 0) {
                 const labels = eq.map(x => x.date);
                 const cum = eq.map(x => x.cum);
+                const dd = eq.map(x => x.dd);
 
                 new Chart(document.getElementById('chartEquity'), {
-                    type: 'line',
                     data: {
                         labels,
                         datasets: [
-                            { label: 'Equity (Profitto cumulato)', data: cum, tension: 0.25, pointRadius: 0 }
+                            {
+                                type: "line",
+                                label: "Equity",
+                                data: cum,
+                                borderColor: "rgba(13,110,253,0.95)",
+                                backgroundColor: "rgba(13,110,253,0.12)",
+                                fill: true,
+                                tension: 0.25,
+                                pointRadius: 0
+                            },
+                            {
+                                type: "line",
+                                label: "Drawdown",
+                                data: dd,
+                                borderColor: "rgba(220,53,69,0.75)",
+                                tension: 0.25,
+                                pointRadius: 0
+                            }
                         ]
                     },
                     options: {
-                        responsive: true,
                         maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } }
+                        },
                         scales: {
+                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                            y: { title: { display: true, text: 'Valore' } }
+                        }
+                    }
+                });
+            }
+
+            // Equity-only (tab)
+            const eqOnly = parseCanvasJson('chartEquityOnly');
+            if (eqOnly && eqOnly.length > 0) {
+                const labels = eqOnly.map(x => x.date);
+                const cum = eqOnly.map(x => x.cum);
+
+                new Chart(document.getElementById('chartEquityOnly'), {
+                    type: "line",
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: "Equity",
+                            data: cum,
+                            borderColor: "rgba(13,110,253,0.95)",
+                            backgroundColor: "rgba(13,110,253,0.12)",
+                            fill: true,
+                            tension: 0.25,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)}` } }
+                        },
+                        scales: {
+                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
                             y: { title: { display: true, text: 'Profitto cumulato' } }
                         }
                     }
