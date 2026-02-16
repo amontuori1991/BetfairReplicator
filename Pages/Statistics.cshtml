@@ -33,9 +33,20 @@
             background: #fff;
             box-shadow: 0 6px 20px rgba(0,0,0,.06);
         }
-        .stat-kpi .label { font-size: .78rem; color: #6c757d; }
-        .stat-kpi .value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
-        .stat-kpi .meta  { font-size: .78rem; color: #6c757d; margin-top: 6px; }
+ .stat-kpi .label { font-size: .78rem; color: #6c757d; }
+
+.stat-kpi .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #111827; /* default scuro */
+}
+
+.stat-kpi.profit-positive .value { color: #198754; }
+.stat-kpi.profit-negative .value { color: #dc3545; }
+
+.stat-kpi .meta { font-size: .78rem; color: #6c757d; margin-top: 6px; }
+
 
         .chart-card {
             border: 1px solid rgba(0,0,0,.06);
@@ -61,6 +72,12 @@
        @@media (max-width: 768px) {
             .chart-wrap { height: 260px; }
         }
+
+        /* ✅ Tabella: aumenta contrasto */
+.table { color: #111827; }
+.table thead th { color: #374151; font-weight: 600; }
+.table tbody td { color: #111827; }
+
     </style>
 
     @if (!string.IsNullOrWhiteSpace(Model.Error))
@@ -139,21 +156,21 @@ else
         <!-- KPI -->
         <div class="row g-3">
             <div class="col-12 col-md-4">
-                <div class="stat-kpi">
+                <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">Totale Profitto</div>
                     <div class="value">@Model.TotalProfit.ToString("0.00")</div>
                     <div class="meta">Stake: @Model.TotalStake.ToString("0.00") • ROI: @Model.TotalRoiPct.ToString("0.00")% • Bets: @Model.TotalBets</div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <div class="stat-kpi">
+               <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">BACK</div>
                     <div class="value">@Model.BackKpi.Profit.ToString("0.00")</div>
                     <div class="meta">Stake: @Model.BackKpi.Stake.ToString("0.00") • ROI: @Model.BackKpi.RoiPct.ToString("0.00")% • Bets: @Model.BackKpi.Bets</div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <div class="stat-kpi">
+                <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">LAY</div>
                     <div class="value">@Model.LayKpi.Profit.ToString("0.00")</div>
                     <div class="meta">Stake: @Model.LayKpi.Stake.ToString("0.00") • ROI: @Model.LayKpi.RoiPct.ToString("0.00")% • Bets: @Model.LayKpi.Bets</div>
@@ -327,7 +344,9 @@ else
 
         // Tema “pulito”
         Chart.defaults.font.family = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial";
-        Chart.defaults.color = "rgba(33,37,41,.75)";
+        Chart.defaults.color = "#111827";
+        Chart.defaults.scale.grid.color = "rgba(0,0,0,0.08)";
+Chart.defaults.scale.ticks.color = "#374151";
         Chart.defaults.plugins.legend.labels.boxWidth = 10;
         Chart.defaults.plugins.legend.labels.boxHeight = 10;
         Chart.defaults.plugins.tooltip.padding = 12;
