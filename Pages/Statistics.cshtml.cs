@@ -35,6 +35,8 @@ namespace BetfairReplicator.Pages
 
         // query
         [BindProperty(SupportsGet = true)]
+
+        public double? Bankroll { get; set; }
         public string? Account { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -57,6 +59,13 @@ namespace BetfairReplicator.Pages
         public double TotalStake { get; private set; }
         public int TotalBets { get; private set; }
         public double TotalRoiPct => TotalStake == 0 ? 0 : (TotalProfit / TotalStake) * 100.0;
+
+        public double StartingBankroll { get; private set; } // valore “usato” (deriva da Bankroll querystring)
+        public double TotalRoiBankrollPct => StartingBankroll <= 0 ? 0 : (TotalProfit / StartingBankroll) * 100.0;
+
+        public double BackRoiBankrollPct => StartingBankroll <= 0 ? 0 : (BackKpi.Profit / StartingBankroll) * 100.0;
+        public double LayRoiBankrollPct => StartingBankroll <= 0 ? 0 : (LayKpi.Profit / StartingBankroll) * 100.0;
+
 
         public SideKpi BackKpi { get; private set; } = new("BACK");
         public SideKpi LayKpi { get; private set; } = new("LAY");
@@ -90,6 +99,8 @@ namespace BetfairReplicator.Pages
 
             public string Label => new DateTime(Year, Month, 1).ToString("yyyy-MM");
             public double RoiPct => Stake == 0 ? 0 : (Profit / Stake) * 100.0;
+            public double RoiBankrollPct { get; set; } // (Profit / Bankroll) * 100
+
         }
 
         public sealed class DailyPoint
@@ -141,6 +152,10 @@ namespace BetfairReplicator.Pages
 
             FromUtcUsed = fromUtc;
             ToUtcUsed = toUtc;
+            // 1b) Bankroll inserito manualmente dall’utente (se non valido => 0, così ROI bankroll resta 0)
+            StartingBankroll = (Bankroll.HasValue && Bankroll.Value > 0)
+                ? Bankroll.Value
+                : 0;
 
             // 2) account collegati
             var accounts = await _accountStore.GetAllAsync();
@@ -221,9 +236,10 @@ namespace BetfairReplicator.Pages
             LayKpi.Bets = lay.Count;
 
             // 6) Mensile
-            MonthlyTotal = AggregateMonthly(normalized);
-            MonthlyBack = AggregateMonthly(back);
-            MonthlyLay = AggregateMonthly(lay);
+            MonthlyTotal = AggregateMonthly(normalized, StartingBankroll);
+            MonthlyBack = AggregateMonthly(back, StartingBankroll);
+            MonthlyLay = AggregateMonthly(lay, StartingBankroll);
+
 
             // 7) Giornaliero (profit)
             DailyProfit = BuildDailyProfit(normalized);
@@ -233,7 +249,8 @@ namespace BetfairReplicator.Pages
             MaxDrawdown = maxDd;
         }
 
-        private static List<MonthlyRow> AggregateMonthly(IEnumerable<NormalizedRow> list)
+        private static List<MonthlyRow> AggregateMonthly(IEnumerable<NormalizedRow> list, double startingBankroll)
+
         {
             return list
                 .GroupBy(x => new { x.SettledUtc.Year, x.SettledUtc.Month })
@@ -243,8 +260,11 @@ namespace BetfairReplicator.Pages
                     Month = g.Key.Month,
                     Profit = g.Sum(x => x.Profit),
                     Stake = g.Sum(x => x.Stake),
-                    Bets = g.Count()
+                    Bets = g.Count(),
+                    RoiBankrollPct = startingBankroll <= 0 ? 0 : (g.Sum(x => x.Profit) / startingBankroll) * 100.0
+
                 })
+
                 .OrderBy(x => x.Year).ThenBy(x => x.Month)
                 .ToList();
         }

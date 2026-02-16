@@ -171,14 +171,28 @@ else
                                max="@maxDate"
                                value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
                     </div>
+                    <div class="col-12 col-md-4">
+    <label class="form-label small text-muted mb-1">Bankroll iniziale (manuale)</label>
+    <input type="number"
+           class="form-control"
+           name="Bankroll"
+           step="0.01"
+           min="0"
+           value="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" />
+    <div class="form-text">Opzionale. Se vuoto o 0 → ROI Bankroll = 0.</div>
+</div>
 
                     <div class="col-12 d-flex gap-2 mt-1">
                         <button class="btn btn-primary w-100" type="submit">Applica</button>
                         <a class="btn btn-outline-secondary w-100"
-                           asp-page="/Statistics"
-                           asp-route-Account="@Model.AccountUsed"
-                           asp-route-From="@minDate"
-                           asp-route-To="@maxDate">Reset</a>
+   asp-page="/Statistics"
+   asp-route-Account="@Model.AccountUsed"
+   asp-route-From="@minDate"
+   asp-route-To="@maxDate"
+   asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
+   Reset
+</a>
+
                     </div>
                 </form>
 
@@ -194,21 +208,39 @@ else
                 <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">Totale Profitto</div>
                     <div class="value">@Model.TotalProfit.ToString("0.00")</div>
-                    <div class="meta">Stake: @Model.TotalStake.ToString("0.00") • ROI: @Model.TotalRoiPct.ToString("0.00")% • Bets: @Model.TotalBets</div>
+                    <div class="meta">
+    Stake: @Model.TotalStake.ToString("0.00")
+    • ROI Stake: @Model.TotalRoiPct.ToString("0.00")%
+    • ROI Bankroll: @Model.TotalRoiBankrollPct.ToString("0.00")%
+    • Bets: @Model.TotalBets
+</div>
+
                 </div>
             </div>
             <div class="col-12 col-md-4">
                <div class="stat-kpi @(Model.BackKpi.Profit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">BACK</div>
                     <div class="value">@Model.BackKpi.Profit.ToString("0.00")</div>
-                    <div class="meta">Stake: @Model.BackKpi.Stake.ToString("0.00") • ROI: @Model.BackKpi.RoiPct.ToString("0.00")% • Bets: @Model.BackKpi.Bets</div>
+                    <div class="meta">
+    Stake: @Model.BackKpi.Stake.ToString("0.00")
+    • ROI Stake: @Model.BackKpi.RoiPct.ToString("0.00")%
+    • ROI Bankroll: @Model.BackRoiBankrollPct.ToString("0.00")%
+    • Bets: @Model.BackKpi.Bets
+</div>
+
                 </div>
             </div>
             <div class="col-12 col-md-4">
                 <div class="stat-kpi @(Model.LayKpi.Profit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">LAY</div>
                     <div class="value">@Model.LayKpi.Profit.ToString("0.00")</div>
-                    <div class="meta">Stake: @Model.LayKpi.Stake.ToString("0.00") • ROI: @Model.LayKpi.RoiPct.ToString("0.00")% • Bets: @Model.LayKpi.Bets</div>
+                    <div class="meta">
+    Stake: @Model.LayKpi.Stake.ToString("0.00")
+    • ROI Stake: @Model.LayKpi.RoiPct.ToString("0.00")%
+    • ROI Bankroll: @Model.LayRoiBankrollPct.ToString("0.00")%
+    • Bets: @Model.LayKpi.Bets
+</div>
+
                 </div>
             </div>
         </div>
@@ -309,7 +341,9 @@ else
                                 <th>Mese</th>
                                 <th class="text-end">Profitto</th>
                                 <th class="text-end">Stake</th>
-                                <th class="text-end">ROI %</th>
+                                <th class="text-end">ROI Stake %</th>
+<th class="text-end">ROI Bankroll %</th>
+
                                 <th class="text-end">Bets</th>
                             </tr>
                         </thead>
@@ -332,6 +366,8 @@ else
 
                                         <td class="text-end">@r.Stake.ToString("0.00")</td>
                                         <td class="text-end">@r.RoiPct.ToString("0.00")%</td>
+<td class="text-end">@r.RoiBankrollPct.ToString("0.00")%</td>
+
                                         <td class="text-end">@r.Bets</td>
                                     </tr>
                                 }
