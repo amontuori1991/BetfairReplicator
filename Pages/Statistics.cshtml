@@ -195,6 +195,30 @@
 .alert-secondary {
     color: #111827;
 }
+/* =========================
+   FILTRI: allineamento + leggibilità
+   ========================= */
+
+.ns-label{
+    color: #111827 !important;   /* nero leggibile */
+    font-weight: 700;
+    font-size: .85rem;
+}
+
+.ns-help{
+    color: #374151 !important;   /* grigio scuro leggibile */
+    font-size: .82rem;
+}
+
+.ns-input{
+    border-radius: 12px;
+    min-height: 42px;
+}
+
+.ns-btn{
+    min-height: 42px;
+    border-radius: 12px;
+}
 
     </style>
 
@@ -226,61 +250,62 @@ else
     <!-- Filtri -->
     <div class="card shadow-sm mb-3">
             <div class="card-body">
-                <form method="get" class="row g-2 align-items-end">
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small text-muted mb-1">Account</label>
-                        <select class="form-select" name="Account">
-                            @foreach (var a in Model.ConnectedAccounts)
-                            {
-                                <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
-                            }
-                        </select>
-                        <div class="form-text">Default: primo account collegato.</div>
-                    </div>
+                <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label ns-label mb-1">Account</label>
+        <select class="form-select ns-input" name="Account">
+            @foreach (var a in Model.ConnectedAccounts)
+            {
+                <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
+            }
+        </select>
+        <div class="form-text ns-help">Default: primo account collegato.</div>
+    </div>
 
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small text-muted mb-1">Da (min @minDate)</label>
-                        <input type="date" class="form-control"
-                               name="From"
-                               min="@minDate"
-                               max="@maxDate"
-                               value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
-                    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label ns-label mb-1">Da (min @minDate)</label>
+        <input type="date" class="form-control ns-input"
+               name="From"
+               min="@minDate"
+               max="@maxDate"
+               value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
+    </div>
 
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small text-muted mb-1">A (max oggi)</label>
-                        <input type="date" class="form-control"
-                               name="To"
-                               min="@minDate"
-                               max="@maxDate"
-                               value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <div class="col-12 col-md-3">
-    <label class="form-label small text-muted mb-1">Bankroll iniziale</label>
-    <input type="number"
-           class="form-control"
-           name="Bankroll"
-           step="0.01"
-           min="0"
-           placeholder="es. 500.00"
-           value="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" />
-    <div class="form-text">Opzionale. Se vuoto → ROI Bankroll = 0.</div>
-</div>
+    <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label ns-label mb-1">A (max oggi)</label>
+        <input type="date" class="form-control ns-input"
+               name="To"
+               min="@minDate"
+               max="@maxDate"
+               value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
+    </div>
 
+    <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label ns-label mb-1">Bankroll iniziale</label>
+        <input type="number"
+               class="form-control ns-input"
+               name="Bankroll"
+               step="0.01"
+               min="0"
+               placeholder="es. 500.00"
+               value="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" />
+        <div class="form-text ns-help">Opzionale. Se vuoto → ROI Bankroll = 0.</div>
+    </div>
 
-                    <div class="col-12 d-flex gap-2 mt-1">
-                        <button class="btn btn-primary w-100" type="submit">Applica</button>
-                        <a class="btn btn-outline-secondary w-100"
-   asp-page="/Statistics"
-   asp-route-Account="@Model.AccountUsed"
-   asp-route-From="@minDate"
-   asp-route-To="@maxDate"
-   asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
-   Reset
-</a>
+    <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary flex-fill ns-btn" type="submit">Applica</button>
 
-                    </div>
-                </form>
+        <a class="btn btn-outline-secondary flex-fill ns-btn"
+           asp-page="/Statistics"
+           asp-route-Account="@Model.AccountUsed"
+           asp-route-From="@minDate"
+           asp-route-To="@maxDate"
+           asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
+            Reset
+        </a>
+    </div>
+</form>
+
 
                 <div class="small text-muted mt-2">
                     Periodo usato (UTC): <strong>@Model.FromUtcUsed.ToString("yyyy-MM-dd")</strong> → <strong>@Model.ToUtcUsed.ToString("yyyy-MM-dd")</strong>
