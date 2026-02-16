@@ -73,10 +73,45 @@
             .chart-wrap { height: 260px; }
         }
 
-        /* ✅ Tabella: aumenta contrasto */
-.table { color: #111827; }
-.table thead th { color: #374151; font-weight: 600; }
-.table tbody td { color: #111827; }
+/* =========================
+   TABELLA DETTAGLIO MENSILE
+   ========================= */
+
+/* testo base chiaro */
+.table {
+    color: #e5e7eb;
+}
+
+/* header */
+.table thead th {
+    color: #9ca3af;
+    font-weight: 600;
+    border-bottom-color: rgba(255,255,255,0.15);
+}
+
+/* celle */
+.table tbody td {
+    color: #f9fafb;
+    border-top-color: rgba(255,255,255,0.08);
+}
+.table > :not(caption) > * > * {
+    border-color: rgba(255,255,255,0.08);
+}
+
+/* hover riga (opzionale ma bello) */
+.table tbody tr:hover {
+    background-color: rgba(255,255,255,0.03);
+}
+.table td.profit-positive {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.table td.profit-negative {
+    color: #ef4444;
+    font-weight: 600;
+}
+
 
     </style>
 
@@ -163,14 +198,14 @@ else
                 </div>
             </div>
             <div class="col-12 col-md-4">
-               <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
+               <div class="stat-kpi @(Model.BackKpi.Profit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">BACK</div>
                     <div class="value">@Model.BackKpi.Profit.ToString("0.00")</div>
                     <div class="meta">Stake: @Model.BackKpi.Stake.ToString("0.00") • ROI: @Model.BackKpi.RoiPct.ToString("0.00")% • Bets: @Model.BackKpi.Bets</div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
+                <div class="stat-kpi @(Model.LayKpi.Profit >= 0 ? "profit-positive" : "profit-negative")">
                     <div class="label">LAY</div>
                     <div class="value">@Model.LayKpi.Profit.ToString("0.00")</div>
                     <div class="meta">Stake: @Model.LayKpi.Stake.ToString("0.00") • ROI: @Model.LayKpi.RoiPct.ToString("0.00")% • Bets: @Model.LayKpi.Bets</div>
@@ -291,7 +326,10 @@ else
                                 {
                                     <tr>
                                         <td>@r.Label</td>
-                                        <td class="text-end">@r.Profit.ToString("0.00")</td>
+                                        <td class="text-end @(r.Profit >= 0 ? "profit-positive" : "profit-negative")">
+    @r.Profit.ToString("0.00")
+</td>
+
                                         <td class="text-end">@r.Stake.ToString("0.00")</td>
                                         <td class="text-end">@r.RoiPct.ToString("0.00")%</td>
                                         <td class="text-end">@r.Bets</td>
