@@ -119,6 +119,53 @@
     font-weight: 700;
 }
 
+/* =========================
+   TABELLA CHIARA SU CARD SCURA
+   ========================= */
+
+.table-light-wrap {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 6px;
+}
+
+/* testo leggibile */
+.table-light-wrap .table {
+    color: #111827;
+}
+
+/* header */
+.table-light-wrap thead th {
+    color: #374151;
+    font-weight: 700;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* celle */
+.table-light-wrap tbody td {
+    color: #111827;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* hover */
+.table-light-wrap tbody tr:hover {
+    background-color: #f3f4f6;
+}
+
+/* profitto */
+.table-light-wrap td.profit-positive {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+.table-light-wrap td.profit-negative {
+    color: #dc2626;
+    font-weight: 700;
+}
+.table-light-wrap tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
 
     </style>
 
@@ -344,7 +391,7 @@ else
             <div class="card-body">
                 <div class="fw-semibold mb-2">Dettaglio mensile</div>
 
-                <div class="table-responsive">
+                <div class="table-responsive table-light-wrap">
                     <table class="table table-sm align-middle mb-0">
                         <thead>
                             <tr>
