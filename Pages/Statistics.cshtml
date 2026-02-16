@@ -219,6 +219,47 @@
     min-height: 42px;
     border-radius: 12px;
 }
+/* =========================
+   FILTRI (solo questa card)
+   ========================= */
+
+.ns-filters-card .form-label{
+    color: #f9fafb !important;   /* chiaro su sfondo scuro */
+    font-weight: 700;
+    font-size: .85rem;
+    margin-bottom: .35rem;
+}
+
+.ns-filters-card .form-text{
+    color: rgba(249,250,251,.75) !important; /* chiaro ma meno intenso */
+    font-size: .82rem;
+}
+
+/* input/select CHIARI e leggibili (override tema scuro) */
+.ns-filters-card .form-control,
+.ns-filters-card .form-select{
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+    border-radius: 12px;
+    min-height: 44px;
+}
+
+/* placeholder */
+.ns-filters-card .form-control::placeholder{
+    color: #6b7280 !important;
+}
+
+/* icone calendario e freccia select (se il tema le scurisce) */
+.ns-filters-card input[type="date"]{
+    color-scheme: light; /* forza rendering chiaro del date picker */
+}
+
+/* bottoni coerenti */
+.ns-filters-card .btn{
+    min-height: 44px;
+    border-radius: 12px;
+}
 
     </style>
 
@@ -248,23 +289,23 @@ else
     );
 
     <!-- Filtri -->
-    <div class="card shadow-sm mb-3">
+    <div class="card shadow-sm mb-3 ns-filters-card">
             <div class="card-body">
-                <form method="get" class="row g-3 align-items-end">
+ <form method="get" class="row g-3">
     <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label ns-label mb-1">Account</label>
-        <select class="form-select ns-input" name="Account">
+        <label class="form-label">Account</label>
+        <select class="form-select" name="Account">
             @foreach (var a in Model.ConnectedAccounts)
             {
                 <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
             }
         </select>
-        <div class="form-text ns-help">Default: primo account collegato.</div>
+        <div class="form-text">Default: primo account collegato.</div>
     </div>
 
     <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label ns-label mb-1">Da (min @minDate)</label>
-        <input type="date" class="form-control ns-input"
+        <label class="form-label">Da (min @minDate)</label>
+        <input type="date" class="form-control"
                name="From"
                min="@minDate"
                max="@maxDate"
@@ -272,8 +313,8 @@ else
     </div>
 
     <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label ns-label mb-1">A (max oggi)</label>
-        <input type="date" class="form-control ns-input"
+        <label class="form-label">A (max oggi)</label>
+        <input type="date" class="form-control"
                name="To"
                min="@minDate"
                max="@maxDate"
@@ -281,30 +322,34 @@ else
     </div>
 
     <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label ns-label mb-1">Bankroll iniziale</label>
+        <label class="form-label">Bankroll iniziale</label>
         <input type="number"
-               class="form-control ns-input"
+               class="form-control"
                name="Bankroll"
                step="0.01"
                min="0"
                placeholder="es. 500.00"
                value="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" />
-        <div class="form-text ns-help">Opzionale. Se vuoto → ROI Bankroll = 0.</div>
+        <div class="form-text">Opzionale. Se vuoto → ROI Bankroll = 0.</div>
     </div>
 
-    <div class="col-12 d-flex gap-2">
-        <button class="btn btn-primary flex-fill ns-btn" type="submit">Applica</button>
+    <!-- BOTTONI su riga separata -->
+    <div class="col-12">
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary flex-fill" type="submit">Applica</button>
 
-        <a class="btn btn-outline-secondary flex-fill ns-btn"
-           asp-page="/Statistics"
-           asp-route-Account="@Model.AccountUsed"
-           asp-route-From="@minDate"
-           asp-route-To="@maxDate"
-           asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
-            Reset
-        </a>
+            <a class="btn btn-outline-secondary flex-fill"
+               asp-page="/Statistics"
+               asp-route-Account="@Model.AccountUsed"
+               asp-route-From="@minDate"
+               asp-route-To="@maxDate"
+               asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
+                Reset
+            </a>
+        </div>
     </div>
 </form>
+
 
 
                 <div class="small text-muted mt-2">
