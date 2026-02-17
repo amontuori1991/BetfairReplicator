@@ -260,6 +260,85 @@
     min-height: 44px;
     border-radius: 12px;
 }
+/* =========================
+   CALENDARIO GIORNALIERO
+   ========================= */
+.bf-cal{
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 16px;
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.06);
+}
+
+.bf-cal-head{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    padding: 6px 6px 10px 6px;
+    color: #6b7280;
+    font-weight: 700;
+    font-size: .85rem;
+    text-align: center;
+}
+
+.bf-cal-grid{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    padding: 6px;
+}
+
+.bf-day{
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,.06);
+    background: #f9fafb;
+    min-height: 62px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.bf-day.out{
+    opacity: .35;
+}
+
+.bf-day .dnum{
+    font-weight: 800;
+    color: #111827;
+    font-size: .95rem;
+    line-height: 1;
+}
+
+.bf-day .amt{
+    font-weight: 800;
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.bf-day.pos{
+    background: rgba(25,135,84,0.10);
+    border-color: rgba(25,135,84,0.18);
+}
+
+.bf-day.pos .amt{
+    color: #198754;
+}
+
+.bf-day.neg{
+    background: rgba(220,53,69,0.10);
+    border-color: rgba(220,53,69,0.18);
+}
+
+.bf-day.neg .amt{
+    color: #dc3545;
+}
+
+@@media (max-width: 768px){
+    .bf-day{ min-height: 58px; }
+    .bf-day .amt{ font-size: 1.0rem; }
+}
 
     </style>
 
@@ -472,13 +551,47 @@ else
                     </div>
                 </div>
 
-                <!-- GIORNALIERO -->
-                <div class="tab-pane fade" id="pane-day" role="tabpanel">
-                    <div class="chart-title small mb-2">Profitto giornaliero + media mobile (7)</div>
-                    <div class="chart-wrap">
-                        <canvas id="chartDaily" data-rows='@dailyJson'></canvas>
-                    </div>
-                </div>
+<!-- GIORNALIERO (CALENDARIO) -->
+<div class="tab-pane fade" id="pane-day" role="tabpanel">
+
+    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+        <div>
+            <div class="chart-title small mb-0">Calendario profitto (giornaliero)</div>
+            <div class="chart-sub">Verde = profitto • Rosso = perdita • Clicca le frecce per cambiare mese.</div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="calPrev">‹</button>
+            <div class="fw-semibold" id="calLabel">—</div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="calNext">›</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="calToday">Oggi</button>
+        </div>
+    </div>
+
+    <div class="bf-cal">
+        <div class="bf-cal-head">
+            <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
+        </div>
+        <div class="bf-cal-grid" id="calGrid"></div>
+    </div>
+
+    <div class="row g-2 mt-3">
+        <div class="col-12 col-md-6">
+            <div class="stat-kpi" id="calProfitCard">
+                <div class="label">Profitto del mese</div>
+                <div class="value" id="calMonthProfit">0.00€</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="stat-kpi">
+                <div class="label">Scommesse del mese</div>
+                <div class="value" id="calMonthBets">0</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 
                 <!-- EQUITY -->
                 <div class="tab-pane fade" id="pane-equity" role="tabpanel">
@@ -654,316 +767,318 @@ form.submit();
             }
         });
     })();
+    (function () {
+
+    // stato calendario
+    let calYear = null;
+    let calMonth = null; // 1..12
+    let calLoaded = false;
+
+    const tabBtn = document.getElementById('tab-day');
+    const grid = document.getElementById('calGrid');
+    const label = document.getElementById('calLabel');
+    const btnPrev = document.getElementById('calPrev');
+    const btnNext = document.getElementById('calNext');
+    const btnToday = document.getElementById('calToday');
+
+    const monthProfitEl = document.getElementById('calMonthProfit');
+    const monthBetsEl = document.getElementById('calMonthBets');
+    const profitCard = document.getElementById('calProfitCard');
+
+    const accountSelect = document.getElementById('accountSelect');
+
+    if (!grid || !label || !btnPrev || !btnNext || !btnToday || !accountSelect) return;
+
+    function moneyEur(x){
+        const v = Number(x || 0);
+        const sign = v < 0 ? "-" : "";
+        return sign + Math.abs(v).toFixed(2) + "€";
+    }
+
+    function startOfCurrentRomeMonth(){
+        const now = new Date();
+        return { y: now.getFullYear(), m: now.getMonth() + 1 };
+    }
+
+    // inizializza: mese corrente
+    const init = startOfCurrentRomeMonth();
+    calYear = init.y;
+    calMonth = init.m;
+
+    async function loadCalendar(){
+        const acc = accountSelect.value || "";
+        if (!acc) return;
+
+        const url = `${window.location.pathname}?handler=Calendar&account=${encodeURIComponent(acc)}&year=${calYear}&month=${calMonth}`;
+        const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+
+        if (!data || !data.ok){
+            label.textContent = "Calendario non disponibile";
+            grid.innerHTML = `<div class="text-muted small">${(data && data.error) ? data.error : "Errore caricamento calendario"}</div>`;
+            return;
+        }
+
+        renderCalendar(data);
+        calLoaded = true;
+    }
+
+    function renderCalendar(data){
+        label.textContent = data.label || `${data.month}/${data.year}`;
+
+        const y = data.year;
+        const m = data.month; // 1..12
+        const days = data.days || [];
+
+        // riepilogo mese
+        const mp = Number(data.monthProfit || 0);
+        monthProfitEl.textContent = moneyEur(mp);
+        monthBetsEl.textContent = String(data.monthBets || 0);
+
+        // color profit card (come KPI)
+        profitCard.classList.remove("profit-positive", "profit-negative");
+        profitCard.classList.add(mp >= 0 ? "profit-positive" : "profit-negative");
+
+        // calcolo offset (Lunedì = 0)
+        const first = new Date(y, m - 1, 1);
+        const jsDay = first.getDay(); // 0=Dom .. 6=Sab
+        const offset = (jsDay + 6) % 7; // lun=0 ... dom=6
+
+        const daysInMonth = new Date(y, m, 0).getDate();
+
+        // giorni mese precedente per riempire
+        const prevDays = new Date(y, m - 1, 0).getDate();
+
+        // build 42 celle (6 settimane) come in app
+        const cells = [];
+        for (let i=0;i<42;i++){
+            const d = i - offset + 1;
+
+            if (d < 1){
+                cells.push({ out:true, day: prevDays + d, profit:null });
+            } else if (d > daysInMonth){
+                cells.push({ out:true, day: d - daysInMonth, profit:null });
+            } else {
+                const row = days.find(x => Number(x.day) === d) || { profit: 0, bets: 0 };
+                cells.push({ out:false, day:d, profit:Number(row.profit||0) });
+            }
+        }
+
+        grid.innerHTML = cells.map(c => {
+            const cls = c.out ? "bf-day out" : (c.profit > 0.0001 ? "bf-day pos" : (c.profit < -0.0001 ? "bf-day neg" : "bf-day"));
+            const amt = c.out ? "" : moneyEur(c.profit);
+            return `<div class="${cls}">
+                        <div class="dnum">${c.day}</div>
+                        <div class="amt">${amt}</div>
+                    </div>`;
+        }).join("");
+    }
+
+    function prevMonth(){
+        calMonth--;
+        if (calMonth < 1){ calMonth = 12; calYear--; }
+        loadCalendar();
+    }
+
+    function nextMonth(){
+        calMonth++;
+        if (calMonth > 12){ calMonth = 1; calYear++; }
+        loadCalendar();
+    }
+
+    function goToday(){
+        const t = startOfCurrentRomeMonth();
+        calYear = t.y;
+        calMonth = t.m;
+        loadCalendar();
+    }
+
+    btnPrev.addEventListener('click', prevMonth);
+    btnNext.addEventListener('click', nextMonth);
+    btnToday.addEventListener('click', goToday);
+
+    // carico quando apro il tab "Giornaliero" la prima volta
+    tabBtn?.addEventListener('shown.bs.tab', () => {
+        if (!calLoaded) loadCalendar();
+    });
+
+    // se la pagina atterra già sul tab giornaliero (o vuoi caricarlo sempre)
+    // lo carico subito per non aspettare il click
+    loadCalendar();
+
+})();
 
 
-        (function () {
-            // 1) Profitto mensile (verde/rosso)
-            const monthly = parseCanvasJson('chartMonthlyProfit');
-            if (monthly && monthly.length > 0) {
-                const labels = monthly.map(x => x.label);
-                const profits = monthly.map(x => x.profit);
-                const stakes = monthly.map(x => x.stake);
-                const bets = monthly.map(x => x.bets);
-                const rois = monthly.map(x => x.roi);
+(function () {
+    // 1) Profitto mensile (verde/rosso)
+    const monthly = parseCanvasJson('chartMonthlyProfit');
+    if (monthly && monthly.length > 0) {
+        const labels = monthly.map(x => x.label);
+        const profits = monthly.map(x => x.profit);
+        const stakes = monthly.map(x => x.stake);
+        const bets = monthly.map(x => x.bets);
+        const rois = monthly.map(x => x.roi);
 
-                const colors = profits.map(p => p >= 0 ? "rgba(25,135,84,0.85)" : "rgba(220,53,69,0.85)");
+        const colors = profits.map(p => p >= 0 ? "rgba(25,135,84,0.85)" : "rgba(220,53,69,0.85)");
 
-                new Chart(document.getElementById('chartMonthlyProfit'), {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'Profitto',
-                            data: profits,
-                            backgroundColor: colors,
-                            borderRadius: 10,
-                            maxBarThickness: 40
-                        }]
+        new Chart(document.getElementById('chartMonthlyProfit'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Profitto',
+                    data: profits,
+                    backgroundColor: colors,
+                    borderRadius: 10,
+                    maxBarThickness: 40
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => items?.[0]?.label ?? "",
+                            label: (ctx) => ` Profitto: ${money(ctx.raw)}`,
+                            afterBody: (items) => {
+                                const i = items?.[0]?.dataIndex ?? 0;
+                                const roiBankroll = (monthly[i]?.roiBankroll ?? 0);
+                                return [
+                                    ` Stake: ${money(stakes[i])}`,
+                                    ` ROI Stake: ${pct(rois[i])}`,
+                                    ` ROI Bankroll: ${pct(roiBankroll)}`,
+                                    ` Bets: ${bets[i]}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            callback: (value, index) => shortMonthLabel(labels[index])
+                        }
                     },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    title: (items) => items?.[0]?.label ?? "",
-                                    label: (ctx) => ` Profitto: ${money(ctx.raw)}`,
-                                    afterBody: (items) => {
-    const i = items?.[0]?.dataIndex ?? 0;
-    const roiBankroll = (monthly[i]?.roiBankroll ?? 0);
-    return [
-        ` Stake: ${money(stakes[i])}`,
-        ` ROI Stake: ${pct(rois[i])}`,
-        ` ROI Bankroll: ${pct(roiBankroll)}`,
-        ` Bets: ${bets[i]}`
-    ];
+                    y: { title: { display: true, text: 'Profitto' } }
+                }
+            }
+        });
+    }
+
+    // 2) ROI mensile
+    const monthlyRoi = parseCanvasJson('chartMonthlyRoi');
+    if (monthlyRoi && monthlyRoi.length > 0) {
+        const labels = monthlyRoi.map(x => x.label);
+        const rois = monthlyRoi.map(x => x.roi);
+
+        new Chart(document.getElementById('chartMonthlyRoi'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'ROI %',
+                    data: rois,
+                    borderColor: "rgba(13,110,253,0.95)",
+                    backgroundColor: "rgba(13,110,253,0.15)",
+                    fill: true,
+                    tension: 0.25,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` ROI: ${pct(ctx.raw)}` } }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            callback: (value, index) => shortMonthLabel(labels[index])
+                        }
+                    },
+                    y: { title: { display: true, text: 'ROI %' } }
+                }
+            }
+        });
+    }
+
+    // 3) BACK vs LAY mensile
+    const backLay = parseCanvasJson('chartBackLay');
+    if (backLay && backLay.labels && backLay.labels.length > 0) {
+        const labels = backLay.labels;
+        const backProfit = labels.map(l => (backLay.back && backLay.back[l] != null) ? backLay.back[l] : 0);
+        const layProfit = labels.map(l => (backLay.lay && backLay.lay[l] != null) ? backLay.lay[l] : 0);
+
+        new Chart(document.getElementById('chartBackLay'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'BACK', data: backProfit, backgroundColor: "rgba(32,201,151,0.75)", borderRadius: 10, maxBarThickness: 34 },
+                    { label: 'LAY', data: layProfit, backgroundColor: "rgba(255,193,7,0.75)", borderRadius: 10, maxBarThickness: 34 }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            callback: (value, index) => shortMonthLabel(labels[index])
+                        }
+                    },
+                    y: { title: { display: true, text: 'Profitto' } }
+                }
+            }
+        });
+    }
+
+    // 5) Equity (area) + Drawdown
+    const eq = parseCanvasJson('chartEquity');
+    if (eq && eq.length > 0) {
+        const labels = eq.map(x => x.date);
+        const cum = eq.map(x => x.cum);
+        const dd = eq.map(x => x.dd);
+
+        new Chart(document.getElementById('chartEquity'), {
+            data: {
+                labels,
+                datasets: [
+                    { type: "line", label: "Equity", data: cum, borderColor: "rgba(13,110,253,0.95)", backgroundColor: "rgba(13,110,253,0.12)", fill: true, tension: 0.25, pointRadius: 0 },
+                    { type: "line", label: "Drawdown", data: dd, borderColor: "rgba(220,53,69,0.75)", tension: 0.25, pointRadius: 0 }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } } },
+                scales: {
+                    x: {
+                        ticks: {
+                            display: !isMobile,
+                            maxRotation: 90,
+                            minRotation: 90,
+                            autoSkip: true,
+                            maxTicksLimit: 8,
+                            callback: (value, index) => shortDayLabel(labels[index])
+                        }
+                    },
+                    y: { title: { display: true, text: 'Valore' } }
+                }
+            }
+        });
+        </script>
 }
 
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-    ticks: {
-        maxRotation: 0,
-        autoSkip: true,
-        maxTicksLimit: 10,
-        callback: (value, index) => shortMonthLabel(labels[index])
-
-    }
-},
-
-                            y: { title: { display: true, text: 'Profitto' } }
-                        }
-                    }
-                });
-            }
-
-            // 2) ROI mensile
-            const monthlyRoi = parseCanvasJson('chartMonthlyRoi');
-            if (monthlyRoi && monthlyRoi.length > 0) {
-                const labels = monthlyRoi.map(x => x.label);
-                const rois = monthlyRoi.map(x => x.roi);
-
-                new Chart(document.getElementById('chartMonthlyRoi'), {
-                    type: 'line',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'ROI %',
-                            data: rois,
-                            borderColor: "rgba(13,110,253,0.95)",
-                            backgroundColor: "rgba(13,110,253,0.15)",
-                            fill: true,
-                            tension: 0.25,
-                            pointRadius: 2
-                        }]
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => ` ROI: ${pct(ctx.raw)}`
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-    ticks: {
-        maxRotation: 0,
-        autoSkip: true,
-        maxTicksLimit: 10,
-        callback: (value, index) => shortMonthLabel(labels[index])
-
-    }
-},
-
-                            y: { title: { display: true, text: 'ROI %' } }
-                        }
-                    }
-                });
-            }
-
-            // 3) BACK vs LAY mensile
-            const backLay = parseCanvasJson('chartBackLay');
-            if (backLay && backLay.labels && backLay.labels.length > 0) {
-                const labels = backLay.labels;
-                const backProfit = labels.map(l => (backLay.back && backLay.back[l] != null) ? backLay.back[l] : 0);
-                const layProfit = labels.map(l => (backLay.lay && backLay.lay[l] != null) ? backLay.lay[l] : 0);
-
-                new Chart(document.getElementById('chartBackLay'), {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [
-                            { label: 'BACK', data: backProfit, backgroundColor: "rgba(32,201,151,0.75)", borderRadius: 10, maxBarThickness: 34 },
-                            { label: 'LAY', data: layProfit, backgroundColor: "rgba(255,193,7,0.75)", borderRadius: 10, maxBarThickness: 34 }
-                        ]
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: {
-                                callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` }
-                            }
-                        },
-                        scales: {
-                            x: {
-    ticks: {
-        maxRotation: 0,
-        autoSkip: true,
-        maxTicksLimit: 10,
-        callback: (value, index) => shortMonthLabel(labels[index])
-
-    }
-},
-
-                            y: { title: { display: true, text: 'Profitto' } }
-                        }
-                    }
-                });
-            }
-
-            // 4) Daily profit + MA7
-            const daily = parseCanvasJson('chartDaily');
-            if (daily && daily.length > 0) {
-                const labels = daily.map(x => x.date);
-                const profits = daily.map(x => x.profit);
-                const ma7 = movingAverage(profits, 7);
-
-                const barColors = profits.map(p => p >= 0 ? "rgba(25,135,84,0.65)" : "rgba(220,53,69,0.65)");
-
-                new Chart(document.getElementById('chartDaily'), {
-                    data: {
-                        labels,
-                        datasets: [
-                            {
-                                type: "bar",
-                                label: "Profitto giornaliero",
-                                data: profits,
-                                backgroundColor: barColors,
-                                borderRadius: 8,
-                                maxBarThickness: 22
-                            },
-                            {
-                                type: "line",
-                                label: "Media mobile (7)",
-                                data: ma7,
-                                borderColor: "rgba(13,110,253,0.95)",
-                                tension: 0.25,
-                                pointRadius: 0
-                            }
-                        ]
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: {
-                                callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` }
-                            }
-                        },
-                        scales: {
-                            x: {
-    ticks: {
-        display: !isMobile,              // su mobile NASCOSTO
-        maxRotation: 90,
-        minRotation: 90,
-        autoSkip: true,
-        maxTicksLimit: 8,
-        callback: (value, index) => shortDayLabel(labels[index])
-
-    }
-},
-
-                            y: { title: { display: true, text: 'Profitto' } }
-                        }
-                    }
-                });
-            }
-
-            // 5) Equity (area) + Drawdown
-            const eq = parseCanvasJson('chartEquity');
-            if (eq && eq.length > 0) {
-                const labels = eq.map(x => x.date);
-                const cum = eq.map(x => x.cum);
-                const dd = eq.map(x => x.dd);
-
-                new Chart(document.getElementById('chartEquity'), {
-                    data: {
-                        labels,
-                        datasets: [
-                            {
-                                type: "line",
-                                label: "Equity",
-                                data: cum,
-                                borderColor: "rgba(13,110,253,0.95)",
-                                backgroundColor: "rgba(13,110,253,0.12)",
-                                fill: true,
-                                tension: 0.25,
-                                pointRadius: 0
-                            },
-                            {
-                                type: "line",
-                                label: "Drawdown",
-                                data: dd,
-                                borderColor: "rgba(220,53,69,0.75)",
-                                tension: 0.25,
-                                pointRadius: 0
-                            }
-                        ]
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } }
-                        },
-                        scales: {
-                            x: {
-    ticks: {
-        display: !isMobile,              // su mobile NASCOSTO
-        maxRotation: 90,
-        minRotation: 90,
-        autoSkip: true,
-        maxTicksLimit: 8,
-        callback: (value, index) => shortDayLabel(labels[index])
-
-    }
-},
-
-                            y: { title: { display: true, text: 'Valore' } }
-                        }
-                    }
-                });
-            }
-
-            // Equity-only (tab)
-            const eqOnly = parseCanvasJson('chartEquityOnly');
-            if (eqOnly && eqOnly.length > 0) {
-                const labels = eqOnly.map(x => x.date);
-                const cum = eqOnly.map(x => x.cum);
-
-                new Chart(document.getElementById('chartEquityOnly'), {
-                    type: "line",
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: "Equity",
-                            data: cum,
-                            borderColor: "rgba(13,110,253,0.95)",
-                            backgroundColor: "rgba(13,110,253,0.12)",
-                            fill: true,
-                            tension: 0.25,
-                            pointRadius: 0
-                        }]
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)}` } }
-                        },
-                        scales: {
-                            x: {
-    ticks: {
-        display: !isMobile,
-        maxRotation: 90,
-        minRotation: 90,
-        autoSkip: true,
-        maxTicksLimit: 8,
-        callback: (value, index) => shortDayLabel(labels[index])
-
-    }
-},
-
-                            y: { title: { display: true, text: 'Profitto cumulato' } }
-                        }
-                    }
-                });
-            }
-        })();
-    </script>
-
-
-}

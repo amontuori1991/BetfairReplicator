@@ -401,6 +401,109 @@ namespace BetfairReplicator.Pages
             });
         }
 
+        public async Task<IActionResult> OnGetCalendarAsync(string account, int year, int month)
+        {
+            if (string.IsNullOrWhiteSpace(account))
+                return new JsonResult(new { ok = false, error = "Account mancante." });
+
+            // clamp mese richiesto (Roma -> UTC)
+            if (year < 2000 || year > 2100) year = DateTime.UtcNow.Year;
+            if (month < 1 || month > 12) month = DateTime.UtcNow.Month;
+
+            var monthStartLocal = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Unspecified);
+            var monthEndLocal = monthStartLocal.AddMonths(1).AddTicks(-1); // fine mese locale
+
+            var nowUtc = DateTime.UtcNow;
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(monthStartLocal, RomeTz);
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(monthEndLocal, RomeTz);
+
+            if (fromUtc < MinFromUtc) fromUtc = MinFromUtc;
+            if (toUtc > nowUtc) toUtc = nowUtc;
+            if (toUtc < fromUtc) toUtc = fromUtc;
+
+            // recupero account + token
+            var accounts = await _accountStore.GetAllAsync();
+            var acc = accounts.FirstOrDefault(x => x.DisplayName.Equals(account, StringComparison.OrdinalIgnoreCase));
+
+            if (acc == null || string.IsNullOrWhiteSpace(acc.AppKeyDelayed))
+                return new JsonResult(new { ok = false, error = $"Account '{account}' non valido o AppKey mancante." });
+
+            var token = await _sessionStore.GetTokenAsync(acc.DisplayName);
+            if (string.IsNullOrWhiteSpace(token))
+                return new JsonResult(new { ok = false, error = $"Token mancante per '{account}'." });
+
+            // fetch cleared orders SOLO per quel mese
+            var (orders, err) = await _bettingApi.FetchClearedOrdersAsync(
+                displayName: acc.DisplayName,
+                appKey: acc.AppKeyDelayed,
+                sessionToken: token,
+                fromUtc: fromUtc,
+                toUtc: toUtc
+            );
+
+            if (err != null)
+                return new JsonResult(new { ok = false, error = err });
+
+            var allOrders = orders ?? new List<BetfairBettingApiService.ClearedOrderSummary>();
+
+            // IMPORTANTISSIMO: raggruppo per GIORNO IN ORARIO ROMA (evita shift -1 giorno)
+            var rows = allOrders
+                .Where(o => o.settledDate.HasValue)
+                .Select(o =>
+                {
+                    var settledUtc = DateTime.SpecifyKind(o.settledDate!.Value, DateTimeKind.Utc);
+                    var localDay = TimeZoneInfo.ConvertTimeFromUtc(settledUtc, RomeTz).Date;
+
+                    return new
+                    {
+                        Day = localDay.Day,
+                        Profit = o.profit ?? 0.0
+                    };
+                })
+                .ToList();
+
+            var perDay = rows
+                .GroupBy(x => x.Day)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        profit = g.Sum(x => x.Profit),
+                        bets = g.Count()
+                    }
+                );
+
+            var daysInMonth = DateTime.DaysInMonth(year, month);
+
+            var days = Enumerable.Range(1, daysInMonth)
+                .Select(d =>
+                {
+                    if (perDay.TryGetValue(d, out var v))
+                        return new { day = d, profit = v.profit, bets = v.bets };
+
+                    return new { day = d, profit = 0.0, bets = 0 };
+                })
+                .ToList();
+
+            var monthProfit = days.Sum(x => x.profit);
+            var monthBets = days.Sum(x => x.bets);
+
+            // label tipo "Dicembre 2025"
+            var monthLabel = new DateTime(year, month, 1).ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
+
+            return new JsonResult(new
+            {
+                ok = true,
+                year,
+                month,
+                label = monthLabel,
+                monthProfit,
+                monthBets,
+                days
+            });
+        }
+
 
     }
+
 }
