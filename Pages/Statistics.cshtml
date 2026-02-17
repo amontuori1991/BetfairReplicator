@@ -347,41 +347,6 @@
     .bf-day{ min-height: 58px; }
     .bf-day .amt{ font-size: 1.0rem; }
 }
-/* ===== Fix calendario su smartphone ===== */
-@@media (max-width: 576px){
-
-  /* contenitore: se proprio non ci sta, scroll solo qui */
-  .bf-cal{
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* griglia: colonne elastiche e gap più piccolo */
-  .bf-cal-head,
-  .bf-cal-grid{
-    gap: 6px;
-    min-width: 520px; /* garantisce 7 colonne leggibili, scroll se serve */
-  }
-
-  .bf-cal-head{
-    font-size: .78rem;
-  }
-
-  /* celle più compatte */
-  .bf-day{
-    min-height: 54px;
-    padding: 6px;
-    border-radius: 12px;
-  }
-
-  .bf-day .dnum{
-    font-size: .85rem;
-  }
-
-  .bf-day .amt{
-    font-size: .92rem;
-  }
-}
 
 @@media (max-width: 576px){
   #pane-day .d-flex.align-items-center.justify-content-between{
@@ -423,8 +388,11 @@
   }
 
   .bf-day .amt{
-    font-size: .82rem;
+    font-size: .70rem;     /* ↓ più piccolo */
+    line-height: 1.1;
+    white-space: nowrap;
   }
+
 }
 
     </style>
