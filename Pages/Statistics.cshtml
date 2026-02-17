@@ -1079,6 +1079,54 @@ form.submit();
                 }
             }
         });
-        </script>
-}
+    }
 
+    // Equity-only (tab)
+    const eqOnly = parseCanvasJson('chartEquityOnly');
+    if (eqOnly && eqOnly.length > 0) {
+        const labels = eqOnly.map(x => x.date);
+        const cum = eqOnly.map(x => x.cum);
+
+        new Chart(document.getElementById('chartEquityOnly'), {
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Equity",
+                    data: cum,
+                    borderColor: "rgba(13,110,253,0.95)",
+                    backgroundColor: "rgba(13,110,253,0.12)",
+                    fill: true,
+                    tension: 0.25,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)}` } }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            display: !isMobile,
+                            maxRotation: 90,
+                            minRotation: 90,
+                            autoSkip: true,
+                            maxTicksLimit: 8,
+                            callback: (value, index) => shortDayLabel(labels[index])
+                        }
+                    },
+                    y: { title: { display: true, text: 'Profitto cumulato' } }
+                }
+            }
+        });
+    }
+})();
+
+ 
+    </script>
+
+
+}
