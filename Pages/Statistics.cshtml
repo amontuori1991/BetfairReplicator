@@ -291,10 +291,10 @@ else
     <!-- Filtri -->
     <div class="card shadow-sm mb-3 ns-filters-card">
             <div class="card-body">
- <form method="get" class="row g-3">
+ <form id="statsForm" method="get" class="row g-3">
     <div class="col-12 col-md-6 col-lg-3">
         <label class="form-label">Account</label>
-        <select class="form-select" name="Account">
+        <select id="accountSelect" class="form-select" name="Account">
             @foreach (var a in Model.ConnectedAccounts)
             {
                 <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
@@ -324,7 +324,7 @@ else
     <div class="col-12 col-md-6 col-lg-3">
         <label class="form-label">Bankroll iniziale</label>
         <input type="number"
-               class="form-control"
+               class="form-control" id="bankrollInput"
                name="Bankroll"
                step="0.01"
                min="0"
@@ -586,6 +586,23 @@ Chart.defaults.scale.ticks.color = "#374151";
 
         function money(x) { return (Number(x) || 0).toFixed(2); }
         function pct(x) { return (Number(x) || 0).toFixed(2) + "%"; }
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+function shortMonthLabel(s) {
+    // "yyyy-MM" -> "MM/yy"
+    if (!s || s.length < 7) return s;
+    const yy = s.substring(2, 4);
+    const mm = s.substring(5, 7);
+    return `${mm}/${yy}`;
+}
+
+function shortDayLabel(s) {
+    // "yyyy-MM-dd" -> "dd/MM"
+    if (!s || s.length < 10) return s;
+    const dd = s.substring(8, 10);
+    const mm = s.substring(5, 7);
+    return `${dd}/${mm}`;
+}
 
         function movingAverage(values, period) {
             const res = [];
@@ -599,6 +616,32 @@ Chart.defaults.scale.ticks.color = "#374151";
         }
 
         Chart.register(zeroLinePlugin);
+
+    (function () {
+        const form = document.getElementById('statsForm');
+        const accountSelect = document.getElementById('accountSelect');
+        const bankrollInput = document.getElementById('bankrollInput');
+        if (!form || !accountSelect || !bankrollInput) return;
+
+        accountSelect.addEventListener('change', async () => {
+            try {
+                const acc = accountSelect.value || '';
+                const url = `${window.location.pathname}?handler=Bankroll&account=${encodeURIComponent(acc)}`;
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await res.json();
+
+                const v = Number(data?.bankroll ?? 0);
+                bankrollInput.value = (v > 0) ? v.toFixed(2) : "";
+
+                // ricalcola tutto subito
+                form.submit();
+            } catch (e) {
+                // se fallisce la fetch, almeno ricalcola comunque
+                form.submit();
+            }
+        });
+    })();
+
 
         (function () {
             // 1) Profitto mensile (verde/rosso)
@@ -647,7 +690,15 @@ Chart.defaults.scale.ticks.color = "#374151";
                             }
                         },
                         scales: {
-                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                            x: {
+    ticks: {
+        maxRotation: 0,
+        autoSkip: true,
+        maxTicksLimit: 10,
+        callback: (v) => shortMonthLabel(v)
+    }
+},
+
                             y: { title: { display: true, text: 'Profitto' } }
                         }
                     }
@@ -685,7 +736,15 @@ Chart.defaults.scale.ticks.color = "#374151";
                             }
                         },
                         scales: {
-                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                            x: {
+    ticks: {
+        maxRotation: 0,
+        autoSkip: true,
+        maxTicksLimit: 10,
+        callback: (v) => shortMonthLabel(v)
+    }
+},
+
                             y: { title: { display: true, text: 'ROI %' } }
                         }
                     }
@@ -716,7 +775,15 @@ Chart.defaults.scale.ticks.color = "#374151";
                             }
                         },
                         scales: {
-                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                            x: {
+    ticks: {
+        maxRotation: 0,
+        autoSkip: true,
+        maxTicksLimit: 10,
+        callback: (v) => shortMonthLabel(v)
+    }
+},
+
                             y: { title: { display: true, text: 'Profitto' } }
                         }
                     }
@@ -762,7 +829,17 @@ Chart.defaults.scale.ticks.color = "#374151";
                             }
                         },
                         scales: {
-                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                            x: {
+    ticks: {
+        display: !isMobile,              // su mobile NASCOSTO
+        maxRotation: 90,
+        minRotation: 90,
+        autoSkip: true,
+        maxTicksLimit: 8,
+        callback: (v) => shortDayLabel(v)
+    }
+},
+
                             y: { title: { display: true, text: 'Profitto' } }
                         }
                     }
@@ -806,7 +883,17 @@ Chart.defaults.scale.ticks.color = "#374151";
                             tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } }
                         },
                         scales: {
-                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                            x: {
+    ticks: {
+        display: !isMobile,              // su mobile NASCOSTO
+        maxRotation: 90,
+        minRotation: 90,
+        autoSkip: true,
+        maxTicksLimit: 8,
+        callback: (v) => shortDayLabel(v)
+    }
+},
+
                             y: { title: { display: true, text: 'Valore' } }
                         }
                     }
@@ -840,7 +927,17 @@ Chart.defaults.scale.ticks.color = "#374151";
                             tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)}` } }
                         },
                         scales: {
-                            x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                            x: {
+    ticks: {
+        display: !isMobile,
+        maxRotation: 90,
+        minRotation: 90,
+        autoSkip: true,
+        maxTicksLimit: 8,
+        callback: (v) => shortDayLabel(v)
+    }
+},
+
                             y: { title: { display: true, text: 'Profitto cumulato' } }
                         }
                     }
@@ -848,4 +945,6 @@ Chart.defaults.scale.ticks.color = "#374151";
             }
         })();
     </script>
+
+
 }

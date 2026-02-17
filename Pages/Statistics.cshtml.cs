@@ -331,5 +331,15 @@ namespace BetfairReplicator.Pages
             maxDrawdownAbs = Math.Abs(maxDd);
             return res;
         }
+
+        public async Task<IActionResult> OnGetBankrollAsync(string account)
+        {
+            if (string.IsNullOrWhiteSpace(account))
+                return new JsonResult(new { bankroll = 0.0 });
+
+            var v = await _bankrollStore.GetAsync(account) ?? 0.0;
+            return new JsonResult(new { bankroll = v });
+        }
+
     }
 }
