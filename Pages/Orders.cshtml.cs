@@ -69,6 +69,8 @@ namespace BetfairReplicator.Pages
 
         public DateTime FromUtcUsed { get; private set; }
         public DateTime ToUtcUsed { get; private set; }
+        public DateTime FromLocalUsed { get; private set; }
+        public DateTime ToLocalUsed { get; private set; }
 
         public List<OrderRow> OpenOrders { get; private set; } = new();
         public List<OrderRow> SettledOrders { get; private set; } = new();
@@ -144,41 +146,42 @@ namespace BetfairReplicator.Pages
 
         public async Task OnGetAsync()
         {
-            // 1) range date con clamp (✅ interpretate come date di ROMA, poi convertite in UTC)
+            // 1) range date con clamp (UI in ORA DI ROMA, poi convertite in UTC per le API)
             var nowUtc = DateTime.UtcNow;
 
-            DateTime fromUtc;
-            if (From.HasValue)
-            {
-                // From.Value è una "date" (senza ora): la considero 00:00 di Roma
-                var fromLocal = new DateTime(From.Value.Year, From.Value.Month, From.Value.Day, 0, 0, 0, DateTimeKind.Unspecified);
-                fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, RomeTz);
-            }
-            else
-            {
-                fromUtc = MinFromUtc;
-            }
+            // min e "oggi" in locale Roma (solo DATE)
+            var minLocalDate = TimeZoneInfo.ConvertTimeFromUtc(MinFromUtc, RomeTz).Date;
+            var todayLocalDate = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, RomeTz).Date;
 
-            DateTime toUtc;
-            if (To.HasValue)
-            {
-                // To.Value "date": considero fine giornata di Roma 23:59:59.9999999
-                var endLocal = new DateTime(To.Value.Year, To.Value.Month, To.Value.Day, 23, 59, 59, 999, DateTimeKind.Unspecified);
-                // aggiungo i tick per arrivare al massimo possibile del millisecondo
-                endLocal = endLocal.AddTicks(9999);
-                toUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, RomeTz);
-            }
-            else
-            {
-                toUtc = nowUtc;
-            }
+            // leggo le date dalla querystring come "DATE" (senza ora) in Roma
+            var fromLocalDate = (From?.Date) ?? minLocalDate;
+            var toLocalDate = (To?.Date) ?? todayLocalDate;
 
+            // clamp lato locale (Roma)
+            if (fromLocalDate < minLocalDate) fromLocalDate = minLocalDate;
+            if (toLocalDate > todayLocalDate) toLocalDate = todayLocalDate;
+            if (toLocalDate < fromLocalDate) toLocalDate = fromLocalDate;
+
+            // salvo per la UI (input date)
+            FromLocalUsed = fromLocalDate;
+            ToLocalUsed = toLocalDate;
+
+            // converto in UTC per le API
+            var fromLocal = new DateTime(fromLocalDate.Year, fromLocalDate.Month, fromLocalDate.Day, 0, 0, 0, DateTimeKind.Unspecified);
+            var toEndLocal = new DateTime(toLocalDate.Year, toLocalDate.Month, toLocalDate.Day, 23, 59, 59, 999, DateTimeKind.Unspecified);
+            toEndLocal = toEndLocal.AddTicks(9999);
+
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, RomeTz);
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(toEndLocal, RomeTz);
+
+            // clamp finale lato UTC (sicurezza)
             if (fromUtc < MinFromUtc) fromUtc = MinFromUtc;
             if (toUtc > nowUtc) toUtc = nowUtc;
             if (toUtc < fromUtc) toUtc = fromUtc;
 
             FromUtcUsed = fromUtc;
             ToUtcUsed = toUtc;
+
 
             // 2) trova account collegati (token + appkey)
             var accounts = await _accountStore.GetAllAsync();

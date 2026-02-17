@@ -3,7 +3,9 @@
 @{
     ViewData["Title"] = "Ordini";
     var minDate = "2026-01-30";
-    var maxDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+    var maxDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+    TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).ToString("yyyy-MM-dd");
+
 }
 
 <div class="ns-page">
@@ -32,10 +34,10 @@
     {
         <div class="card shadow-sm mb-3">
             <div class="card-body">
-                <form method="get" class="row g-2 align-items-end">
+                <form id="ordersForm" method="get" class="row g-2 align-items-end">
                     <div class="col-12 col-md-4">
                         <label class="form-label small text-muted mb-1">Master</label>
-                        <select class="form-select" name="Master">
+                        <select id="masterSelect" class="form-select" name="Master">
                             @foreach (var a in Model.ConnectedAccounts)
                             {
                                 <option value="@a" selected="@(string.Equals(a, Model.MasterUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
@@ -47,19 +49,21 @@
                     <div class="col-12 col-md-3">
                         <label class="form-label small text-muted mb-1">Da (min @minDate)</label>
                         <input type="date" class="form-control"
+                        id="fromInput"
                                name="From"
                                min="@minDate"
                                max="@maxDate"
-                               value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
+                               value="@Model.FromLocalUsed.ToString("yyyy-MM-dd")" />
                     </div>
 
                     <div class="col-12 col-md-3">
                         <label class="form-label small text-muted mb-1">A</label>
                         <input type="date" class="form-control"
+                        id="toInput"
                                name="To"
                                min="@minDate"
                                max="@maxDate"
-                               value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
+                               value="@Model.ToLocalUsed.ToString("yyyy-MM-dd")" />
                     </div>
 
                     <div class="col-12 col-md-2 d-flex gap-2">
@@ -312,4 +316,19 @@
 
         </div>
     }
+
 </div>
+
+    @section Scripts {
+<script>
+(function () {
+    const form = document.getElementById('ordersForm');
+    const masterSelect = document.getElementById('masterSelect');
+    if (!form || !masterSelect) return;
+
+    masterSelect.addEventListener('change', () => {
+        form.submit(); // ricarica la pagina e quindi la tabella
+    });
+})();
+</script>
+}
