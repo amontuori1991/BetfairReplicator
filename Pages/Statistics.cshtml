@@ -389,6 +389,43 @@
     align-items: flex-start !important;
   }
 }
+/* ===== Calendario super-compatto (NO scroll) ===== */
+@@media (max-width: 576px){
+
+  /* niente scroll */
+  .bf-cal{
+    overflow-x: hidden;
+  }
+
+  /* 7 colonne sempre dentro */
+  .bf-cal-head,
+  .bf-cal-grid{
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;              /* più stretto */
+    padding: 4px;          /* meno padding */
+    min-width: 0 !important;
+  }
+
+  .bf-cal-head{
+    font-size: .72rem;
+    padding: 4px 4px 6px 4px;
+  }
+
+  .bf-day{
+    min-height: 44px;      /* più basso */
+    padding: 4px;          /* più stretto */
+    border-radius: 10px;
+  }
+
+  .bf-day .dnum{
+    font-size: .78rem;
+  }
+
+  .bf-day .amt{
+    font-size: .82rem;
+  }
+}
 
     </style>
 
