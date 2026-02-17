@@ -10,6 +10,8 @@ namespace BetfairReplicator.Pages
         private readonly BetfairAccountStoreFile _accountStore;
         private readonly BetfairBettingApiService _bettingApi;
         private readonly BankrollStoreFile _bankrollStore;
+        private readonly FromDateStoreFile _fromDateStore;
+
 
 
         private static readonly DateTime MinFromUtc = new DateTime(2026, 1, 30, 0, 0, 0, DateTimeKind.Utc);
@@ -29,13 +31,16 @@ namespace BetfairReplicator.Pages
             BetfairSessionStoreFile sessionStore,
             BetfairAccountStoreFile accountStore,
             BetfairBettingApiService bettingApi,
-            BankrollStoreFile bankrollStore)
+            BankrollStoreFile bankrollStore,
+            FromDateStoreFile fromDateStore)
         {
             _sessionStore = sessionStore;
             _accountStore = accountStore;
             _bettingApi = bettingApi;
             _bankrollStore = bankrollStore;
+            _fromDateStore = fromDateStore;
         }
+
 
 
         // query
@@ -135,32 +140,7 @@ namespace BetfairReplicator.Pages
 
         public async Task OnGetAsync()
         {
-            // 1) clamp date (interpretate come date ROMA → UTC)
-            var nowUtc = DateTime.UtcNow;
 
-            DateTime fromUtc;
-            if (From.HasValue)
-            {
-                var fromLocal = new DateTime(From.Value.Year, From.Value.Month, From.Value.Day, 0, 0, 0, DateTimeKind.Unspecified);
-                fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, RomeTz);
-            }
-            else fromUtc = MinFromUtc;
-
-            DateTime toUtc;
-            if (To.HasValue)
-            {
-                var endLocal = new DateTime(To.Value.Year, To.Value.Month, To.Value.Day, 23, 59, 59, 999, DateTimeKind.Unspecified);
-                endLocal = endLocal.AddTicks(9999);
-                toUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, RomeTz);
-            }
-            else toUtc = nowUtc;
-
-            if (fromUtc < MinFromUtc) fromUtc = MinFromUtc;
-            if (toUtc > nowUtc) toUtc = nowUtc;
-            if (toUtc < fromUtc) toUtc = fromUtc;
-
-            FromUtcUsed = fromUtc;
-            ToUtcUsed = toUtc;
 
 
             // 2) account collegati
@@ -189,6 +169,57 @@ namespace BetfairReplicator.Pages
 
             acc ??= usable.First();
             AccountUsed = acc.DisplayName;
+
+            // 4) clamp date (ROMA -> UTC) con memoria della From per account
+            var nowUtc = DateTime.UtcNow;
+
+            DateTime fromUtc;
+
+            // Se l'utente ha passato From nella querystring, usala e salvala per quell'account
+            if (From.HasValue)
+            {
+                var fromLocal = new DateTime(From.Value.Year, From.Value.Month, From.Value.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, RomeTz);
+
+                // salva "From" (yyyy-MM-dd) per quell'account
+                await _fromDateStore.SetAsync(AccountUsed!, From.Value.ToString("yyyy-MM-dd"));
+            }
+            else
+            {
+                // altrimenti prova a prendere la From salvata per quell'account
+                var saved = await _fromDateStore.GetAsync(AccountUsed!);
+
+                if (!string.IsNullOrWhiteSpace(saved) && DateTime.TryParse(saved, out var savedDate))
+                {
+                    var savedLocal = new DateTime(savedDate.Year, savedDate.Month, savedDate.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                    fromUtc = TimeZoneInfo.ConvertTimeToUtc(savedLocal, RomeTz);
+                }
+                else
+                {
+                    // se non esiste nulla salvato, fallback al minimo
+                    fromUtc = MinFromUtc;
+                }
+            }
+
+            DateTime toUtc;
+            if (To.HasValue)
+            {
+                var endLocal = new DateTime(To.Value.Year, To.Value.Month, To.Value.Day, 23, 59, 59, 999, DateTimeKind.Unspecified);
+                endLocal = endLocal.AddTicks(9999);
+                toUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, RomeTz);
+            }
+            else
+            {
+                toUtc = nowUtc;
+            }
+
+            if (fromUtc < MinFromUtc) fromUtc = MinFromUtc;
+            if (toUtc > nowUtc) toUtc = nowUtc;
+            if (toUtc < fromUtc) toUtc = fromUtc;
+
+            FromUtcUsed = fromUtc;
+            ToUtcUsed = toUtc;
+
             // ✅ Bankroll: priorità a querystring (?Bankroll=), altrimenti da JSON per account
             if (Bankroll.HasValue && Bankroll.Value >= 0)
             {
@@ -335,11 +366,36 @@ namespace BetfairReplicator.Pages
         public async Task<IActionResult> OnGetBankrollAsync(string account)
         {
             if (string.IsNullOrWhiteSpace(account))
-                return new JsonResult(new { bankroll = 0.0 });
+                return new JsonResult(new { bankroll = 0.0, from = MinFromUtc.ToString("yyyy-MM-dd") });
 
-            var v = await _bankrollStore.GetAsync(account) ?? 0.0;
-            return new JsonResult(new { bankroll = v });
+            // bankroll salvato
+            var bankroll = await _bankrollStore.GetAsync(account) ?? 0.0;
+
+            // from salvata (se manca -> MinFromUtc)
+            var savedFrom = await _fromDateStore.GetAsync(account);
+            DateTime fromDateLocal;
+
+            if (!string.IsNullOrWhiteSpace(savedFrom) && DateTime.TryParse(savedFrom, out var parsed))
+            {
+                fromDateLocal = parsed.Date;
+            }
+            else
+            {
+                // fallback al minimo
+                fromDateLocal = new DateTime(MinFromUtc.Year, MinFromUtc.Month, MinFromUtc.Day);
+            }
+
+            // clamp lato server (se qualcuno salva una data più vecchia del minimo)
+            var minLocal = new DateTime(MinFromUtc.Year, MinFromUtc.Month, MinFromUtc.Day);
+            if (fromDateLocal < minLocal) fromDateLocal = minLocal;
+
+            return new JsonResult(new
+            {
+                bankroll = bankroll,
+                from = fromDateLocal.ToString("yyyy-MM-dd")
+            });
         }
+
 
     }
 }

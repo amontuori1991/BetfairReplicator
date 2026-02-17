@@ -305,20 +305,25 @@ else
 
     <div class="col-12 col-md-6 col-lg-3">
         <label class="form-label">Da (min @minDate)</label>
-        <input type="date" class="form-control"
-               name="From"
-               min="@minDate"
-               max="@maxDate"
-               value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
+<input type="date" class="form-control"
+       id="fromInput"
+       name="From"
+       min="@minDate"
+       max="@maxDate"
+       value="@Model.FromUtcUsed.ToString("yyyy-MM-dd")" />
+
     </div>
 
     <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label">A (max oggi)</label>
-        <input type="date" class="form-control"
-               name="To"
-               min="@minDate"
-               max="@maxDate"
-               value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
+<label class="form-label">A (max oggi)</label>
+<input type="date" class="form-control"
+       id="toInput"
+       name="To"
+       min="@minDate"
+       max="@maxDate"
+       value="@Model.ToUtcUsed.ToString("yyyy-MM-dd")" />
+
+
     </div>
 
     <div class="col-12 col-md-6 col-lg-3">
@@ -621,7 +626,10 @@ function shortDayLabel(s) {
         const form = document.getElementById('statsForm');
         const accountSelect = document.getElementById('accountSelect');
         const bankrollInput = document.getElementById('bankrollInput');
-        if (!form || !accountSelect || !bankrollInput) return;
+        const fromInput = document.getElementById('fromInput');
+
+        if (!form || !accountSelect || !bankrollInput || !fromInput) return;
+
 
         accountSelect.addEventListener('change', async () => {
             try {
@@ -630,11 +638,16 @@ function shortDayLabel(s) {
                 const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 const data = await res.json();
 
-                const v = Number(data?.bankroll ?? 0);
-                bankrollInput.value = (v > 0) ? v.toFixed(2) : "";
+ const v = Number(data?.bankroll ?? 0);
+bankrollInput.value = (v > 0) ? v.toFixed(2) : "";
 
-                // ricalcola tutto subito
-                form.submit();
+// imposta anche la "Da" salvata (yyyy-MM-dd)
+const f = (data?.from ?? "").toString();
+if (f) fromInput.value = f;
+
+// ricalcola tutto subito
+form.submit();
+
             } catch (e) {
                 // se fallisce la fetch, almeno ricalcola comunque
                 form.submit();
