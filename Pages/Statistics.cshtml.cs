@@ -65,6 +65,9 @@ namespace BetfairReplicator.Pages
 
         public DateTime FromUtcUsed { get; private set; }
         public DateTime ToUtcUsed { get; private set; }
+        public DateTime FromLocalUsed { get; private set; }
+        public DateTime ToLocalUsed { get; private set; }
+
 
         // KPI
         public double TotalProfit { get; private set; }
@@ -219,6 +222,8 @@ namespace BetfairReplicator.Pages
 
             FromUtcUsed = fromUtc;
             ToUtcUsed = toUtc;
+            FromLocalUsed = TimeZoneInfo.ConvertTimeFromUtc(fromUtc, RomeTz).Date;
+            ToLocalUsed = TimeZoneInfo.ConvertTimeFromUtc(toUtc, RomeTz).Date;
 
             // ✅ Bankroll: priorità a querystring (?Bankroll=), altrimenti da JSON per account
             if (Bankroll.HasValue && Bankroll.Value >= 0)
