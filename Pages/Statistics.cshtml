@@ -299,6 +299,11 @@
     flex-direction: column;
     justify-content: space-between;
 }
+/* giorni con profitto = 0 (testo nero ben leggibile) */
+.bf-day.zero .amt{
+    color: #111827;
+    opacity: 1;
+}
 
 .bf-day.out{
     opacity: .35;
@@ -334,10 +339,55 @@
 .bf-day.neg .amt{
     color: #dc3545;
 }
-
+#calLabel{
+    color: #111827;
+    user-select: none; /* evita che si evidenzi in blu */
+}
 @@media (max-width: 768px){
     .bf-day{ min-height: 58px; }
     .bf-day .amt{ font-size: 1.0rem; }
+}
+/* ===== Fix calendario su smartphone ===== */
+@@media (max-width: 576px){
+
+  /* contenitore: se proprio non ci sta, scroll solo qui */
+  .bf-cal{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* griglia: colonne elastiche e gap più piccolo */
+  .bf-cal-head,
+  .bf-cal-grid{
+    gap: 6px;
+    min-width: 520px; /* garantisce 7 colonne leggibili, scroll se serve */
+  }
+
+  .bf-cal-head{
+    font-size: .78rem;
+  }
+
+  /* celle più compatte */
+  .bf-day{
+    min-height: 54px;
+    padding: 6px;
+    border-radius: 12px;
+  }
+
+  .bf-day .dnum{
+    font-size: .85rem;
+  }
+
+  .bf-day .amt{
+    font-size: .92rem;
+  }
+}
+
+@@media (max-width: 576px){
+  #pane-day .d-flex.align-items-center.justify-content-between{
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
 }
 
     </style>
@@ -865,7 +915,14 @@ form.submit();
         }
 
         grid.innerHTML = cells.map(c => {
-            const cls = c.out ? "bf-day out" : (c.profit > 0.0001 ? "bf-day pos" : (c.profit < -0.0001 ? "bf-day neg" : "bf-day"));
+            const cls = c.out
+    ? "bf-day out"
+    : (c.profit > 0.0001
+        ? "bf-day pos"
+        : (c.profit < -0.0001
+            ? "bf-day neg"
+            : "bf-day zero"));
+
             const amt = c.out ? "" : moneyEur(c.profit);
             return `<div class="${cls}">
                         <div class="dnum">${c.day}</div>
