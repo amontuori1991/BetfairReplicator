@@ -377,23 +377,32 @@
     padding: 4px 4px 6px 4px;
   }
 
-  .bf-day{
-    min-height: 44px;      /* più basso */
-    padding: 4px;          /* più stretto */
+.bf-day{
+    min-height: 44px;
+    padding: 4px;
     border-radius: 10px;
-  }
+    overflow: hidden;   /* ⬅ impedisce qualsiasi sbordo */
+}
+
 
   .bf-day .dnum{
     font-size: .78rem;
   }
 
 .bf-day .amt{
-    font-size: .62rem;        /* puoi anche risalire leggermente */
+    font-size: .70rem;                 /* un filo più leggibile */
     line-height: 1;
     white-space: nowrap;
-    transform: skewX(-8deg);  /* ⬅ obliquo */
-    display: inline-block;    /* necessario per il transform */
+
+    display: inline-block;             /* necessario per transform */
+    transform: skewX(-16deg) scaleX(.86);  /* obliquo VISIBILE + più stretto */
+    transform-origin: left center;
+
+    max-width: 100%;
+    overflow: hidden;                  /* non esce mai */
+    text-overflow: clip;
 }
+
 
 
 }
