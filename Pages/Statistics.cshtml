@@ -381,7 +381,6 @@
     min-height: 44px;
     padding: 4px;
     border-radius: 10px;
-    overflow: hidden;   /* ⬅ impedisce qualsiasi sbordo */
 }
 
 
@@ -390,18 +389,17 @@
   }
 
 .bf-day .amt{
-    font-size: .60rem;                 /* un filo più leggibile */
+    font-size: .70rem;           /* prova .68rem se vuoi ancora più piccolo */
     line-height: 1;
     white-space: nowrap;
 
-    display: inline-block;             /* necessario per transform */
-    transform: skewX(-16deg) scaleX(.86);  /* obliquo VISIBILE + più stretto */
-    transform-origin: left center;
+    font-style: italic;          /* corsivo reale (non transform) */
+    letter-spacing: -0.04em;     /* stringe senza tagliare */
+    font-variant-numeric: tabular-nums;
 
-    max-width: 100%;
-    overflow: hidden;                  /* non esce mai */
-    text-overflow: clip;
+    display: block;              /* più stabile dentro la cella */
 }
+
 
 
 
