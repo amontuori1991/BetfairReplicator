@@ -377,28 +377,35 @@
     padding: 4px 4px 6px 4px;
   }
 
-.bf-day{
-    min-height: 44px;
+#pane-day .bf-day{
+    min-height: 48px;   /* +4px: evita tagli su iOS */
     padding: 4px;
     border-radius: 10px;
+    overflow: visible;
 }
+
 
 
   .bf-day .dnum{
     font-size: .78rem;
   }
 
-.bf-day .amt{
-    font-size: .70rem;           /* prova .68rem se vuoi ancora più piccolo */
-    line-height: 1;
-    white-space: nowrap;
+#pane-day .bf-day .amt{
+    font-size: .68rem !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
 
-    font-style: italic;          /* corsivo reale (non transform) */
-    letter-spacing: -0.04em;     /* stringe senza tagliare */
+    font-style: italic !important;
+    transform: skewX(-8deg);
+transform-origin: left center;
+display: inline-block !important;
+
+    letter-spacing: -0.05em !important;
     font-variant-numeric: tabular-nums;
 
-    display: block;              /* più stabile dentro la cella */
+    display: block !important;
 }
+
 
 
 
