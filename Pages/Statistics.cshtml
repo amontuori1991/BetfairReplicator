@@ -387,11 +387,14 @@
     font-size: .78rem;
   }
 
-  .bf-day .amt{
-    font-size: .62rem;     /* ↓ più piccolo */
-    line-height: 1.1;
+.bf-day .amt{
+    font-size: .62rem;        /* puoi anche risalire leggermente */
+    line-height: 1;
     white-space: nowrap;
-  }
+    transform: skewX(-8deg);  /* ⬅ obliquo */
+    display: inline-block;    /* necessario per il transform */
+}
+
 
 }
 
