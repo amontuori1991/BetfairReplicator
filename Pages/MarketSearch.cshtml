@@ -5,476 +5,544 @@
     ViewData["Title"] = "Cerca mercato";
 }
 
-<style>
-    /* Fix dropdown illeggibile (testo bianco su bianco) */
-    select.form-select,
-    select.form-select option {
-        color: #212529 !important;
-        background-color: #fff !important;
-    }
+<div class="ns-page">
 
-    .ns-hide-order-preview {
-        display: none !important;
-    }
-
-</style>
-
-
-<h1>Cerca mercato</h1>
-<p class="text-muted d-none">Calcio → Match Odds (1X2). Seleziona un evento, poi scegli il mercato.</p>
-
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
-}
-
-<form method="get" class="mb-3">
-    <div class="row g-2">
-        <input type="hidden" name="Account" value="@Model.Account" />
-
-
-        <input type="hidden" id="stakePct" name="StakePercent" value="@Model.StakePercent" />
-
-
-
-        <div class="col-12 col-md-5">
-            <label class="form-label">Cerca evento</label>
-            <input class="form-control" id="eventQuery" name="Q" value="@Model.Q" placeholder="Es: Inter, Milan, Juventus..." />
-        </div>
-        <div class="col-12 col-md-2">
-            <label class="form-label">Mercato</label>
-            <select class="form-select" name="MarketType">
-                <option value="ALL" selected="@(Model.MarketType == "ALL")">Tutti</option>
-                <option value="FULLTIME_RESULT" selected="@(Model.MarketType == "FULLTIME_RESULT")">Full Time (1X2 + Double Chance)</option>
-                <option value="OVER_UNDER_ALL" selected="@(Model.MarketType == "OVER_UNDER_ALL")">Over/Under (tutte le linee)</option>
-                <option value="BTTS" selected="@(Model.MarketType == "BTTS")">GG/NG (BTTS)</option>
-                <option value="CORRECT_SCORE" selected="@(Model.MarketType == "CORRECT_SCORE")">Correct Score</option>
-                <option value="FIRST_HALF_GROUP" selected="@(Model.MarketType == "FIRST_HALF_GROUP")">Primo Tempo (tutti)</option>
-            </select>
-        </div>
-
-
-        <div class="col-12 col-md-2 d-flex align-items-end">
-            <button class="btn btn-primary w-100" type="submit">Cerca</button>
-            @if (!string.IsNullOrWhiteSpace(Model.EventId))
-            {
-                <input type="hidden" name="EventId" value="@Model.EventId" />
-            }
-
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(Model.EventId))
-        {
-            <div class="col-12 col-md-2 d-flex align-items-end">
-                <a class="btn btn-secondary w-100"
-                   asp-page="/MarketSearch"
-                   asp-route-Account="@Model.Account"
-                   asp-route-Q="@Model.Q">
-                    Cambia evento
-                </a>
-            </div>
-        }
-    </div>
-</form>
-
-@if (string.IsNullOrWhiteSpace(Model.EventId))
-{
-    <h5>Eventi</h5>
-
-    <!-- ===== MOBILE: cards eventi ===== -->
-    <div class="d-md-none">
-        <div class="row g-2" id="eventsCards">
-            @foreach (var e in (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate))
-            {
-                <div class="col-12 col-sm-6">
-                    <div class="card bf-mobile-card">
-                        <div class="card-body bf-card-body">
-                            <div class="fw-bold">@e.Event?.name</div>
-                            <div class="text-muted small mt-1">@Model.ToRome(e.Event?.openDate)</div>
-
-                            <div class="mt-3">
-                                <a class="btn btn-outline-primary w-100"
-                                   asp-page="/MarketSearch"
-                                   asp-route-Account="@Model.Account"
-                                   asp-route-Q="@Model.Q"
-                                   asp-route-EventId="@e.Event?.id">
-                                    Scegli
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    </div>
-
-    <!-- ===== DESKTOP/TABLET: tabella eventi ===== -->
-    <div class="d-none d-md-block">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Evento</th>
-                    <th>Data</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="eventsTbody">
-                @foreach (var e in (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate))
-                {
-                    <tr>
-                        <td>@e.Event?.name</td>
-                        <td>@Model.ToRome(e.Event?.openDate)</td>
-                        <td class="text-end">
-                            <a class="btn btn-outline-primary"
-                               asp-page="/MarketSearch"
-                               asp-route-Account="@Model.Account"
-                               asp-route-Q="@Model.Q"
-                               asp-route-EventId="@e.Event?.id">
-                                Scegli
-                            </a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-}
-else
-{
-    <div class="ns-page">
-        <div class="ns-header-card d-flex justify-content-between align-items-start">
+    <!-- ═══ HEADER ═══════════════════════════════════════════════════════ -->
+    <div class="ns-header-card">
+        <div class="d-flex align-items-center justify-content-between">
             <div>
-                <h2 class="ns-title h5">
-                    @(string.IsNullOrWhiteSpace(Model.SelectedEventName) ? "Evento selezionato" : Model.SelectedEventName)
-                </h2>
-                <div class="ns-subtitle">Mercati dell’evento</div>
+                <h1 class="ns-title h4 mb-1">Cerca mercato</h1>
+                <div class="ns-subtitle">
+                    Calcio · eventi e quote in tempo reale
+                    @if (!string.IsNullOrWhiteSpace(Model.Account))
+                    {
+                        <span class="text-muted">— <strong>@Model.Account</strong></span>
+                    }
+                </div>
             </div>
-
-            <span class="ns-chip @(Model.IsInPlay ? "ns-live" : "ns-pre")">
-                @(Model.IsInPlay ? "LIVE" : "PRE")
-            </span>
+            <div class="d-flex align-items-center gap-2">
+                @if (!string.IsNullOrWhiteSpace(Model.EventId))
+                {
+                    <span class="ns-chip @(Model.IsInPlay ? "ns-live" : "ns-pre")">
+                        @(Model.IsInPlay ? "LIVE" : "PRE")
+                    </span>
+                }
+                <a class="btn btn-outline-secondary btn-sm" asp-page="/Index">Home</a>
+            </div>
         </div>
+    </div>
 
-        <h5 class="mt-2">Mercati</h5>
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-danger">@Model.Error</div>
+    }
 
-        @foreach (var m in (Model.Markets ?? new List<MarketCatalogue>()).OrderBy(x => x.marketName))
-        {
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="fw-bold">@m.marketName</div>
-                            <div class="text-muted small">
-                                @if (m.marketStartTime != null)
-                                {
-                                    <span>Start: @Model.ToRome(m.marketStartTime)</span>
-                                }
-                            </div>
+    <!-- ═══ FILTRI ═══════════════════════════════════════════════════════ -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" id="searchForm" class="row g-2 align-items-end">
+                <input type="hidden" name="Account" value="@Model.Account" />
+                <input type="hidden" id="stakePct" name="StakePercent" value="@Model.StakePercent" />
 
-                        </div>
+                <!-- cerca evento -->
+                <div class="col-12 col-md-5">
+                    <label class="form-label small text-muted mb-1">Cerca evento</label>
+                    <input class="form-control" id="eventQuery" name="Q"
+                           value="@Model.Q"
+                           placeholder="Es: Inter, Milan, Juventus…"
+                           autocomplete="off" />
+                </div>
 
-                        <a class="btn btn-primary ns-hide-order-preview"
-                           asp-page="/OrderPreview"
-                           asp-route-MarketId="@m.marketId">
-                            Apri in Ordine (preview)
+                <!-- tipo mercato -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted mb-1">Tipo mercato</label>
+                    <select class="form-select" name="MarketType" id="marketTypeSelect">
+                        <option value="ALL"               selected="@(Model.MarketType == "ALL")">Tutti</option>
+                        <option value="FULLTIME_RESULT"   selected="@(Model.MarketType == "FULLTIME_RESULT")">Full Time (1X2 + Double Chance)</option>
+                        <option value="OVER_UNDER_ALL"    selected="@(Model.MarketType == "OVER_UNDER_ALL")">Over/Under (tutte le linee)</option>
+                        <option value="BTTS"              selected="@(Model.MarketType == "BTTS")">GG/NG (BTTS)</option>
+                        <option value="CORRECT_SCORE"     selected="@(Model.MarketType == "CORRECT_SCORE")">Correct Score</option>
+                        <option value="FIRST_HALF_GROUP"  selected="@(Model.MarketType == "FIRST_HALF_GROUP")">Primo Tempo (tutti)</option>
+                    </select>
+                </div>
+
+                <!-- bottoni -->
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <button class="btn btn-primary flex-fill" type="submit">Cerca</button>
+                    @if (!string.IsNullOrWhiteSpace(Model.EventId))
+                    {
+                        <input type="hidden" name="EventId" value="@Model.EventId" />
+                        <a class="btn btn-outline-secondary flex-fill"
+                           asp-page="/MarketSearch"
+                           asp-route-Account="@Model.Account"
+                           asp-route-Q="@Model.Q">
+                            Cambia evento
                         </a>
+                    }
+                </div>
 
+            </form>
+        </div>
+    </div>
 
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VISTA EVENTI (nessun EventId selezionato)
+         ═══════════════════════════════════════════════════════════════════ -->
+    @if (string.IsNullOrWhiteSpace(Model.EventId))
+    {
+        var events = (Model.Events ?? new List<EventResult>()).OrderBy(x => x.Event?.openDate).ToList();
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="fw-semibold">
+                        Eventi
+                        <span class="badge bg-secondary ms-1" id="eventsCount">@events.Count</span>
+                    </div>
+                    <div class="text-muted small">Clicca un evento per vedere i mercati</div>
+                </div>
+
+                @if (events.Count == 0 && !string.IsNullOrWhiteSpace(Model.Q))
+                {
+                    <div class="text-muted small">Nessun evento trovato per "<strong>@Model.Q</strong>".</div>
+                }
+                else if (events.Count == 0)
+                {
+                    <div class="text-muted small">Inserisci il nome di una squadra per cercare.</div>
+                }
+                else
+                {
+                    <!-- MOBILE: cards -->
+                    <div class="d-md-none" id="eventsCards">
+                        <div class="row g-2">
+                            @foreach (var e in events)
+                            {
+                                <div class="col-12 col-sm-6 bf-ev-item">
+                                    <div class="bf-event-card">
+                                        <div class="bf-event-name">@e.Event?.name</div>
+                                        <div class="text-muted small mt-1">@Model.ToRome(e.Event?.openDate)</div>
+                                        <a class="btn btn-outline-primary w-100 mt-2 btn-sm"
+                                           href="/MarketSearch?Account=@Uri.EscapeDataString(Model.Account ?? "")&Q=@Uri.EscapeDataString(Model.Q ?? "")&EventId=@Uri.EscapeDataString(e.Event?.id ?? "")">
+                                            Scegli →
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     </div>
 
-                    <div class="mt-3">
-                        <div class="fw-semibold mb-1">Runner / Quote</div>
-
-                        <div class="table-responsive market-card" data-marketid="@m.marketId" data-account="@Model.Account">
-                            <table class="table table-sm align-middle mb-0 bf-runner-table">
+                    <!-- DESKTOP: tabella -->
+                    <div class="d-none d-md-block">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Runner</th>
-                                        <th class="text-end text-primary">BACK</th>
-                                        <th class="text-end text-danger">LAY</th>
-                                        <th class="text-end">Azione</th>
+                                        <th>Evento</th>
+                                        <th>Data / Ora</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
-
-                                <tbody>
-                                    @foreach (var r in (m.runners ?? new List<RunnerCatalogue>()).OrderBy(x => x.runnerName))
+                                <tbody id="eventsTbody">
+                                    @foreach (var e in events)
                                     {
-                                        <tr class="runner-row bf-runner-row" data-selectionid="@r.selectionId">
-                                            <td>@r.runnerName</td>
-                                            <td class="text-end text-primary">
-                                                <span class="back-odds">-</span>
-                                            </td>
-                                            <td class="text-end text-danger">
-                                                <span class="lay-odds">-</span>
-                                            </td>
+                                        <tr class="bf-ev-item">
+                                            <td class="fw-semibold">@e.Event?.name</td>
+                                            <td class="text-nowrap text-muted small">@Model.ToRome(e.Event?.openDate)</td>
                                             <td class="text-end">
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <button type="button"
-                                                            class="btn btn-outline-primary btn-order"
-                                                            data-side="BACK"
-                                                            data-marketid="@m.marketId"
-                                                            data-selectionid="@r.selectionId">
-                                                        BACK
-                                                    </button>
-
-                                                    <button type="button"
-                                                            class="btn btn-outline-danger btn-order"
-                                                            data-side="LAY"
-                                                            data-marketid="@m.marketId"
-                                                            data-selectionid="@r.selectionId">
-                                                        LAY
-                                                    </button>
-                                                </div>
+                                                <a class="btn btn-outline-primary btn-sm"
+                                                   href="/MarketSearch?Account=@Uri.EscapeDataString(Model.Account ?? "")&Q=@Uri.EscapeDataString(Model.Q ?? "")&EventId=@Uri.EscapeDataString(e.Event?.id ?? "")">
+                                                    Scegli →
+                                                </a>
                                             </td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
-                            <div class="bf-runner-mobile">
-                                @foreach (var r in (m.runners ?? new List<RunnerCatalogue>()).OrderBy(x => x.runnerName))
-                                {
-                                    <div class="bf-runner-card runner-row"
-                                         data-selectionid="@r.selectionId"
-                                         data-marketid="@m.marketId">
-
-                                        <div class="bf-runner-name">@r.runnerName</div>
-
-                                        <div class="bf-runner-grid">
-                                            <div class="bf-odd-back back-odds">-</div>
-                                            <div class="bf-odd-lay lay-odds">-</div>
-                                        </div>
-
-                                        <div class="bf-runner-actions">
-                                            <button type="button"
-                                                    class="btn btn-outline-primary btn-order"
-                                                    data-side="BACK"
-                                                    data-marketid="@m.marketId"
-                                                    data-selectionid="@r.selectionId">
-                                                BACK
-                                            </button>
-
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-order"
-                                                    data-side="LAY"
-                                                    data-marketid="@m.marketId"
-                                                    data-selectionid="@r.selectionId">
-                                                LAY
-                                            </button>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-
-                            <div class="small text-muted mt-1 quote-status"></div>
                         </div>
                     </div>
+
+                    <!-- paginatori -->
+                    <div id="eventsTablePager" class="bf-pager mt-3"></div>
+                    <div id="eventsCardsPager" class="bf-pager mt-3 d-md-none"></div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VISTA MERCATI (EventId selezionato)
+         ═══════════════════════════════════════════════════════════════════ -->
+    else
+    {
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="fw-semibold">
+                @(string.IsNullOrWhiteSpace(Model.SelectedEventName) ? "Evento selezionato" : Model.SelectedEventName)
+            </div>
+            <span class="text-muted small">— @((Model.Markets ?? new List<MarketCatalogue>()).Count) mercati</span>
+        </div>
+
+        @foreach (var m in (Model.Markets ?? new List<MarketCatalogue>()).OrderBy(x => x.marketName))
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+
+                    <!-- header mercato -->
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="fw-bold">@m.marketName</div>
+                            @if (m.marketStartTime != null)
+                            {
+                                <div class="text-muted small">Start: @Model.ToRome(m.marketStartTime)</div>
+                            }
+                        </div>
+                        <span class="badge bg-secondary ms-2 text-nowrap">@m.marketId</span>
+                    </div>
+
+                    <!-- runner / quote -->
+                    <div class="table-responsive market-card"
+                         data-marketid="@m.marketId"
+                         data-account="@Model.Account">
+
+                        <!-- DESKTOP: tabella runner -->
+                        <table class="table table-sm align-middle mb-0 bf-runner-table">
+                            <thead>
+                                <tr>
+                                    <th>Runner</th>
+                                    <th class="text-end bf-col-back">BACK</th>
+                                    <th class="text-end bf-col-lay">LAY</th>
+                                    <th class="text-end">Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in (m.runners ?? new List<RunnerCatalogue>()).OrderBy(x => x.runnerName))
+                                {
+                                    <tr class="runner-row bf-runner-row" data-selectionid="@r.selectionId">
+                                        <td class="fw-semibold">@r.runnerName</td>
+                                        <td class="text-end">
+                                            <span class="back-odds bf-odd-back-val">—</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="lay-odds bf-odd-lay-val">—</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex gap-1 justify-content-end">
+                                                <button type="button"
+                                                        class="btn btn-order"
+                                                        data-side="BACK"
+                                                        data-marketid="@m.marketId"
+                                                        data-selectionid="@r.selectionId">
+                                                    BACK
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-order"
+                                                        data-side="LAY"
+                                                        data-marketid="@m.marketId"
+                                                        data-selectionid="@r.selectionId">
+                                                    LAY
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <!-- MOBILE: runner cards -->
+                        <div class="bf-runner-mobile">
+                            @foreach (var r in (m.runners ?? new List<RunnerCatalogue>()).OrderBy(x => x.runnerName))
+                            {
+                                <div class="bf-runner-card runner-row"
+                                     data-selectionid="@r.selectionId"
+                                     data-marketid="@m.marketId">
+
+                                    <div class="bf-runner-name">@r.runnerName</div>
+
+                                    <div class="bf-runner-grid">
+                                        <div>
+                                            <div class="bf-runner-odd-lbl">BACK</div>
+                                            <div class="bf-odd-back back-odds">—</div>
+                                        </div>
+                                        <div>
+                                            <div class="bf-runner-odd-lbl">LAY</div>
+                                            <div class="bf-odd-lay lay-odds">—</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="bf-runner-actions">
+                                        <button type="button"
+                                                class="btn btn-order"
+                                                data-side="BACK"
+                                                data-marketid="@m.marketId"
+                                                data-selectionid="@r.selectionId">
+                                            BACK
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-order"
+                                                data-side="LAY"
+                                                data-marketid="@m.marketId"
+                                                data-selectionid="@r.selectionId">
+                                            LAY
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="text-muted small mt-2 quote-status"></div>
+                    </div>
+
                 </div>
             </div>
         }
+    }
 
-    </div>
-}
+</div>
 
 @section Scripts {
-    <script>
-                function debounce(fn, ms) {
-            let t;
-            return (...args) => {
-                clearTimeout(t);
-                t = setTimeout(() => fn(...args), ms);
-            };
+<script>
+(function () {
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+    function debounce(fn, ms) {
+        let t;
+        return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+
+    function parseOdd(text) {
+        if (!text) return null;
+        const v = Number(text.replace(',', '.').trim());
+        return Number.isFinite(v) && v > 1 ? v : null;
+    }
+
+    function getStakePct() {
+        const el = document.getElementById('stakePct');
+        const v = el ? Number(String(el.value).replace(',', '.')) : 3.0;
+        return Number.isFinite(v) ? Math.min(100, Math.max(0.1, v)) : 3.0;
+    }
+
+    // ── paginazione ────────────────────────────────────────────────────────────
+    const PAGE_SIZE = 20;
+
+    function paginate(allItems, pageEl, page) {
+        const total = allItems.length;
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        page = Math.max(1, Math.min(page, pages));
+        const start = (page - 1) * PAGE_SIZE;
+        const end   = start + PAGE_SIZE;
+
+        allItems.forEach((el, i) => { el.style.display = (i >= start && i < end) ? '' : 'none'; });
+
+        if (pages <= 1) { pageEl.innerHTML = ''; return; }
+
+        const from = start + 1, to = Math.min(end, total);
+        let html = `<div class="bf-pager-inner">
+            <button class="bf-pg-btn" data-p="${page-1}" ${page===1?'disabled':''}>&#8249;</button>
+            <span class="bf-pg-info">${from}–${to} di ${total}</span>`;
+
+        const range = [];
+        for (let i = Math.max(1, page-2); i <= Math.min(pages, page+2); i++) range.push(i);
+        if (range[0] > 1) { html += `<button class="bf-pg-btn" data-p="1">1</button>`; if (range[0] > 2) html += `<span class="bf-pg-dots">…</span>`; }
+        range.forEach(i => { html += `<button class="bf-pg-btn${i===page?' active':''}" data-p="${i}">${i}</button>`; });
+        if (range[range.length-1] < pages) { if (range[range.length-1] < pages-1) html += `<span class="bf-pg-dots">…</span>`; html += `<button class="bf-pg-btn" data-p="${pages}">${pages}</button>`; }
+        html += `<button class="bf-pg-btn" data-p="${page+1}" ${page===pages?'disabled':''}>&#8250;</button></div>`;
+
+        pageEl.innerHTML = html;
+        pageEl.querySelectorAll('.bf-pg-btn:not([disabled])').forEach(b => {
+            b.addEventListener('click', () => paginate(allItems, pageEl, +b.dataset.p));
+        });
+    }
+
+    function initEventsPager() {
+        const tbody  = document.getElementById('eventsTbody');
+        const tpager = document.getElementById('eventsTablePager');
+        const cards  = document.getElementById('eventsCards');
+        const cpager = document.getElementById('eventsCardsPager');
+
+        if (tbody && tpager) {
+            const rows = Array.from(tbody.querySelectorAll('tr.bf-ev-item'));
+            if (rows.length > PAGE_SIZE) paginate(rows, tpager, 1);
         }
-
-         async function refreshEventsRealtime() {
-            const qEl = document.getElementById("eventQuery");
-            const tbody = document.getElementById("eventsTbody");
-            const cards = document.getElementById("eventsCards");
-
-            if (!qEl) return;
-
-            const account = document.querySelector('input[name="Account"]')?.value || "";
-            const q = qEl.value || "";
-
-            const url = `/MarketSearch?handler=Events&account=${encodeURIComponent(account)}&q=${encodeURIComponent(q)}`;
-            const res = await fetch(url, { cache: "no-store" });
-            const data = await res.json();
-            if (!data.ok) return;
-
-            const events = data.events || [];
-            const qValue = q;
-
-            // aggiorna tabella (desktop)
-            if (tbody) {
-                tbody.innerHTML = events.map(e => {
-                    const dt = e.openDate
-                        ? new Date(e.openDate).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-                        : "-";
-
-                    const href =
-                        `/MarketSearch?Account=${encodeURIComponent(account)}` +
-                        `&Q=${encodeURIComponent(qValue)}` +
-                        `&EventId=${encodeURIComponent(e.id || "")}`;
-
-                    return `
-                        <tr>
-                            <td>${(e.name || "")}</td>
-                            <td>${dt}</td>
-                            <td class="text-end">
-                                <a class="btn btn-outline-primary" href="${href}">Scegli</a>
-                            </td>
-                        </tr>`;
-                }).join("");
-            }
-
-            // aggiorna cards (mobile)
-            if (cards) {
-                cards.innerHTML = events.map(e => {
-                    const dt = e.openDate
-                        ? new Date(e.openDate).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-                        : "-";
-
-                    const href =
-                        `/MarketSearch?Account=${encodeURIComponent(account)}` +
-                        `&Q=${encodeURIComponent(qValue)}` +
-                        `&EventId=${encodeURIComponent(e.id || "")}`;
-
-                    return `
-                        <div class="col-12 col-sm-6">
-                            <div class="card bf-mobile-card">
-                                <div class="card-body bf-card-body">
-                                    <div class="fw-bold">${(e.name || "")}</div>
-                                    <div class="text-muted small mt-1">${dt}</div>
-                                    <div class="mt-3">
-                                        <a class="btn btn-outline-primary w-100" href="${href}">Scegli</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                }).join("");
-            }
+        if (cards && cpager) {
+            const items = Array.from(cards.querySelectorAll('.bf-ev-item'));
+            if (items.length > PAGE_SIZE) paginate(items, cpager, 1);
         }
+    }
 
+    // ── realtime eventi (ricerca mentre scrivi) ────────────────────────────────
+    async function refreshEventsRealtime() {
+        const qEl   = document.getElementById('eventQuery');
+        const tbody = document.getElementById('eventsTbody');
+        const cards = document.getElementById('eventsCards');
+        const countEl = document.getElementById('eventsCount');
 
-        document.addEventListener("DOMContentLoaded", () => {
-            // realtime eventi mentre scrivi
-            const qEl = document.getElementById("eventQuery");
-            if (qEl) qEl.addEventListener("input", debounce(refreshEventsRealtime, 300));
+        if (!qEl) return;
 
-            // refresh automatico al cambio filtro mercato
-            const sel = document.querySelector('select[name="MarketType"]');
-            const form = sel?.closest("form");
-            if (sel && form) sel.addEventListener("change", () => form.submit());
+        const account = document.querySelector('input[name="Account"]')?.value || '';
+        const q       = qEl.value || '';
+
+        const url = `/MarketSearch?handler=Events&account=${encodeURIComponent(account)}&q=${encodeURIComponent(q)}`;
+        const res  = await fetch(url, { cache: 'no-store' });
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const events = (data.events || []).sort((a, b) => {
+            if (!a.openDate) return 1;
+            if (!b.openDate) return -1;
+            return new Date(a.openDate) - new Date(b.openDate);
         });
 
-        (async function () {
-            const REFRESH_MS = 2500;
+        if (countEl) countEl.textContent = events.length;
 
-            async function refreshMarketQuotes(container) {
-                const marketId = container.dataset.marketid;
-                const account = container.dataset.account || "";
+        // ─ desktop: tabella ─
+        if (tbody) {
+            tbody.innerHTML = events.map(e => {
+                const dt = e.openDate
+                    ? new Date(e.openDate).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+                    : '—';
+                const href = `/MarketSearch?Account=${encodeURIComponent(account)}&Q=${encodeURIComponent(q)}&EventId=${encodeURIComponent(e.id || '')}`;
+                return `<tr class="bf-ev-item">
+                    <td class="fw-semibold">${e.name || ''}</td>
+                    <td class="text-nowrap text-muted small">${dt}</td>
+                    <td class="text-end"><a class="btn btn-outline-primary btn-sm" href="${href}">Scegli →</a></td>
+                </tr>`;
+            }).join('');
 
-                try {
-                    const url = `/MarketSearch?handler=Quotes&marketId=${encodeURIComponent(marketId)}&account=${encodeURIComponent(account)}`;
-                    const res = await fetch(url, { cache: "no-store" });
-                    const data = await res.json();
+            // ri-pagina
+            const tpager = document.getElementById('eventsTablePager');
+            if (tpager) {
+                const rows = Array.from(tbody.querySelectorAll('tr.bf-ev-item'));
+                if (rows.length > PAGE_SIZE) paginate(rows, tpager, 1);
+                else tpager.innerHTML = '';
+            }
+        }
 
-                    const statusEl = container.querySelector(".quote-status");
-                    if (!data.ok) {
-                        if (statusEl) statusEl.textContent = data.error || "Errore quote";
-                        return;
-                    }
+        // ─ mobile: cards ─
+        if (cards) {
+            const container = cards.querySelector('.row') || cards;
+            container.innerHTML = events.map(e => {
+                const dt = e.openDate
+                    ? new Date(e.openDate).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+                    : '—';
+                const href = `/MarketSearch?Account=${encodeURIComponent(account)}&Q=${encodeURIComponent(q)}&EventId=${encodeURIComponent(e.id || '')}`;
+                return `<div class="col-12 col-sm-6 bf-ev-item">
+                    <div class="bf-event-card">
+                        <div class="bf-event-name">${e.name || ''}</div>
+                        <div class="text-muted small mt-1">${dt}</div>
+                        <a class="btn btn-outline-primary w-100 mt-2 btn-sm" href="${href}">Scegli →</a>
+                    </div>
+                </div>`;
+            }).join('');
 
-                    if (statusEl) statusEl.textContent = data.delayed ? "Quote DELAYED" : "Quote LIVE";
+            // ri-pagina cards
+            const cpager = document.getElementById('eventsCardsPager');
+            if (cpager) {
+                const items = Array.from(container.querySelectorAll('.bf-ev-item'));
+                if (items.length > PAGE_SIZE) paginate(items, cpager, 1);
+                else cpager.innerHTML = '';
+            }
+        }
+    }
 
-                    const runners = data.runners || {};
-                    container.querySelectorAll(".runner-row").forEach(row => {
-                        const selId = row.dataset.selectionid;
-                        const q = runners[selId];
+    // ── quote realtime (mercati) ───────────────────────────────────────────────
+    async function refreshMarketQuotes(container) {
+        const marketId = container.dataset.marketid;
+        const account  = container.dataset.account || '';
 
-                        const backEl = row.querySelector(".back-odds");
-                        const layEl = row.querySelector(".lay-odds");
+        try {
+            const url = `/MarketSearch?handler=Quotes&marketId=${encodeURIComponent(marketId)}&account=${encodeURIComponent(account)}`;
+            const res  = await fetch(url, { cache: 'no-store' });
+            const data = await res.json();
 
-                        if (!q) {
-                            if (backEl) backEl.textContent = "-";
-                            if (layEl) layEl.textContent = "-";
-                            return;
-                        }
+            const statusEl = container.querySelector('.quote-status');
+            if (!data.ok) {
+                if (statusEl) statusEl.textContent = data.error || 'Errore quote';
+                return;
+            }
 
-                        if (backEl) backEl.textContent = q.back ? Number(q.back).toFixed(2) : "-";
-                        if (layEl) layEl.textContent = q.lay ? Number(q.lay).toFixed(2) : "-";
-                    });
-                } catch (e) {
-                    const statusEl = container.querySelector(".quote-status");
-                    if (statusEl) statusEl.textContent = "Errore rete";
+            if (statusEl) statusEl.textContent = data.delayed ? '⚠ Quote DELAYED' : '● Quote LIVE';
+
+            const runners = data.runners || {};
+            container.querySelectorAll('.runner-row').forEach(row => {
+                const selId  = row.dataset.selectionid;
+                const q      = runners[selId];
+                const backEl = row.querySelector('.back-odds');
+                const layEl  = row.querySelector('.lay-odds');
+
+                if (!q) {
+                    if (backEl) backEl.textContent = '—';
+                    if (layEl)  layEl.textContent  = '—';
+                    return;
                 }
-            }
-
-        async function refreshAll() {
-            const cards = document.querySelectorAll(".market-card");
-            for (const c of cards) {
-                await refreshMarketQuotes(c);
-            }
-            attachOrderButtons();
-        }
-
-
-        function parseOdd(text) {
-            if (!text) return null;
-            const t = text.replace(",", ".").trim();
-            const v = Number(t);
-            return Number.isFinite(v) && v > 1 ? v : null;
-        }
-
-        function getStakePct() {
-            const el = document.getElementById("stakePct");
-            const v = el ? Number(String(el.value).replace(",", ".")) : 3.0;
-            if (!Number.isFinite(v)) return 3.0;
-            return Math.min(100, Math.max(0.1, v));
-        }
-
-        function attachOrderButtons() {
-            document.querySelectorAll(".btn-order").forEach(btn => {
-                if (btn.dataset.bound === "1") return;
-                btn.dataset.bound = "1";
-
-                btn.addEventListener("click", () => {
-                    const marketId = btn.dataset.marketid;
-                    const selectionId = btn.dataset.selectionid;
-                    const side = (btn.dataset.side || "LAY").toUpperCase();
-
-                    const row = btn.closest(".runner-row");
-                    const backText = row?.querySelector(".back-odds")?.textContent || "";
-                    const layText = row?.querySelector(".lay-odds")?.textContent || "";
-
-                    const backPrice = parseOdd(backText);
-                    const layPrice = parseOdd(layText);
-
-                    // price da usare: BACK usa colonna blu, LAY usa colonna rossa
-        const price = side === "BACK" ? backPrice : layPrice; // può essere null
-
-        const stakePct = getStakePct();
-
-        let url =
-            `/OrderPreview?MarketId=${encodeURIComponent(marketId)}` +
-            `&SelectionId=${encodeURIComponent(selectionId)}` +
-            `&Side=${encodeURIComponent(side)}` +
-            `&StakePercent=${encodeURIComponent(stakePct.toFixed(1))}`;
-
-        // Passo Price SOLO se presente
-        if (price !== null && price !== undefined) {
-            url += `&Price=${encodeURIComponent(Number(price).toFixed(2))}`;
-        }
-
-        window.location.href = url;
-
-                });
+                if (backEl) backEl.textContent = q.back ? Number(q.back).toFixed(2) : '—';
+                if (layEl)  layEl.textContent  = q.lay  ? Number(q.lay).toFixed(2)  : '—';
             });
+        } catch {
+            const statusEl = container.querySelector('.quote-status');
+            if (statusEl) statusEl.textContent = 'Errore rete';
         }
+    }
 
+    async function refreshAll() {
+        const cards = document.querySelectorAll('.market-card');
+        for (const c of cards) await refreshMarketQuotes(c);
+        attachOrderButtons();
+    }
 
+    // ── bottoni BACK/LAY → OrderPreview ───────────────────────────────────────
+    function attachOrderButtons() {
+        document.querySelectorAll('.btn-order').forEach(btn => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+
+            btn.addEventListener('click', () => {
+                const marketId    = btn.dataset.marketid;
+                const selectionId = btn.dataset.selectionid;
+                const side        = (btn.dataset.side || 'LAY').toUpperCase();
+
+                const row      = btn.closest('.runner-row');
+                const backText = row?.querySelector('.back-odds')?.textContent || '';
+                const layText  = row?.querySelector('.lay-odds')?.textContent  || '';
+
+                const price    = side === 'BACK' ? parseOdd(backText) : parseOdd(layText);
+                const stakePct = getStakePct();
+
+                let url = `/OrderPreview?MarketId=${encodeURIComponent(marketId)}`
+                        + `&SelectionId=${encodeURIComponent(selectionId)}`
+                        + `&Side=${encodeURIComponent(side)}`
+                        + `&StakePercent=${encodeURIComponent(stakePct.toFixed(1))}`;
+
+                if (price !== null && price !== undefined)
+                    url += `&Price=${encodeURIComponent(Number(price).toFixed(2))}`;
+
+                window.location.href = url;
+            });
+        });
+    }
+
+    // ── init ───────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // paginazione iniziale (da Razor)
+        initEventsPager();
+
+        // ricerca realtime
+        const qEl = document.getElementById('eventQuery');
+        if (qEl) qEl.addEventListener('input', debounce(refreshEventsRealtime, 300));
+
+        // cambio filtro mercato → submit form
+        const sel = document.getElementById('marketTypeSelect');
+        if (sel) sel.addEventListener('change', () => document.getElementById('searchForm')?.submit());
+
+    });
+
+    // quote e bottoni (solo se siamo nella vista mercati)
+    if (document.querySelectorAll('.market-card').length > 0) {
+        (async function () {
             await refreshAll();
-            setInterval(refreshAll, REFRESH_MS);
+            setInterval(refreshAll, 2500);
         })();
-    </script>
+    }
+
+})();
+</script>
 }
