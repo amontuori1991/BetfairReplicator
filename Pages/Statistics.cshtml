@@ -12,693 +12,363 @@
             <div>
                 <h1 class="ns-title h4 mb-1">Statistiche</h1>
                 <div class="ns-subtitle">
-                    Storico P/L, ROI, BACK/LAY, Equity
+                    Storico P&amp;L, ROI, BACK/LAY, Equity
                     @if (!string.IsNullOrWhiteSpace(Model.AccountUsed))
                     {
                         <span class="text-muted">— account: <strong>@Model.AccountUsed</strong></span>
                     }
-
                 </div>
             </div>
-
-            <a class="btn btn-outline-secondary btn-sm" asp-page="/Index">Torna alla Home</a>
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/Index">Home</a>
         </div>
     </div>
-
-    <style>
-        .stat-kpi {
-            border: 1px solid rgba(0,0,0,.06);
-            border-radius: 14px;
-            padding: 14px;
-            background: #fff;
-            box-shadow: 0 6px 20px rgba(0,0,0,.06);
-        }
- .stat-kpi .label { font-size: .78rem; color: #6c757d; }
-
-.stat-kpi .value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.1;
-    color: #111827; /* default scuro */
-}
-
-.stat-kpi.profit-positive .value { color: #198754; }
-.stat-kpi.profit-negative .value { color: #dc3545; }
-
-.stat-kpi .meta {
-    font-size: .78rem;
-    color: #6c757d;
-    margin-top: 8px;
-    line-height: 1.3;
-}
-
-
-
-        .chart-card {
-            border: 1px solid rgba(0,0,0,.06);
-            border-radius: 16px;
-            background: #fff;
-            box-shadow: 0 6px 20px rgba(0,0,0,.06);
-        }
-        .chart-card .head {
-            padding: 14px 16px 0 16px;
-        }
-        .chart-card .body {
-            padding: 10px 16px 16px 16px;
-        }
-        .chart-title { font-weight: 700; }
-        .chart-sub   { font-size: .82rem; color: #6c757d; }
-
-        .nav-pills .nav-link {
-            border-radius: 999px;
-            padding: .35rem .8rem;
-        }
-
-        .chart-wrap { height: 320px; }
-       @@media (max-width: 768px) {
-            .chart-wrap { height: 260px; }
-        }
-
-/* =========================
-   TABELLA DETTAGLIO MENSILE
-   ========================= */
-
-/* tabella “light” coerente con card bianca */
-.table {
-    color: #111827;              /* testo scuro leggibile */
-}
-
-.table thead th {
-    color: #374151;
-    font-weight: 700;
-    border-bottom-color: rgba(0,0,0,0.10);
-}
-
-.table tbody td {
-    color: #111827;
-    border-top-color: rgba(0,0,0,0.06);
-}
-
-.table > :not(caption) > * > * {
-    border-color: rgba(0,0,0,0.06);
-}
-
-/* hover riga */
-.table tbody tr:hover {
-    background-color: rgba(0,0,0,0.02);
-}
-
-/* profit coloring (in tabella) */
-.table td.profit-positive {
-    color: #16a34a;
-    font-weight: 700;
-}
-
-.table td.profit-negative {
-    color: #dc2626;
-    font-weight: 700;
-}
-
-/* =========================
-   TABELLA CHIARA SU CARD SCURA
-   ========================= */
-
-.table-light-wrap {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 6px;
-}
-
-/* testo leggibile */
-.table-light-wrap .table {
-    color: #111827;
-}
-
-/* header */
-.table-light-wrap thead th {
-    color: #000000 !important;
-    font-weight: 700;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-
-/* celle */
-.table-light-wrap tbody td {
-    color: #111827;
-    border-top: 1px solid #e5e7eb;
-}
-
-/* hover */
-.table-light-wrap tbody tr:hover {
-    background-color: #f3f4f6;
-}
-
-/* profitto */
-.table-light-wrap td.profit-positive {
-    color: #16a34a;
-    font-weight: 700;
-}
-
-.table-light-wrap td.profit-negative {
-    color: #dc2626;
-    font-weight: 700;
-}
-.table-light-wrap tbody tr:nth-child(even) {
-    background-color: #fafafa;
-}
-/* =========================
-   TESTI SU SFONDO CHIARO
-   (grafici + messaggi)
-   ========================= */
-
-/* Titoli grafici */
-.chart-title {
-    color: #111827; /* nero pieno */
-}
-
-.chart-sub {
-    color: #374151; /* grigio scuro leggibile */
-}
-
-/* Messaggi informativi (es. nessun dato) */
-.text-muted {
-    color: #374151 !important;
-}
-
-/* Messaggi "nessun dato" nelle tabelle */
-.table td.text-muted {
-    color: #374151 !important;
-}
-
-/* Alert informativi chiari */
-.alert-secondary {
-    color: #111827;
-}
-/* =========================
-   FILTRI: allineamento + leggibilità
-   ========================= */
-
-.ns-label{
-    color: #111827 !important;   /* nero leggibile */
-    font-weight: 700;
-    font-size: .85rem;
-}
-
-.ns-help{
-    color: #374151 !important;   /* grigio scuro leggibile */
-    font-size: .82rem;
-}
-
-.ns-input{
-    border-radius: 12px;
-    min-height: 42px;
-}
-
-.ns-btn{
-    min-height: 42px;
-    border-radius: 12px;
-}
-/* =========================
-   FILTRI (solo questa card)
-   ========================= */
-
-.ns-filters-card .form-label{
-    color: #f9fafb !important;   /* chiaro su sfondo scuro */
-    font-weight: 700;
-    font-size: .85rem;
-    margin-bottom: .35rem;
-}
-
-.ns-filters-card .form-text{
-    color: rgba(249,250,251,.75) !important; /* chiaro ma meno intenso */
-    font-size: .82rem;
-}
-
-/* input/select CHIARI e leggibili (override tema scuro) */
-.ns-filters-card .form-control,
-.ns-filters-card .form-select{
-    background-color: #ffffff !important;
-    color: #111827 !important;
-    border: 1px solid rgba(255,255,255,.18) !important;
-    border-radius: 12px;
-    min-height: 44px;
-}
-
-/* placeholder */
-.ns-filters-card .form-control::placeholder{
-    color: #6b7280 !important;
-}
-
-/* icone calendario e freccia select (se il tema le scurisce) */
-.ns-filters-card input[type="date"]{
-    color-scheme: light; /* forza rendering chiaro del date picker */
-}
-
-/* bottoni coerenti */
-.ns-filters-card .btn{
-    min-height: 44px;
-    border-radius: 12px;
-}
-/* =========================
-   CALENDARIO GIORNALIERO
-   ========================= */
-.bf-cal{
-    border: 1px solid rgba(0,0,0,.06);
-    border-radius: 16px;
-    background: #fff;
-    padding: 10px;
-    box-shadow: 0 6px 20px rgba(0,0,0,.06);
-}
-
-.bf-cal-head{
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    padding: 6px 6px 10px 6px;
-    color: #6b7280;
-    font-weight: 700;
-    font-size: .85rem;
-    text-align: center;
-}
-
-.bf-cal-grid{
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    padding: 6px;
-}
-
-.bf-day{
-    border-radius: 14px;
-    border: 1px solid rgba(0,0,0,.06);
-    background: #f9fafb;
-    min-height: 62px;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-/* giorni con profitto = 0 (testo nero ben leggibile) */
-.bf-day.zero .amt{
-    color: #111827;
-    opacity: 1;
-}
-
-.bf-day.out{
-    opacity: .35;
-}
-
-.bf-day .dnum{
-    font-weight: 800;
-    color: #111827;
-    font-size: .95rem;
-    line-height: 1;
-}
-
-.bf-day .amt{
-    font-weight: 800;
-    font-size: 1.05rem;
-    line-height: 1;
-}
-
-.bf-day.pos{
-    background: rgba(25,135,84,0.10);
-    border-color: rgba(25,135,84,0.18);
-}
-
-.bf-day.pos .amt{
-    color: #198754;
-}
-
-.bf-day.neg{
-    background: rgba(220,53,69,0.10);
-    border-color: rgba(220,53,69,0.18);
-}
-
-.bf-day.neg .amt{
-    color: #dc3545;
-}
-#calLabel{
-    color: #111827;
-    user-select: none; /* evita che si evidenzi in blu */
-}
-@@media (max-width: 768px){
-    .bf-day{ min-height: 58px; }
-    .bf-day .amt{ font-size: 1.0rem; }
-}
-
-@@media (max-width: 576px){
-  #pane-day .d-flex.align-items-center.justify-content-between{
-    flex-direction: column;
-    align-items: flex-start !important;
-  }
-}
-/* ===== Calendario super-compatto (NO scroll) ===== */
-@@media (max-width: 576px){
-
-  /* niente scroll */
-  .bf-cal{
-    overflow-x: hidden;
-  }
-
-  /* 7 colonne sempre dentro */
-  .bf-cal-head,
-  .bf-cal-grid{
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 4px;              /* più stretto */
-    padding: 4px;          /* meno padding */
-    min-width: 0 !important;
-  }
-
-  .bf-cal-head{
-    font-size: .72rem;
-    padding: 4px 4px 6px 4px;
-  }
-
-#pane-day .bf-day{
-    min-height: 48px;   /* +4px: evita tagli su iOS */
-    padding: 4px;
-    border-radius: 10px;
-    overflow: visible;
-}
-
-
-
-  .bf-day .dnum{
-    font-size: .78rem;
-  }
-
-#pane-day .bf-day .amt{
-    font-size: .68rem !important;
-    line-height: 1 !important;
-    white-space: nowrap !important;
-
-    font-style: italic !important;
-    transform: skewX(-8deg);
-transform-origin: left center;
-display: inline-block !important;
-
-    letter-spacing: -0.05em !important;
-    font-variant-numeric: tabular-nums;
-
-    display: block !important;
-}
-
-
-
-
-
-}
-
-    </style>
 
     @if (!string.IsNullOrWhiteSpace(Model.Error))
     {
         <div class="alert alert-danger">@Model.Error</div>
     }
-else
-{
-    var monthlyJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.MonthlyTotal.Select(r => new { label = r.Label, profit = r.Profit, stake = r.Stake, bets = r.Bets, roi = r.RoiPct, roiBankroll = r.RoiBankrollPct })
+    else
+    {
+        var monthlyJson = System.Text.Json.JsonSerializer.Serialize(
+            Model.MonthlyTotal.Select(r => new { label = r.Label, profit = r.Profit, stake = r.Stake, bets = r.Bets, roi = r.RoiPct, roiBankroll = r.RoiBankrollPct })
+        );
+        var monthlyBackLayJson = System.Text.Json.JsonSerializer.Serialize(new {
+            labels = Model.MonthlyTotal.Select(r => r.Label).ToList(),
+            back   = Model.MonthlyBack.ToDictionary(r => r.Label, r => r.Profit),
+            lay    = Model.MonthlyLay.ToDictionary(r => r.Label, r => r.Profit)
+        });
+        var equityJson = System.Text.Json.JsonSerializer.Serialize(
+            Model.Equity.Select(p => new { date = p.Date, cum = p.CumProfit, dd = p.Drawdown })
+        );
 
-    );
-
-    var monthlyBackLayJson = System.Text.Json.JsonSerializer.Serialize(new {
-        labels = Model.MonthlyTotal.Select(r => r.Label).ToList(),
-        back = Model.MonthlyBack.ToDictionary(r => r.Label, r => r.Profit),
-        lay  = Model.MonthlyLay.ToDictionary(r => r.Label, r => r.Profit)
-    });
-
-    var dailyJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.DailyProfit.Select(p => new { date = p.Date, profit = p.Profit })
-    );
-
-    var equityJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.Equity.Select(p => new { date = p.Date, cum = p.CumProfit, dd = p.Drawdown })
-    );
-
-    <!-- Filtri -->
-    <div class="card shadow-sm mb-3 ns-filters-card">
+        <!-- ═══ FILTRI ═══════════════════════════════════════════════════════ -->
+        <div class="card shadow-sm mb-3">
             <div class="card-body">
- <form id="statsForm" method="get" class="row g-3">
-    <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label">Account</label>
-        <select id="accountSelect" class="form-select" name="Account">
-            @foreach (var a in Model.ConnectedAccounts)
-            {
-                <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
-            }
-        </select>
-        <div class="form-text">Default: primo account collegato.</div>
-    </div>
+                <form id="statsForm" method="get" class="row g-2 align-items-end">
 
-    <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label">Da (min @minDate)</label>
-<input type="date" class="form-control"
-       id="fromInput"
-       name="From"
-       min="@minDate"
-       max="@maxDate"
-       value="@Model.FromLocalUsed.ToString("yyyy-MM-dd")" />
-
-    </div>
-
-    <div class="col-12 col-md-6 col-lg-3">
-<label class="form-label">A (max oggi)</label>
-<input type="date" class="form-control"
-       id="toInput"
-       name="To"
-       min="@minDate"
-       max="@maxDate"
-       value="@Model.ToLocalUsed.ToString("yyyy-MM-dd")" />
-
-
-    </div>
-
-    <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label">Bankroll iniziale</label>
-        <input type="number"
-               class="form-control" id="bankrollInput"
-               name="Bankroll"
-               step="0.01"
-               min="0"
-               placeholder="es. 500.00"
-               value="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" />
-        <div class="form-text">Opzionale. Se vuoto → ROI Bankroll = 0.</div>
-    </div>
-
-    <!-- BOTTONI su riga separata -->
-    <div class="col-12">
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary flex-fill" type="submit">Applica</button>
-
-            <a class="btn btn-outline-secondary flex-fill"
-               asp-page="/Statistics"
-               asp-route-Account="@Model.AccountUsed"
-               asp-route-From="@minDate"
-               asp-route-To="@maxDate"
-               asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
-                Reset
-            </a>
-        </div>
-    </div>
-</form>
-
-
-
-                <div class="small text-muted mt-2">
-                    Periodo usato (UTC): <strong>@Model.FromUtcUsed.ToString("yyyy-MM-dd")</strong> → <strong>@Model.ToUtcUsed.ToString("yyyy-MM-dd")</strong>
-                </div>
-            </div>
-        </div>
-
-        <!-- KPI -->
-        <div class="row g-3">
-            <div class="col-12 col-md-4">
-                <div class="stat-kpi @(Model.TotalProfit >= 0 ? "profit-positive" : "profit-negative")">
-                    <div class="label">Totale Profitto</div>
-                    <div class="value">@Model.TotalProfit.ToString("0.00")</div>
-                    <div class="meta">
-    Stake: @Model.TotalStake.ToString("0.00")
-    • ROI Stake: @Model.TotalRoiPct.ToString("0.00")%
-    • ROI Bankroll: @Model.TotalRoiBankrollPct.ToString("0.00")%
-    • Bets: @Model.TotalBets
-</div>
-
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-               <div class="stat-kpi @(Model.BackKpi.Profit >= 0 ? "profit-positive" : "profit-negative")">
-                    <div class="label">BACK</div>
-                    <div class="value">@Model.BackKpi.Profit.ToString("0.00")</div>
-                    <div class="meta">
-    Stake: @Model.BackKpi.Stake.ToString("0.00")
-    • ROI Stake: @Model.BackKpi.RoiPct.ToString("0.00")%
-    • ROI Bankroll: @Model.BackRoiBankrollPct.ToString("0.00")%
-    • Bets: @Model.BackKpi.Bets
-</div>
-
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="stat-kpi @(Model.LayKpi.Profit >= 0 ? "profit-positive" : "profit-negative")">
-                    <div class="label">LAY</div>
-                    <div class="value">@Model.LayKpi.Profit.ToString("0.00")</div>
-                    <div class="meta">
-    Stake: @Model.LayKpi.Stake.ToString("0.00")
-    • ROI Stake: @Model.LayKpi.RoiPct.ToString("0.00")%
-    • ROI Bankroll: @Model.LayRoiBankrollPct.ToString("0.00")%
-    • Bets: @Model.LayKpi.Bets
-</div>
-
-                </div>
-            </div>
-        </div>
-
-
-
-        <!-- TABS -->
-        <div class="chart-card mt-3">
-            <div class="head">
-                <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                    <div>
-                        <div class="chart-title">Dashboard grafici</div>
-                        <div class="chart-sub">Sezioni pensate per essere “leggibili al primo colpo”.</div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label small text-muted mb-1">Account</label>
+                        <select id="accountSelect" class="form-select" name="Account">
+                            @foreach (var a in Model.ConnectedAccounts)
+                            {
+                                <option value="@a" selected="@(string.Equals(a, Model.AccountUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
+                            }
+                        </select>
                     </div>
 
-                    <ul class="nav nav-pills" id="statsTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="tab-overview" data-bs-toggle="pill" data-bs-target="#pane-overview" type="button" role="tab">Panoramica</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-month" data-bs-toggle="pill" data-bs-target="#pane-month" type="button" role="tab">Mensile</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-day" data-bs-toggle="pill" data-bs-target="#pane-day" type="button" role="tab">Giornaliero</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-equity" data-bs-toggle="pill" data-bs-target="#pane-equity" type="button" role="tab">Equity</button>
-                        </li>
+                    <div class="col-6 col-sm-6 col-lg-2">
+                        <label class="form-label small text-muted mb-1">Da</label>
+                        <input type="date" class="form-control" id="fromInput" name="From"
+                               min="@minDate" max="@maxDate"
+                               value="@Model.FromLocalUsed.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-6 col-sm-6 col-lg-2">
+                        <label class="form-label small text-muted mb-1">A</label>
+                        <input type="date" class="form-control" id="toInput" name="To"
+                               min="@minDate" max="@maxDate"
+                               value="@Model.ToLocalUsed.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label small text-muted mb-1">Bankroll iniziale (€)</label>
+                        <input type="number" class="form-control" id="bankrollInput" name="Bankroll"
+                               step="0.01" min="0" placeholder="es. 500.00"
+                               value="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-2 d-flex gap-2">
+                        <button class="btn btn-primary flex-fill" type="submit">Applica</button>
+                        <a class="btn btn-outline-secondary flex-fill"
+                           asp-page="/Statistics"
+                           asp-route-Account="@Model.AccountUsed"
+                           asp-route-From="@minDate"
+                           asp-route-To="@maxDate"
+                           asp-route-Bankroll="@(Model.StartingBankroll > 0 ? Model.StartingBankroll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : null)">
+                            Reset
+                        </a>
+                    </div>
+
+                </form>
+                <div class="text-muted small mt-2">
+                    Periodo UTC: <strong>@Model.FromUtcUsed.ToString("yyyy-MM-dd")</strong> → <strong>@Model.ToUtcUsed.ToString("yyyy-MM-dd")</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SUMMARY BAR ══════════════════════════════════════════════════ -->
+        @if (Model.TotalBets > 0)
+        {
+            var winRate = Model.TotalBets == 0 ? 0.0 :
+                (Model.MonthlyTotal.Count > 0 ? (double)Model.MonthlyTotal.Count(r => r.Profit > 0) / Model.MonthlyTotal.Count * 100.0 : 0.0);
+
+            <div class="bf-summary-bar mb-3">
+                <div class="bf-sb-item">
+                    <span class="bf-sb-lbl">P&amp;L totale</span>
+                    <span class="bf-sb-val @(Model.TotalProfit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                        @(Model.TotalProfit >= 0 ? "+" : "")@Model.TotalProfit.ToString("0.00") €
+                    </span>
+                </div>
+                <div class="bf-sb-item">
+                    <span class="bf-sb-lbl">Scommesse</span>
+                    <span class="bf-sb-val">@Model.TotalBets</span>
+                </div>
+                <div class="bf-sb-item">
+                    <span class="bf-sb-lbl">ROI Stake</span>
+                    <span class="bf-sb-val @(Model.TotalRoiPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                        @(Model.TotalRoiPct >= 0 ? "+" : "")@Model.TotalRoiPct.ToString("0.00")%
+                    </span>
+                </div>
+                @if (Model.StartingBankroll > 0)
+                {
+                    <div class="bf-sb-item">
+                        <span class="bf-sb-lbl">ROI Bankroll</span>
+                        <span class="bf-sb-val @(Model.TotalRoiBankrollPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                            @(Model.TotalRoiBankrollPct >= 0 ? "+" : "")@Model.TotalRoiBankrollPct.ToString("0.00")%
+                        </span>
+                    </div>
+                }
+                <div class="bf-sb-item">
+                    <span class="bf-sb-lbl">Max Drawdown</span>
+                    <span class="bf-sb-val bf-profit-neg">-@Model.MaxDrawdown.ToString("0.00") €</span>
+                </div>
+                <div class="bf-sb-item">
+                    <span class="bf-sb-lbl">Stake totale</span>
+                    <span class="bf-sb-val">@Model.TotalStake.ToString("0.00") €</span>
+                </div>
+            </div>
+        }
+
+        <!-- ═══ KPI CARDS ════════════════════════════════════════════════════ -->
+        <div class="row g-3 mb-3">
+            <!-- Totale -->
+            <div class="col-12 col-md-4">
+                <div class="st-kpi">
+                    <div class="st-kpi-label">Totale</div>
+                    <div class="st-kpi-value @(Model.TotalProfit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                        @(Model.TotalProfit >= 0 ? "+" : "")@Model.TotalProfit.ToString("0.00") €
+                    </div>
+                    <div class="st-kpi-grid mt-2">
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Stake</span>
+                            <span class="st-kpi-cval">@Model.TotalStake.ToString("0.00") €</span>
+                        </div>
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">ROI Stake</span>
+                            <span class="st-kpi-cval @(Model.TotalRoiPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">@Model.TotalRoiPct.ToString("0.00")%</span>
+                        </div>
+                        @if (Model.StartingBankroll > 0)
+                        {
+                            <div class="st-kpi-cell">
+                                <span class="st-kpi-clbl">ROI Bankroll</span>
+                                <span class="st-kpi-cval @(Model.TotalRoiBankrollPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">@Model.TotalRoiBankrollPct.ToString("0.00")%</span>
+                            </div>
+                        }
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Bets</span>
+                            <span class="st-kpi-cval">@Model.TotalBets</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BACK -->
+            <div class="col-12 col-md-4">
+                <div class="st-kpi">
+                    <div class="st-kpi-label">
+                        <span class="bf-side-chip bf-side-back me-1">BACK</span>
+                    </div>
+                    <div class="st-kpi-value @(Model.BackKpi.Profit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                        @(Model.BackKpi.Profit >= 0 ? "+" : "")@Model.BackKpi.Profit.ToString("0.00") €
+                    </div>
+                    <div class="st-kpi-grid mt-2">
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Stake</span>
+                            <span class="st-kpi-cval">@Model.BackKpi.Stake.ToString("0.00") €</span>
+                        </div>
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">ROI Stake</span>
+                            <span class="st-kpi-cval @(Model.BackKpi.RoiPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">@Model.BackKpi.RoiPct.ToString("0.00")%</span>
+                        </div>
+                        @if (Model.StartingBankroll > 0)
+                        {
+                            <div class="st-kpi-cell">
+                                <span class="st-kpi-clbl">ROI Bankroll</span>
+                                <span class="st-kpi-cval @(Model.BackRoiBankrollPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">@Model.BackRoiBankrollPct.ToString("0.00")%</span>
+                            </div>
+                        }
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Bets</span>
+                            <span class="st-kpi-cval">@Model.BackKpi.Bets</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LAY -->
+            <div class="col-12 col-md-4">
+                <div class="st-kpi">
+                    <div class="st-kpi-label">
+                        <span class="bf-side-chip bf-side-lay me-1">LAY</span>
+                    </div>
+                    <div class="st-kpi-value @(Model.LayKpi.Profit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                        @(Model.LayKpi.Profit >= 0 ? "+" : "")@Model.LayKpi.Profit.ToString("0.00") €
+                    </div>
+                    <div class="st-kpi-grid mt-2">
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Stake</span>
+                            <span class="st-kpi-cval">@Model.LayKpi.Stake.ToString("0.00") €</span>
+                        </div>
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">ROI Stake</span>
+                            <span class="st-kpi-cval @(Model.LayKpi.RoiPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">@Model.LayKpi.RoiPct.ToString("0.00")%</span>
+                        </div>
+                        @if (Model.StartingBankroll > 0)
+                        {
+                            <div class="st-kpi-cell">
+                                <span class="st-kpi-clbl">ROI Bankroll</span>
+                                <span class="st-kpi-cval @(Model.LayRoiBankrollPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">@Model.LayRoiBankrollPct.ToString("0.00")%</span>
+                            </div>
+                        }
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Bets</span>
+                            <span class="st-kpi-cval">@Model.LayKpi.Bets</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ GRAFICI (TABS) ═══════════════════════════════════════════════ -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <!-- tab nav -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div>
+                        <div class="fw-semibold">Dashboard grafici</div>
+                        <div class="text-muted small">Panoramica visiva del periodo selezionato</div>
+                    </div>
+                    <ul class="nav nav-pills st-tabs" id="statsTabs" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pane-overview" type="button">Panoramica</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pane-month" type="button">Mensile</button></li>
+                        <li class="nav-item"><button class="nav-link" id="tab-day" data-bs-toggle="pill" data-bs-target="#pane-day" type="button">Giornaliero</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pane-equity" type="button">Equity</button></li>
                     </ul>
                 </div>
-            </div>
 
-            <div class="body tab-content" id="statsTabsContent">
-                <!-- PANORAMICA -->
-                <div class="tab-pane fade show active" id="pane-overview" role="tabpanel">
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-6">
-                            <div class="chart-title small mb-2">Profitto mensile (verde/rosso)</div>
-                            <div class="chart-wrap">
-                                <canvas id="chartMonthlyProfit" data-rows='@monthlyJson'></canvas>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6">
-                            <div class="chart-title small mb-2">Equity cumulata (area) + Drawdown</div>
-                            <div class="chart-wrap">
-                                <canvas id="chartEquity" data-rows='@equityJson'></canvas>
-                            </div>
-                            <div class="small text-muted mt-1">Max Drawdown: <strong>@Model.MaxDrawdown.ToString("0.00")</strong></div>
-                        </div>
-                    </div>
-                </div>
+                <div class="tab-content" id="statsTabsContent">
 
-                <!-- MENSILE -->
-                <div class="tab-pane fade" id="pane-month" role="tabpanel">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <div class="chart-title small mb-2">ROI mensile (linea)</div>
-                            <div class="chart-wrap">
-                                <canvas id="chartMonthlyRoi" data-rows='@monthlyJson'></canvas>
+                    <!-- PANORAMICA -->
+                    <div class="tab-pane fade show active" id="pane-overview" role="tabpanel">
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-6">
+                                <div class="st-chart-label mb-2">Profitto mensile</div>
+                                <div class="st-chart-wrap">
+                                    <canvas id="chartMonthlyProfit" data-rows='@monthlyJson'></canvas>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="chart-title small mb-2">BACK vs LAY (profitto mensile)</div>
-                            <div class="chart-wrap">
-                                <canvas id="chartBackLay" data-rows='@monthlyBackLayJson'></canvas>
+                            <div class="col-12 col-lg-6">
+                                <div class="st-chart-label mb-2">Equity cumulata + Drawdown</div>
+                                <div class="st-chart-wrap">
+                                    <canvas id="chartEquity" data-rows='@equityJson'></canvas>
+                                </div>
+                                <div class="text-muted small mt-1">Max Drawdown: <strong class="bf-profit-neg">-@Model.MaxDrawdown.ToString("0.00") €</strong></div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-<!-- GIORNALIERO (CALENDARIO) -->
-<div class="tab-pane fade" id="pane-day" role="tabpanel">
-
-    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-        <div>
-            <div class="chart-title small mb-0">Calendario profitto (giornaliero)</div>
-            <div class="chart-sub">Verde = profitto • Rosso = perdita • Clicca le frecce per cambiare mese.</div>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="calPrev">‹</button>
-            <div class="fw-semibold" id="calLabel">—</div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="calNext">›</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="calToday">Oggi</button>
-        </div>
-    </div>
-
-    <div class="bf-cal">
-        <div class="bf-cal-head">
-            <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
-        </div>
-        <div class="bf-cal-grid" id="calGrid"></div>
-    </div>
-
-    <div class="row g-2 mt-3">
-        <div class="col-12 col-md-6">
-            <div class="stat-kpi" id="calProfitCard">
-                <div class="label">Profitto del mese</div>
-                <div class="value" id="calMonthProfit">0.00€</div>
-            </div>
-        </div>
-        <div class="col-12 col-md-6">
-            <div class="stat-kpi">
-                <div class="label">Scommesse del mese</div>
-                <div class="value" id="calMonthBets">0</div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-
-                <!-- EQUITY -->
-                <div class="tab-pane fade" id="pane-equity" role="tabpanel">
-                    <div class="chart-title small mb-2">Equity cumulata (zoom visivo, griglia leggera)</div>
-                    <div class="chart-wrap">
-                        <canvas id="chartEquityOnly" data-rows='@equityJson'></canvas>
+                    <!-- MENSILE -->
+                    <div class="tab-pane fade" id="pane-month" role="tabpanel">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="st-chart-label mb-2">ROI mensile</div>
+                                <div class="st-chart-wrap">
+                                    <canvas id="chartMonthlyRoi" data-rows='@monthlyJson'></canvas>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="st-chart-label mb-2">BACK vs LAY – profitto mensile</div>
+                                <div class="st-chart-wrap">
+                                    <canvas id="chartBackLay" data-rows='@monthlyBackLayJson'></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+
+                    <!-- GIORNALIERO -->
+                    <div class="tab-pane fade" id="pane-day" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <div class="st-chart-label mb-0">Calendario giornaliero</div>
+                                <div class="text-muted small">Verde = profitto · Rosso = perdita</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="calPrev">‹</button>
+                                <div class="fw-semibold" id="calLabel" style="min-width:130px;text-align:center">—</div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="calNext">›</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="calToday">Oggi</button>
+                            </div>
+                        </div>
+
+                        <div class="st-cal">
+                            <div class="st-cal-head">
+                                <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
+                            </div>
+                            <div class="st-cal-grid" id="calGrid"></div>
+                        </div>
+
+                        <div class="row g-2 mt-3">
+                            <div class="col-6">
+                                <div class="st-kpi st-kpi-sm" id="calProfitCard">
+                                    <div class="st-kpi-label">P&amp;L del mese</div>
+                                    <div class="st-kpi-value" id="calMonthProfit">0.00 €</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="st-kpi st-kpi-sm">
+                                    <div class="st-kpi-label">Scommesse</div>
+                                    <div class="st-kpi-value" id="calMonthBets">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EQUITY -->
+                    <div class="tab-pane fade" id="pane-equity" role="tabpanel">
+                        <div class="st-chart-label mb-2">Equity cumulata</div>
+                        <div class="st-chart-wrap">
+                            <canvas id="chartEquityOnly" data-rows='@equityJson'></canvas>
+                        </div>
+                    </div>
+
+                </div><!-- /tab-content -->
             </div>
         </div>
 
-        <!-- Tabella -->
+        <!-- ═══ TABELLA MENSILE ═══════════════════════════════════════════════ -->
         <div class="card shadow-sm mt-3">
             <div class="card-body">
-                <div class="fw-semibold mb-2">Dettaglio mensile</div>
-
-                <div class="table-responsive table-light-wrap">
+                <div class="fw-semibold mb-3">Dettaglio mensile</div>
+                <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
                         <thead>
                             <tr>
                                 <th>Mese</th>
-                                <th class="text-end">Profitto</th>
+                                <th class="text-end">P&amp;L</th>
                                 <th class="text-end">Stake</th>
-                                <th class="text-end">ROI Stake %</th>
-<th class="text-end">ROI Bankroll %</th>
-
+                                <th class="text-end">ROI Stake</th>
+                                @if (Model.StartingBankroll > 0)
+                                {
+                                    <th class="text-end">ROI Bankroll</th>
+                                }
                                 <th class="text-end">Bets</th>
                             </tr>
                         </thead>
                         <tbody>
                             @if (Model.MonthlyTotal == null || Model.MonthlyTotal.Count == 0)
                             {
-                                <tr>
-                                    <td colspan="6" class="text-muted">Nessun dato disponibile nel periodo selezionato.</td>
-                                </tr>
+                                <tr><td colspan="6" class="text-muted">Nessun dato nel periodo selezionato.</td></tr>
                             }
                             else
                             {
@@ -706,14 +376,19 @@ else
                                 {
                                     <tr>
                                         <td>@r.Label</td>
-                                        <td class="text-end @(r.Profit >= 0 ? "profit-positive" : "profit-negative")">
-    @r.Profit.ToString("0.00")
-</td>
-
-                                        <td class="text-end">@r.Stake.ToString("0.00")</td>
-                                        <td class="text-end">@r.RoiPct.ToString("0.00")%</td>
-<td class="text-end">@r.RoiBankrollPct.ToString("0.00")%</td>
-
+                                        <td class="text-end @(r.Profit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                                            @(r.Profit >= 0 ? "+" : "")@r.Profit.ToString("0.00") €
+                                        </td>
+                                        <td class="text-end">@r.Stake.ToString("0.00") €</td>
+                                        <td class="text-end @(r.RoiPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                                            @r.RoiPct.ToString("0.00")%
+                                        </td>
+                                        @if (Model.StartingBankroll > 0)
+                                        {
+                                            <td class="text-end @(r.RoiBankrollPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                                                @r.RoiBankrollPct.ToString("0.00")%
+                                            </td>
+                                        }
                                         <td class="text-end">@r.Bets</td>
                                     </tr>
                                 }
@@ -721,296 +396,115 @@ else
                         </tbody>
                     </table>
                 </div>
-
-                <div class="alert alert-secondary mt-3 mb-0">
-                    Fonte: listClearedOrders (account selezionato).
-                </div>
+                <div class="text-muted small mt-2">Fonte: listClearedOrders · account: @Model.AccountUsed</div>
             </div>
         </div>
+
     }
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script>
+(function () {
 
-    <script>
-        function parseCanvasJson(id) {
-            const el = document.getElementById(id);
-            if (!el) return null;
-            const raw = el.getAttribute('data-rows');
-            if (!raw) return null;
-            try { return JSON.parse(raw); } catch { return null; }
-        }
+    // ── Account select: ricarica bankroll + from + submit ─────────────────────
+    const form          = document.getElementById('statsForm');
+    const accountSelect = document.getElementById('accountSelect');
+    const bankrollInput = document.getElementById('bankrollInput');
+    const fromInput     = document.getElementById('fromInput');
 
-        // Baseline y=0
-        const zeroLinePlugin = {
-            id: 'zeroLine',
-            afterDraw(chart) {
-                const y = chart.scales?.y;
-                if (!y) return;
-                const y0 = y.getPixelForValue(0);
-                const { ctx, chartArea } = chart;
-                if (!chartArea) return;
-                ctx.save();
-                ctx.beginPath();
-                ctx.moveTo(chartArea.left, y0);
-                ctx.lineTo(chartArea.right, y0);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-                ctx.stroke();
-                ctx.restore();
-            }
-        };
-
-        // Tema “pulito”
-        Chart.defaults.font.family = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial";
-        Chart.defaults.color = "#111827";
-        Chart.defaults.scale.grid.color = "rgba(0,0,0,0.08)";
-Chart.defaults.scale.ticks.color = "#374151";
-        Chart.defaults.plugins.legend.labels.boxWidth = 10;
-        Chart.defaults.plugins.legend.labels.boxHeight = 10;
-        Chart.defaults.plugins.tooltip.padding = 12;
-        Chart.defaults.plugins.tooltip.cornerRadius = 10;
-        Chart.defaults.interaction.mode = "index";
-        Chart.defaults.interaction.intersect = false;
-
-        function money(x) { return (Number(x) || 0).toFixed(2); }
-        function pct(x) { return (Number(x) || 0).toFixed(2) + "%"; }
-        const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
-function shortMonthLabel(s) {
-    // "yyyy-MM" -> "MM/yy"
-    if (!s || s.length < 7) return s;
-    const yy = s.substring(2, 4);
-    const mm = s.substring(5, 7);
-    return `${mm}/${yy}`;
-}
-
-function shortDayLabel(s) {
-    // "yyyy-MM-dd" -> "dd/MM"
-    if (!s || s.length < 10) return s;
-    const dd = s.substring(8, 10);
-    const mm = s.substring(5, 7);
-    return `${dd}/${mm}`;
-}
-
-        function movingAverage(values, period) {
-            const res = [];
-            for (let i = 0; i < values.length; i++) {
-                let start = Math.max(0, i - period + 1);
-                let slice = values.slice(start, i + 1);
-                let avg = slice.reduce((a, b) => a + b, 0) / slice.length;
-                res.push(avg);
-            }
-            return res;
-        }
-
-        Chart.register(zeroLinePlugin);
-
-    (function () {
-        const form = document.getElementById('statsForm');
-        const accountSelect = document.getElementById('accountSelect');
-        const bankrollInput = document.getElementById('bankrollInput');
-        const fromInput = document.getElementById('fromInput');
-
-        if (!form || !accountSelect || !bankrollInput || !fromInput) return;
-
-
+    if (form && accountSelect) {
         accountSelect.addEventListener('change', async () => {
             try {
                 const acc = accountSelect.value || '';
-                const url = `${window.location.pathname}?handler=Bankroll&account=${encodeURIComponent(acc)}`;
-                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const res  = await fetch(`${location.pathname}?handler=Bankroll&account=${encodeURIComponent(acc)}`,
+                    { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 const data = await res.json();
-
- const v = Number(data?.bankroll ?? 0);
-bankrollInput.value = (v > 0) ? v.toFixed(2) : "";
-
-// imposta anche la "Da" salvata (yyyy-MM-dd)
-const f = (data?.from ?? "").toString();
-if (f) fromInput.value = f;
-
-// ricalcola tutto subito
-form.submit();
-
-            } catch (e) {
-                // se fallisce la fetch, almeno ricalcola comunque
-                form.submit();
-            }
+                const v = Number(data?.bankroll ?? 0);
+                if (bankrollInput) bankrollInput.value = v > 0 ? v.toFixed(2) : '';
+                const f = (data?.from ?? '').toString();
+                if (f && fromInput) fromInput.value = f;
+            } catch { /* fallback silenzioso */ }
+            form.submit();
         });
-    })();
-    (function () {
-
-    // stato calendario
-    let calYear = null;
-    let calMonth = null; // 1..12
-    let calLoaded = false;
-
-    const tabBtn = document.getElementById('tab-day');
-    const grid = document.getElementById('calGrid');
-    const label = document.getElementById('calLabel');
-    const btnPrev = document.getElementById('calPrev');
-    const btnNext = document.getElementById('calNext');
-    const btnToday = document.getElementById('calToday');
-
-    const monthProfitEl = document.getElementById('calMonthProfit');
-    const monthBetsEl = document.getElementById('calMonthBets');
-    const profitCard = document.getElementById('calProfitCard');
-
-    const accountSelect = document.getElementById('accountSelect');
-
-    if (!grid || !label || !btnPrev || !btnNext || !btnToday || !accountSelect) return;
-
-    function moneyEur(x){
-        const v = Number(x || 0);
-        const sign = v < 0 ? "-" : "";
-        return sign + Math.abs(v).toFixed(2) + "€";
     }
 
-    function startOfCurrentRomeMonth(){
-        const now = new Date();
-        return { y: now.getFullYear(), m: now.getMonth() + 1 };
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function parseCanvasJson(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        try { return JSON.parse(el.getAttribute('data-rows') || 'null'); } catch { return null; }
     }
 
-    // inizializza: mese corrente
-    const init = startOfCurrentRomeMonth();
-    calYear = init.y;
-    calMonth = init.m;
+    function money(x) { return (Number(x) || 0).toFixed(2); }
+    function pct(x)   { return (Number(x) || 0).toFixed(2) + '%'; }
 
-    async function loadCalendar(){
-        const acc = accountSelect.value || "";
-        if (!acc) return;
+    function shortMonthLabel(s) {
+        if (!s || s.length < 7) return s;
+        return s.substring(5, 7) + '/' + s.substring(2, 4);
+    }
+    function shortDayLabel(s) {
+        if (!s || s.length < 10) return s;
+        return s.substring(8, 10) + '/' + s.substring(5, 7);
+    }
 
-        const url = `${window.location.pathname}?handler=Calendar&account=${encodeURIComponent(acc)}&year=${calYear}&month=${calMonth}`;
-        const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const data = await res.json();
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
-        if (!data || !data.ok){
-            label.textContent = "Calendario non disponibile";
-            grid.innerHTML = `<div class="text-muted small">${(data && data.error) ? data.error : "Errore caricamento calendario"}</div>`;
-            return;
+    // ── Chart.js tema dark ────────────────────────────────────────────────────
+    Chart.defaults.font.family     = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial";
+    Chart.defaults.color           = 'rgba(242,246,255,.80)';
+    Chart.defaults.scale.grid.color= 'rgba(255,255,255,.06)';
+    Chart.defaults.scale.ticks.color = 'rgba(242,246,255,.65)';
+    Chart.defaults.plugins.legend.labels.color     = 'rgba(242,246,255,.80)';
+    Chart.defaults.plugins.legend.labels.boxWidth  = 10;
+    Chart.defaults.plugins.legend.labels.boxHeight = 10;
+    Chart.defaults.plugins.tooltip.padding         = 12;
+    Chart.defaults.plugins.tooltip.cornerRadius    = 10;
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(7,16,31,.92)';
+    Chart.defaults.plugins.tooltip.titleColor      = '#ffcc00';
+    Chart.defaults.plugins.tooltip.bodyColor       = 'rgba(242,246,255,.90)';
+    Chart.defaults.plugins.tooltip.borderColor     = 'rgba(255,255,255,.12)';
+    Chart.defaults.plugins.tooltip.borderWidth     = 1;
+    Chart.defaults.interaction.mode       = 'index';
+    Chart.defaults.interaction.intersect  = false;
+
+    // zero-line plugin
+    const zeroLinePlugin = {
+        id: 'zeroLine',
+        afterDraw(chart) {
+            const y = chart.scales?.y;
+            if (!y) return;
+            const y0 = y.getPixelForValue(0);
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(chartArea.left, y0);
+            ctx.lineTo(chartArea.right, y0);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255,255,255,.18)';
+            ctx.stroke();
+            ctx.restore();
         }
+    };
+    Chart.register(zeroLinePlugin);
 
-        renderCalendar(data);
-        calLoaded = true;
-    }
-
-    function renderCalendar(data){
-        label.textContent = data.label || `${data.month}/${data.year}`;
-
-        const y = data.year;
-        const m = data.month; // 1..12
-        const days = data.days || [];
-
-        // riepilogo mese
-        const mp = Number(data.monthProfit || 0);
-        monthProfitEl.textContent = moneyEur(mp);
-        monthBetsEl.textContent = String(data.monthBets || 0);
-
-        // color profit card (come KPI)
-        profitCard.classList.remove("profit-positive", "profit-negative");
-        profitCard.classList.add(mp >= 0 ? "profit-positive" : "profit-negative");
-
-        // calcolo offset (Lunedì = 0)
-        const first = new Date(y, m - 1, 1);
-        const jsDay = first.getDay(); // 0=Dom .. 6=Sab
-        const offset = (jsDay + 6) % 7; // lun=0 ... dom=6
-
-        const daysInMonth = new Date(y, m, 0).getDate();
-
-        // giorni mese precedente per riempire
-        const prevDays = new Date(y, m - 1, 0).getDate();
-
-        // build 42 celle (6 settimane) come in app
-        const cells = [];
-        for (let i=0;i<42;i++){
-            const d = i - offset + 1;
-
-            if (d < 1){
-                cells.push({ out:true, day: prevDays + d, profit:null });
-            } else if (d > daysInMonth){
-                cells.push({ out:true, day: d - daysInMonth, profit:null });
-            } else {
-                const row = days.find(x => Number(x.day) === d) || { profit: 0, bets: 0 };
-                cells.push({ out:false, day:d, profit:Number(row.profit||0) });
-            }
-        }
-
-        grid.innerHTML = cells.map(c => {
-            const cls = c.out
-    ? "bf-day out"
-    : (c.profit > 0.0001
-        ? "bf-day pos"
-        : (c.profit < -0.0001
-            ? "bf-day neg"
-            : "bf-day zero"));
-
-            const amt = c.out ? "" : moneyEur(c.profit);
-            return `<div class="${cls}">
-                        <div class="dnum">${c.day}</div>
-                        <div class="amt">${amt}</div>
-                    </div>`;
-        }).join("");
-    }
-
-    function prevMonth(){
-        calMonth--;
-        if (calMonth < 1){ calMonth = 12; calYear--; }
-        loadCalendar();
-    }
-
-    function nextMonth(){
-        calMonth++;
-        if (calMonth > 12){ calMonth = 1; calYear++; }
-        loadCalendar();
-    }
-
-    function goToday(){
-        const t = startOfCurrentRomeMonth();
-        calYear = t.y;
-        calMonth = t.m;
-        loadCalendar();
-    }
-
-    btnPrev.addEventListener('click', prevMonth);
-    btnNext.addEventListener('click', nextMonth);
-    btnToday.addEventListener('click', goToday);
-
-    // carico quando apro il tab "Giornaliero" la prima volta
-    tabBtn?.addEventListener('shown.bs.tab', () => {
-        if (!calLoaded) loadCalendar();
-    });
-
-    // se la pagina atterra già sul tab giornaliero (o vuoi caricarlo sempre)
-    // lo carico subito per non aspettare il click
-    loadCalendar();
-
-})();
-
-
-(function () {
-    // 1) Profitto mensile (verde/rosso)
+    // ── 1. Profitto mensile (barre) ───────────────────────────────────────────
     const monthly = parseCanvasJson('chartMonthlyProfit');
-    if (monthly && monthly.length > 0) {
-        const labels = monthly.map(x => x.label);
+    if (monthly?.length) {
+        const labels  = monthly.map(x => x.label);
         const profits = monthly.map(x => x.profit);
-        const stakes = monthly.map(x => x.stake);
-        const bets = monthly.map(x => x.bets);
-        const rois = monthly.map(x => x.roi);
-
-        const colors = profits.map(p => p >= 0 ? "rgba(25,135,84,0.85)" : "rgba(220,53,69,0.85)");
+        const stakes  = monthly.map(x => x.stake);
+        const bets    = monthly.map(x => x.bets);
+        const rois    = monthly.map(x => x.roi);
+        const colors  = profits.map(p => p >= 0 ? 'rgba(74,222,128,.85)' : 'rgba(248,113,113,.85)');
 
         new Chart(document.getElementById('chartMonthlyProfit'), {
             type: 'bar',
             data: {
                 labels,
-                datasets: [{
-                    label: 'Profitto',
-                    data: profits,
-                    backgroundColor: colors,
-                    borderRadius: 10,
-                    maxBarThickness: 40
-                }]
+                datasets: [{ label: 'Profitto', data: profits, backgroundColor: colors, borderRadius: 8, maxBarThickness: 40 }]
             },
             options: {
                 maintainAspectRatio: false,
@@ -1018,15 +512,14 @@ form.submit();
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            title: (items) => items?.[0]?.label ?? "",
-                            label: (ctx) => ` Profitto: ${money(ctx.raw)}`,
+                            title: (items) => items?.[0]?.label ?? '',
+                            label: (ctx)   => ` P&L: ${money(ctx.raw)} €`,
                             afterBody: (items) => {
                                 const i = items?.[0]?.dataIndex ?? 0;
-                                const roiBankroll = (monthly[i]?.roiBankroll ?? 0);
                                 return [
-                                    ` Stake: ${money(stakes[i])}`,
-                                    ` ROI Stake: ${pct(rois[i])}`,
-                                    ` ROI Bankroll: ${pct(roiBankroll)}`,
+                                    ` Stake: ${money(stakes[i])} €`,
+                                    ` ROI: ${pct(rois[i])}`,
+                                    ` ROI Bankroll: ${pct(monthly[i]?.roiBankroll ?? 0)}`,
                                     ` Bets: ${bets[i]}`
                                 ];
                             }
@@ -1034,178 +527,219 @@ form.submit();
                     }
                 },
                 scales: {
-                    x: {
-                        ticks: {
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: 10,
-                            callback: (value, index) => shortMonthLabel(labels[index])
-                        }
-                    },
-                    y: { title: { display: true, text: 'Profitto' } }
+                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10,
+                        callback: (v, i) => shortMonthLabel(labels[i]) } },
+                    y: { title: { display: true, text: 'P&L €', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // 2) ROI mensile
+    // ── 2. ROI mensile (linea) ────────────────────────────────────────────────
     const monthlyRoi = parseCanvasJson('chartMonthlyRoi');
-    if (monthlyRoi && monthlyRoi.length > 0) {
+    if (monthlyRoi?.length) {
         const labels = monthlyRoi.map(x => x.label);
-        const rois = monthlyRoi.map(x => x.roi);
+        const rois   = monthlyRoi.map(x => x.roi);
 
         new Chart(document.getElementById('chartMonthlyRoi'), {
             type: 'line',
             data: {
                 labels,
-                datasets: [{
-                    label: 'ROI %',
-                    data: rois,
-                    borderColor: "rgba(13,110,253,0.95)",
-                    backgroundColor: "rgba(13,110,253,0.15)",
-                    fill: true,
-                    tension: 0.25,
-                    pointRadius: 2
-                }]
+                datasets: [{ label: 'ROI %', data: rois,
+                    borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)',
+                    fill: true, tension: 0.25, pointRadius: 2 }]
             },
             options: {
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => ` ROI: ${pct(ctx.raw)}` } }
-                },
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` ROI: ${pct(ctx.raw)}` } } },
                 scales: {
-                    x: {
-                        ticks: {
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: 10,
-                            callback: (value, index) => shortMonthLabel(labels[index])
-                        }
-                    },
-                    y: { title: { display: true, text: 'ROI %' } }
+                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10,
+                        callback: (v, i) => shortMonthLabel(labels[i]) } },
+                    y: { title: { display: true, text: 'ROI %', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // 3) BACK vs LAY mensile
+    // ── 3. BACK vs LAY ────────────────────────────────────────────────────────
     const backLay = parseCanvasJson('chartBackLay');
-    if (backLay && backLay.labels && backLay.labels.length > 0) {
-        const labels = backLay.labels;
-        const backProfit = labels.map(l => (backLay.back && backLay.back[l] != null) ? backLay.back[l] : 0);
-        const layProfit = labels.map(l => (backLay.lay && backLay.lay[l] != null) ? backLay.lay[l] : 0);
+    if (backLay?.labels?.length) {
+        const labels     = backLay.labels;
+        const backProfit = labels.map(l => backLay.back?.[l] ?? 0);
+        const layProfit  = labels.map(l => backLay.lay?.[l]  ?? 0);
 
         new Chart(document.getElementById('chartBackLay'), {
             type: 'bar',
             data: {
                 labels,
                 datasets: [
-                    { label: 'BACK', data: backProfit, backgroundColor: "rgba(32,201,151,0.75)", borderRadius: 10, maxBarThickness: 34 },
-                    { label: 'LAY', data: layProfit, backgroundColor: "rgba(255,193,7,0.75)", borderRadius: 10, maxBarThickness: 34 }
+                    { label: 'BACK', data: backProfit, backgroundColor: 'rgba(96,165,250,.75)', borderRadius: 8, maxBarThickness: 32 },
+                    { label: 'LAY',  data: layProfit,  backgroundColor: 'rgba(255,204,0,.75)',  borderRadius: 8, maxBarThickness: 32 }
                 ]
             },
             options: {
                 maintainAspectRatio: false,
-                plugins: {
-                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } }
-                },
+                plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)} €` } } },
                 scales: {
-                    x: {
-                        ticks: {
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: 10,
-                            callback: (value, index) => shortMonthLabel(labels[index])
-                        }
-                    },
-                    y: { title: { display: true, text: 'Profitto' } }
+                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10,
+                        callback: (v, i) => shortMonthLabel(labels[i]) } },
+                    y: { title: { display: true, text: 'P&L €', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // 5) Equity (area) + Drawdown
-    const eq = parseCanvasJson('chartEquity');
-    if (eq && eq.length > 0) {
+    // ── 4. Equity + Drawdown (overview) ──────────────────────────────────────
+    function buildEquityChart(canvasId) {
+        const eq = parseCanvasJson(canvasId);
+        if (!eq?.length) return;
         const labels = eq.map(x => x.date);
-        const cum = eq.map(x => x.cum);
-        const dd = eq.map(x => x.dd);
+        const cum    = eq.map(x => x.cum);
+        const dd     = eq.map(x => x.dd);
 
-        new Chart(document.getElementById('chartEquity'), {
+        new Chart(document.getElementById(canvasId), {
             data: {
                 labels,
                 datasets: [
-                    { type: "line", label: "Equity", data: cum, borderColor: "rgba(13,110,253,0.95)", backgroundColor: "rgba(13,110,253,0.12)", fill: true, tension: 0.25, pointRadius: 0 },
-                    { type: "line", label: "Drawdown", data: dd, borderColor: "rgba(220,53,69,0.75)", tension: 0.25, pointRadius: 0 }
+                    { type: 'line', label: 'Equity', data: cum,
+                        borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)',
+                        fill: true, tension: 0.25, pointRadius: 0 },
+                    { type: 'line', label: 'Drawdown', data: dd,
+                        borderColor: 'rgba(248,113,113,.75)', tension: 0.25, pointRadius: 0 }
                 ]
             },
             options: {
                 maintainAspectRatio: false,
-                plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)}` } } },
+                plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)} €` } } },
                 scales: {
-                    x: {
-                        ticks: {
-                            display: !isMobile,
-                            maxRotation: 90,
-                            minRotation: 90,
-                            autoSkip: true,
-                            maxTicksLimit: 8,
-                            callback: (value, index) => shortDayLabel(labels[index])
-                        }
-                    },
-                    y: { title: { display: true, text: 'Valore' } }
+                    x: { ticks: { display: !isMobile, maxRotation: 90, minRotation: 90,
+                        autoSkip: true, maxTicksLimit: 8, callback: (v, i) => shortDayLabel(labels[i]) } },
+                    y: { title: { display: true, text: '€', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
+    buildEquityChart('chartEquity');
 
-    // Equity-only (tab)
+    // ── 5. Equity only (tab) ──────────────────────────────────────────────────
     const eqOnly = parseCanvasJson('chartEquityOnly');
-    if (eqOnly && eqOnly.length > 0) {
+    if (eqOnly?.length) {
         const labels = eqOnly.map(x => x.date);
-        const cum = eqOnly.map(x => x.cum);
+        const cum    = eqOnly.map(x => x.cum);
 
         new Chart(document.getElementById('chartEquityOnly'), {
-            type: "line",
+            type: 'line',
             data: {
                 labels,
-                datasets: [{
-                    label: "Equity",
-                    data: cum,
-                    borderColor: "rgba(13,110,253,0.95)",
-                    backgroundColor: "rgba(13,110,253,0.12)",
-                    fill: true,
-                    tension: 0.25,
-                    pointRadius: 0
-                }]
+                datasets: [{ label: 'Equity', data: cum,
+                    borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)',
+                    fill: true, tension: 0.25, pointRadius: 0 }]
             },
             options: {
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)}` } }
-                },
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)} €` } } },
                 scales: {
-                    x: {
-                        ticks: {
-                            display: !isMobile,
-                            maxRotation: 90,
-                            minRotation: 90,
-                            autoSkip: true,
-                            maxTicksLimit: 8,
-                            callback: (value, index) => shortDayLabel(labels[index])
-                        }
-                    },
-                    y: { title: { display: true, text: 'Profitto cumulato' } }
+                    x: { ticks: { display: !isMobile, maxRotation: 90, minRotation: 90,
+                        autoSkip: true, maxTicksLimit: 8, callback: (v, i) => shortDayLabel(labels[i]) } },
+                    y: { title: { display: true, text: 'P&L cumulato €', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
+
+    // ── CALENDARIO ────────────────────────────────────────────────────────────
+    (function () {
+        let calYear, calMonth, calLoaded = false;
+
+        const now = new Date();
+        calYear  = now.getFullYear();
+        calMonth = now.getMonth() + 1;
+
+        const grid          = document.getElementById('calGrid');
+        const label         = document.getElementById('calLabel');
+        const btnPrev       = document.getElementById('calPrev');
+        const btnNext       = document.getElementById('calNext');
+        const btnToday      = document.getElementById('calToday');
+        const monthProfitEl = document.getElementById('calMonthProfit');
+        const monthBetsEl   = document.getElementById('calMonthBets');
+        const profitCard    = document.getElementById('calProfitCard');
+        const accSel        = document.getElementById('accountSelect');
+        const tabBtn        = document.getElementById('tab-day');
+
+        if (!grid || !label || !accSel) return;
+
+        function moneyEur(x) {
+            const v = Number(x || 0);
+            return (v >= 0 ? '+' : '') + v.toFixed(2) + ' €';
+        }
+
+        async function loadCalendar() {
+            const acc = accSel.value || '';
+            if (!acc) return;
+            label.textContent = '…';
+
+            const url = `${location.pathname}?handler=Calendar&account=${encodeURIComponent(acc)}&year=${calYear}&month=${calMonth}`;
+            const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+
+            if (!data?.ok) {
+                label.textContent = 'Errore';
+                grid.innerHTML = `<div class="text-muted small p-2">${data?.error ?? 'Errore caricamento'}</div>`;
+                return;
+            }
+            renderCalendar(data);
+            calLoaded = true;
+        }
+
+        function renderCalendar(data) {
+            label.textContent = data.label || `${data.month}/${data.year}`;
+
+            const mp = Number(data.monthProfit || 0);
+            monthProfitEl.textContent = moneyEur(mp);
+            monthBetsEl.textContent   = String(data.monthBets || 0);
+
+            monthProfitEl.className = 'st-kpi-value ' + (mp >= 0 ? 'bf-profit-pos' : 'bf-profit-neg');
+            profitCard?.classList.remove('bf-profit-pos-card', 'bf-profit-neg-card');
+            profitCard?.classList.add(mp >= 0 ? 'bf-profit-pos-card' : 'bf-profit-neg-card');
+
+            const y = data.year, m = data.month;
+            const first = new Date(y, m - 1, 1);
+            const offset = (first.getDay() + 6) % 7;
+            const daysInMonth = new Date(y, m, 0).getDate();
+            const prevDays    = new Date(y, m - 1, 0).getDate();
+            const days = data.days || [];
+
+            const cells = [];
+            for (let i = 0; i < 42; i++) {
+                const d = i - offset + 1;
+                if (d < 1) {
+                    cells.push({ out: true, day: prevDays + d, profit: null });
+                } else if (d > daysInMonth) {
+                    cells.push({ out: true, day: d - daysInMonth, profit: null });
+                } else {
+                    const row = days.find(x => Number(x.day) === d) || { profit: 0 };
+                    cells.push({ out: false, day: d, profit: Number(row.profit || 0) });
+                }
+            }
+
+            grid.innerHTML = cells.map(c => {
+                if (c.out) return `<div class="st-day st-day-out"><span class="st-day-num">${c.day}</span></div>`;
+                const cls = c.profit > 0.0001 ? 'st-day-pos' : (c.profit < -0.0001 ? 'st-day-neg' : 'st-day-zero');
+                const amt = (c.profit >= 0 ? '+' : '') + c.profit.toFixed(2);
+                return `<div class="st-day ${cls}"><span class="st-day-num">${c.day}</span><span class="st-day-amt">${amt}</span></div>`;
+            }).join('');
+        }
+
+        btnPrev?.addEventListener('click', () => { calMonth--; if (calMonth < 1) { calMonth = 12; calYear--; } loadCalendar(); });
+        btnNext?.addEventListener('click', () => { calMonth++; if (calMonth > 12) { calMonth = 1; calYear++; } loadCalendar(); });
+        btnToday?.addEventListener('click', () => { const t = new Date(); calYear = t.getFullYear(); calMonth = t.getMonth()+1; loadCalendar(); });
+        tabBtn?.addEventListener('shown.bs.tab', () => { if (!calLoaded) loadCalendar(); });
+
+        loadCalendar();
+    })();
+
 })();
-
- 
-    </script>
-
-
+</script>
 }
