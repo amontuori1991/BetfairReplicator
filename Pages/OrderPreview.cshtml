@@ -3,611 +3,421 @@
 @{
     ViewData["Title"] = "Ordine (preview)";
 }
-<style>
-    /* ================================
-           Modal invio ordine – DARK theme
-           coerente col sito + non fullscreen
-           ================================ */
 
-    /* overlay leggermente più scuro */
-    .modal-backdrop.show {
-        opacity: .8;
-    }
+<div class="ns-page">
 
-    /* dialog: margini reali su mobile, larghezza controllata */
-    #sendConfirmModal .modal-dialog {
-        margin: 14px auto;
-        max-width: 520px; /* desktop/tablet */
-    }
-
-    @@media (max-width: 576px) {
-        #sendConfirmModal .modal-dialog
-
-    {
-        margin: 12px; /* evita fullscreen */
-        max-width: calc(100% - 24px); /* bordo aria */
-    }
-
-    }
-
-    /* contenitore modal: come le card del sito */
-    #sendConfirmModal .modal-content {
-        background: linear-gradient(180deg, #121826 0%, #0b0f1a 100%) !important;
-        border: 1px solid rgba(255,255,255,.12) !important;
-        border-radius: 18px !important;
-        color: #f2f6ff !important;
-        box-shadow: 0 18px 40px rgba(0,0,0,.45);
-        overflow: hidden;
-    }
-
-    #sendConfirmModal .modal-header,
-    #sendConfirmModal .modal-footer {
-        border-color: rgba(255,255,255,.10) !important;
-        background: rgba(0,0,0,.10);
-    }
-
-    #sendConfirmModal .modal-title {
-        color: #ffcc00 !important;
-        font-weight: 900;
-        letter-spacing: .2px;
-        text-shadow: 0 0 14px rgba(255,204,0,.18);
-    }
-
-    /* X di chiusura visibile su dark */
-    #sendConfirmModal .btn-close {
-        filter: invert(1);
-        opacity: .85;
-    }
-
-    /* Testi e label dentro */
-    #sendConfirmModal .modal-body,
-    #sendConfirmModal .modal-body * {
-        color: #f2f6ff !important;
-    }
-
-    /* Box warning (giallo soft) coerente col tema */
-    #sendConfirmModal .risk-box {
-        border-radius: 14px;
-        border: 1px solid rgba(255,204,0,.28);
-        background: rgba(255,204,0,.10);
-        padding: 12px 12px;
-    }
-
-    /* Summary come “bf-kv” ma dark */
-    #sendConfirmModal .bank-summary {
-        border: 1px solid rgba(255,255,255,.10);
-        background: rgba(0,0,0,.18);
-        border-radius: 14px;
-        padding: 12px 12px;
-    }
-
-    #sendConfirmModal .bank-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 8px 0;
-        border-bottom: 1px dashed rgba(255,255,255,.10);
-    }
-
-        #sendConfirmModal .bank-row:last-child {
-            border-bottom: none;
-        }
-
-    #sendConfirmModal .bank-k {
-        font-weight: 700;
-        color: rgba(242,246,255,.70) !important;
-        white-space: nowrap;
-    }
-
-    #sendConfirmModal .bank-v {
-        font-weight: 900;
-        text-align: right;
-        color: #f2f6ff !important;
-    }
-
-    /* Header con pallone (stile chip) */
-    #sendConfirmModal .bank-header {
-        display: flex;
-        align-items: center;
-        gap: .6rem;
-    }
-
-    #sendConfirmModal .ball {
-        width: 28px;
-        height: 28px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        background: rgba(255,204,0,.12);
-        border: 1px solid rgba(255,204,0,.22);
-        font-size: 18px;
-        line-height: 1;
-    }
-
-    /* Badge BACK/LAY coerenti con site.css */
-    #sendConfirmModal .badge-side {
-        font-weight: 900;
-        letter-spacing: .3px;
-        padding: .45rem .7rem;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        gap: .35rem;
-        border: 1px solid rgba(255,255,255,.10);
-    }
-
-    #sendConfirmModal .badge-back {
-        background: rgba(47,107,255,.14);
-        border-color: rgba(47,107,255,.35);
-        color: #f2f6ff !important;
-    }
-
-    #sendConfirmModal .badge-lay {
-        background: rgba(255,204,0,.14);
-        border-color: rgba(255,204,0,.35);
-        color: #f2f6ff !important;
-    }
-
-    /* Checkbox più “app” */
-    #sendConfirmModal .form-check-input {
-        width: 20px;
-        height: 20px;
-        margin-top: .2rem;
-    }
-
-    /* Footer buttons: più “mobile tappabile” */
-    @@media (max-width: 576px) {
-        #sendConfirmModal .modal-footer
-
-    {
-        gap: 10px;
-    }
-
-    #sendConfirmModal .modal-footer .btn {
-        flex: 1 1 auto;
-        border-radius: 14px !important;
-        padding: 12px 12px !important;
-        font-weight: 900 !important;
-    }
-
-    }
-
-    /* disabilitato */
-    #sendConfirmModal #btnConfirmSend[disabled] {
-        opacity: .55;
-        cursor: not-allowed;
-    }
-</style>
-
-
-<h1>Ordine (preview)</h1>
-<p class="text-muted">
-    Preview: genera lo stake/importo per account e il JSON pronto. Con "INVIA ORDINE" piazza davvero l'ordine su tutti gli account collegati.
-</p>
-
-@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-{
-    <div class="alert alert-danger">@Model.ErrorMessage</div>
-}
-
-<form method="post" class="mb-4">
-    @Html.AntiForgeryToken()
-
-    <!-- ROW 1: mercato + selezione + side + price -->
-    <div class="row g-2">
-        <div class="col-12 col-md-4">
-            <label class="form-label">MarketId</label>
-            <input class="form-control" name="MarketId" value="@Model.MarketId" placeholder="es. 1.23456789" required />
-        </div>
-
-        <div class="col-12 col-md-4">
-            <label class="form-label">SelectionId</label>
-            @if (Model.Runners != null && Model.Runners.Count > 0)
-            {
-                <select class="form-select" name="SelectionId" required>
-                    @foreach (var r in Model.Runners)
-                    {
-                        <option value="@r.SelectionId" selected="@(Model.SelectionId == r.SelectionId)">
-                            @{
-                                var q = Model.QuotesBySelection.ContainsKey(r.SelectionId)
-                                    ? Model.QuotesBySelection[r.SelectionId]
-                                    : (null, null);
-                                var backTxt = q.Back?.ToString("0.00") ?? "-";
-                                var layTxt = q.Lay?.ToString("0.00") ?? "-";
-                            }
-                            @r.Name — BACK @backTxt / LAY @layTxt
-                        </option>
-                    }
-                </select>
-
-                @if (!string.IsNullOrWhiteSpace(Model.QuotesInfo))
-                {
-                    <div class="form-text">@Model.QuotesInfo</div>
-                }
-            }
-            else
-            {
-                <input class="form-control" type="number" name="SelectionId" value="@Model.SelectionId" placeholder="SelectionId" required />
-                <div class="form-text">Nessun runner caricato: controlla MarketId o token collegato.</div>
-            }
-        </div>
-
-        <div class="col-6 col-md-2">
-            <label class="form-label">Side</label>
-            <select class="form-select" name="Side" id="sideSelect">
-                <option value="BACK" selected="@(Model.Side == "BACK")">BACK</option>
-                <option value="LAY" selected="@(Model.Side == "LAY")">LAY</option>
-            </select>
-            <div class="form-text">BACK = punta (importo fisso). LAY = banca (stake %).</div>
-        </div>
-
-        <div class="col-6 col-md-2">
-            <label class="form-label">Price</label>
-            <input class="form-control" type="number" step="0.01" min="1.01" name="Price" value="@Model.Price" required />
+    <!-- ═══ HEADER ═══════════════════════════════════════════════════════ -->
+    <div class="ns-header-card">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="ns-title h4 mb-1">Ordine</h1>
+                <div class="ns-subtitle">Configura, genera preview e invia su tutti gli account collegati</div>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/Index">Home</a>
         </div>
     </div>
 
-    <!-- ROW 2: stake + bottoni -->
-    <div class="row g-2 mt-1">
-        <!-- LAY: stake percent -->
-        <div class="col-12 col-md-3" id="grpStakePercent">
-            <label class="form-label">Stake % (solo LAY)</label>
-            <input class="form-control" type="number" step="0.1" min="0.1" max="100" name="StakePercent" value="@Model.StakePercent" />
-            <div class="form-text">Usato solo se Side=LAY.</div>
-        </div>
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
 
-        <!-- BACK: stake euro -->
-        <div class="col-12 col-md-3" id="grpBackStakeEuro">
-            <label class="form-label">Importo BACK € (solo BACK)</label>
-            <input class="form-control" type="number" step="0.01" min="1.00" name="BackStakeEuro" value="@(Model.BackStakeEuro?.ToString("0.00") ?? "")" />
-            <div class="form-text">Min 1€. Usato solo se Side=BACK.</div>
-        </div>
+    <!-- ═══ FORM ══════════════════════════════════════════════════════════ -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="post">
+                @Html.AntiForgeryToken()
 
-        <div class="col-6 col-md-3 d-flex align-items-end">
-            <button class="btn btn-primary w-100" type="submit" asp-page-handler="Preview">Genera preview</button>
-        </div>
+                <!-- riga 1: mercato + runner + side + price -->
+                <div class="row g-2">
 
-        <div class="col-6 col-md-3 d-flex align-items-end">
-            <button type="button"
-                    class="btn btn-danger w-100"
-                    id="btnOpenSendModal">
-                INVIA ORDINE
-            </button>
-
-            <button type="submit"
-                    class="d-none"
-                    id="btnSendHidden"
-                    asp-page-handler="Send">
-            </button>
-        </div>
-
-    </div>
-</form>
-
-
-@if (Model.Rows?.Any() == true)
-{
-    <!-- =========================
-         MOBILE: CARDS
-         ========================= -->
-    <div class="bf-preview-mobile d-md-none">
-        @foreach (var r in Model.Rows)
-        {
-            <div class="bf-preview-card">
-                <div class="bf-preview-top">
-                    <div>
-                        <div class="bf-preview-name">@r.DisplayName</div>
-                        <div class="mt-2">
-                            @{
-                                var s = (r.Status ?? "").ToUpperInvariant();
-                                var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
-                                var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
-                                var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
-                            }
-                            <span class="badge @cls">@r.Status</span>
-                        </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label small text-muted mb-1">MarketId</label>
+                        <input class="form-control" name="MarketId"
+                               value="@Model.MarketId"
+                               placeholder="es. 1.23456789" required />
                     </div>
 
-                    <div class="text-end">
-                        @if (r.MinStakeApplied)
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label small text-muted mb-1">Runner</label>
+                        @if (Model.Runners != null && Model.Runners.Count > 0)
                         {
-                            <span class="badge bg-warning text-dark">Min 1€: SI</span>
+                            <select class="form-select" name="SelectionId" required>
+                                @foreach (var r in Model.Runners)
+                                {
+                                    var q = Model.QuotesBySelection.ContainsKey(r.SelectionId)
+                                    ? Model.QuotesBySelection[r.SelectionId]
+                                    : (null, null);
+                                    var backTxt = q.Back?.ToString("0.00") ?? "—";
+                                    var layTxt = q.Lay?.ToString("0.00") ?? "—";
+                                    <option value="@r.SelectionId" selected="@(Model.SelectionId == r.SelectionId)">
+                                        @r.Name — B:@backTxt / L:@layTxt
+                                    </option>
+                                }
+                            </select>
+                            @if (!string.IsNullOrWhiteSpace(Model.QuotesInfo))
+                            {
+                                <div class="form-text">@Model.QuotesInfo</div>
+                            }
                         }
                         else
                         {
-                            <span class="badge bg-secondary">Min 1€: NO</span>
+                            <input class="form-control" type="number" name="SelectionId"
+                                   value="@Model.SelectionId" placeholder="SelectionId" required />
+                            <div class="form-text text-warning">Nessun runner caricato.</div>
                         }
                     </div>
+
+                    <div class="col-6 col-sm-4 col-lg-2">
+                        <label class="form-label small text-muted mb-1">Side</label>
+                        <select class="form-select" name="Side" id="sideSelect">
+                            <option value="BACK" selected="@(Model.Side == "BACK")">BACK</option>
+                            <option value="LAY" selected="@(Model.Side == "LAY")">LAY</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-sm-4 col-lg-2">
+                        <label class="form-label small text-muted mb-1">Price</label>
+                        <input class="form-control" type="number" step="0.01" min="1.01"
+                               name="Price" value="@Model.Price" required />
+                    </div>
+
                 </div>
 
-                <div class="bf-kv">
-                    <div class="bf-kv-row">
-                        <div class="bf-k">Saldo</div>
-                        <div class="bf-v">@(r.Balance?.ToString("0.00") ?? "-")</div>
-                    </div>
-                    <div class="bf-kv-row">
-                        <div class="bf-k">Stake/Importo</div>
-                        <div class="bf-v">@(r.Stake?.ToString("0.00") ?? "-")</div>
-                    </div>
-                    <div class="bf-kv-row">
-                        <div class="bf-k">Liability (LAY)</div>
-                        <div class="bf-v">@(r.Liability?.ToString("0.00") ?? "-")</div>
-                    </div>
-                    <div class="bf-kv-row">
-                        <div class="bf-k">BetId</div>
-                        <div class="bf-v">@(r.BetId ?? "-")</div>
-                    </div>
-                </div>
+                <!-- riga 2: stake + bottoni -->
+                <div class="row g-2 mt-1 align-items-end">
 
-                <div class="bf-preview-actions">
-                    @if (!string.IsNullOrWhiteSpace(r.BetId))
-                    {
-                        <button type="button"
-                                class="btn btn-outline-danger btn-cancel"
-                                data-account="@r.DisplayName"
-                                data-betid="@r.BetId">
-                            Cancella ordine
+                    <!-- LAY: % -->
+                    <div class="col-12 col-sm-4 col-lg-3" id="grpStakePercent">
+                        <label class="form-label small text-muted mb-1">Stake % <span class="bf-side-chip bf-side-lay ms-1">LAY</span></label>
+                        <input class="form-control" type="number" step="0.1" min="0.1" max="100"
+                               name="StakePercent" value="@Model.StakePercent" />
+                    </div>
+
+                    <!-- BACK: importo fisso -->
+                    <div class="col-12 col-sm-4 col-lg-3" id="grpBackStakeEuro">
+                        <label class="form-label small text-muted mb-1">Importo € <span class="bf-side-chip bf-side-back ms-1">BACK</span></label>
+                        <input class="form-control" type="number" step="0.01" min="1.00"
+                               name="BackStakeEuro"
+                               value="@(Model.BackStakeEuro?.ToString("0.00") ?? "")"
+                               placeholder="min 1.00" />
+                    </div>
+
+                    <!-- bottoni -->
+                    <div class="col-6 col-sm-4 col-lg-2 d-flex">
+                        <button class="btn btn-primary w-100" type="submit" asp-page-handler="Preview">
+                            Preview
                         </button>
-                    }
+                    </div>
 
-                    @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
-                    {
-                        <details class="bf-preview-json">
-                            <summary class="mt-1">JSON-RPC preview</summary>
-                            <pre>@r.JsonRpcPreview</pre>
-                        </details>
-                    }
+                    <div class="col-6 col-sm-4 col-lg-2 d-flex">
+                        <button type="button" class="btn btn-danger w-100" id="btnOpenSendModal">
+                            INVIA
+                        </button>
+                        <button type="submit" class="d-none" id="btnSendHidden" asp-page-handler="Send"></button>
+                    </div>
+
                 </div>
-            </div>
-        }
+
+            </form>
+        </div>
     </div>
 
-    <!-- =========================
-         DESKTOP/TABLET: TABELLA
-         ========================= -->
-    <div class="bf-preview-table d-none d-md-block">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Account</th>
-                    <th>Saldo</th>
-                    <th>Stake/Importo</th>
-                    <th>Liability (LAY)</th>
-                    <th>Min 1€</th>
-                    <th>Stato</th>
-                    <th>BetId</th>
-                    <th>Live</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var r in Model.Rows)
-                {
-                    <tr>
-                        <td>@r.DisplayName</td>
-                        <td>@(r.Balance?.ToString("0.00") ?? "-")</td>
-                        <td>@(r.Stake?.ToString("0.00") ?? "-")</td>
-                        <td>@(r.Liability?.ToString("0.00") ?? "-")</td>
-                        <td>
-                            @if (r.MinStakeApplied)
-                            {
-                                <span class="badge bg-warning text-dark">SI</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">NO</span>
-                            }
-                        </td>
-                        <td>
-                            @{
-                                var s = (r.Status ?? "").ToUpperInvariant();
-                                var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
-                                var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
-                                var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
-                            }
-                            <span class="badge @cls">@r.Status</span>
-                        </td>
+    <!-- ═══ PREVIEW ROWS ══════════════════════════════════════════════════ -->
+    @if (Model.Rows?.Any() == true)
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="fw-semibold mb-3">
+                    Preview ordine
+                    <span class="bf-side-chip @(Model.Side == "BACK" ? "bf-side-back" : "bf-side-lay") ms-2">@Model.Side</span>
+                    <span class="text-muted small ms-2">@Model.MarketId</span>
+                </div>
 
-                        <td>@(r.BetId ?? "-")</td>
+                <!-- MOBILE: cards -->
+                <div class="bf-preview-mobile d-md-none">
+                    @foreach (var r in Model.Rows)
+                    {
+                        var s = (r.Status ?? "").ToUpperInvariant();
+                        var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
+                        var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
+                        var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
 
-                        <td>
+                        <div class="bf-preview-card mb-2">
+                            <div class="bf-preview-top">
+                                <div class="bf-preview-name">@r.DisplayName</div>
+                                <span class="badge @cls">@r.Status</span>
+                            </div>
+
+                            <div class="bf-order-inline mt-2">
+                                <div class="bf-oi-item">
+                                    <span class="bf-oi-lbl">Saldo</span>
+                                    <span class="bf-oi-val bf-price">@(r.Balance?.ToString("0.00") ?? "—") €</span>
+                                </div>
+                                <div class="bf-oi-item">
+                                    <span class="bf-oi-lbl">Stake</span>
+                                    <span class="bf-oi-val">@(r.Stake?.ToString("0.00") ?? "—") €</span>
+                                </div>
+                                @if (Model.Side == "LAY")
+                                {
+                                    <div class="bf-oi-item">
+                                        <span class="bf-oi-lbl">Liability</span>
+                                        <span class="bf-oi-val bf-profit-neg">@(r.Liability?.ToString("0.00") ?? "—") €</span>
+                                    </div>
+                                }
+                                @if (r.MinStakeApplied)
+                                {
+                                    <div class="bf-oi-item">
+                                        <span class="bf-oi-lbl">Min 1€</span>
+                                        <span class="bf-oi-val"><span class="badge bg-warning text-dark">SI</span></span>
+                                    </div>
+                                }
+                            </div>
+
                             @if (!string.IsNullOrWhiteSpace(r.BetId))
                             {
+                                <div class="bf-kv mt-2">
+                                    <div class="bf-kv-row">
+                                        <div class="bf-k">BetId</div>
+                                        <div class="bf-v bf-mono small">@r.BetId</div>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(r.LiveStatus))
+                                    {
+                                        <div class="bf-kv-row">
+                                            <div class="bf-k">Live</div>
+                                            <div class="bf-v">@r.LiveStatus</div>
+                                        </div>
+                                    }
+                                </div>
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-danger btn-cancel"
+                                        class="btn btn-outline-danger btn-sm w-100 mt-2 btn-cancel"
                                         data-account="@r.DisplayName"
                                         data-betid="@r.BetId">
                                     Cancella ordine
                                 </button>
                             }
-                            else
+
+                            @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
                             {
-                                <span>-</span>
-                            }
-                        </td>
-                    </tr>
-
-                    @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
-                    {
-                        <tr>
-                            <td colspan="8">
-                                <details>
-                                    <summary>JSON-RPC preview (@r.DisplayName)</summary>
-                                    <pre class="mt-2">@r.JsonRpcPreview</pre>
+                                <details class="mt-2">
+                                    <summary class="text-muted small" style="cursor:pointer">JSON-RPC</summary>
+                                    <pre class="mt-1 small" style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;font-size:11px;">@r.JsonRpcPreview</pre>
                                 </details>
-                            </td>
-                        </tr>
+                            }
+                        </div>
                     }
-                }
-            </tbody>
-        </table>
-    </div>
-}
-
-
-<a class="btn btn-secondary" asp-page="/Funds">Indietro</a>
-<div class="modal fade" id="sendConfirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content shadow">
-            <div class="modal-header">
-                <div class="bank-header">
-                    <span class="ball">⚽</span>
-                    <h5 class="modal-title mb-0">Conferma invio ordine</h5>
                 </div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                <!-- DESKTOP: tabella -->
+                <div class="bf-preview-table d-none d-md-block">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Account</th>
+                                    <th class="text-end">Saldo</th>
+                                    <th class="text-end">Stake</th>
+                                    @if (Model.Side == "LAY")
+                                    {
+                                        <th class="text-end">Liability</th>
+                                    }
+                                    <th>Min 1€</th>
+                                    <th>Stato</th>
+                                    <th>BetId</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in Model.Rows)
+                                {
+                                    var s = (r.Status ?? "").ToUpperInvariant();
+                                    var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
+                                    var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
+                                    var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
+
+                                    <tr>
+                                        <td class="fw-semibold">@r.DisplayName</td>
+                                        <td class="text-end bf-price">@(r.Balance?.ToString("0.00") ?? "—") €</td>
+                                        <td class="text-end">@(r.Stake?.ToString("0.00") ?? "—") €</td>
+                                        @if (Model.Side == "LAY")
+                                        {
+                                            <td class="text-end bf-profit-neg">@(r.Liability?.ToString("0.00") ?? "—") €</td>
+                                        }
+                                        <td>
+                                            @if (r.MinStakeApplied)
+                                            {
+                                                <span class="badge bg-warning text-dark">SI</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">—</span>
+                                            }
+                                        </td>
+                                        <td><span class="badge @cls">@r.Status</span></td>
+                                        <td class="bf-mono small text-muted">@(r.BetId ?? "—")</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(r.BetId))
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger btn-cancel"
+                                                        data-account="@r.DisplayName"
+                                                        data-betid="@r.BetId">
+                                                    Cancella
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+
+                                    @if (!string.IsNullOrWhiteSpace(r.JsonRpcPreview))
+                                    {
+                                        <tr>
+                                            <td colspan="8" class="py-1">
+                                                <details>
+                                                    <summary class="text-muted small" style="cursor:pointer">JSON-RPC (@r.DisplayName)</summary>
+                                                    <pre class="mt-1 small" style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;font-size:11px;">@r.JsonRpcPreview</pre>
+                                                </details>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    }
+
+    <a class="btn btn-outline-secondary btn-sm" asp-page="/MarketSearch">← Torna ai mercati</a>
+
+</div>
+
+<!-- ═══ MODAL CONFERMA INVIO ══════════════════════════════════════════════ -->
+<div class="modal fade" id="sendConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:520px;margin:14px auto;">
+        <div class="modal-content" style="background:linear-gradient(180deg,#121826 0%,#0b0f1a 100%) !important;border:1px solid rgba(255,255,255,.12) !important;border-radius:18px !important;color:#f2f6ff !important;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden;">
+
+            <div class="modal-header" style="border-color:rgba(255,255,255,.10) !important;background:rgba(0,0,0,.10);">
+                <div class="d-flex align-items-center gap-2">
+                    <span style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(255,204,0,.12);border:1px solid rgba(255,204,0,.22);font-size:18px;">⚽</span>
+                    <h5 class="modal-title mb-0" style="color:#ffcc00 !important;font-weight:900;text-shadow:0 0 14px rgba(255,204,0,.18);">Conferma invio ordine</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi" style="filter:invert(1);opacity:.85;"></button>
             </div>
 
-            <div class="modal-body">
-                <div class="risk-box mb-3">
+            <div class="modal-body" style="color:#f2f6ff !important;">
+
+                <div style="border-radius:14px;border:1px solid rgba(255,204,0,.28);background:rgba(255,204,0,.10);padding:12px;" class="mb-3">
                     <strong>Stai per inviare un ordine REALE</strong> su <strong>tutti</strong> gli account collegati.
-                    <div class="small mt-1">
-                        Controlla bene i dati qui sotto prima di confermare.
-                    </div>
+                    <div class="small mt-1">Controlla bene i dati qui sotto prima di confermare.</div>
                 </div>
 
-
-                <div class="bank-summary">
-                    <div class="bank-row">
-                        <div class="bank-k">Evento</div>
-                        <div class="bank-v" id="mEventName">-</div>
-                    </div>
-
-                    <div class="bank-row">
-                        <div class="bank-k">Selezione</div>
-                        <div class="bank-v" id="mRunnerName">-</div>
-                    </div>
-
-                    <div class="bank-row">
-                        <div class="bank-k">Tipo</div>
-                        <div class="bank-v">
-                            <span id="mSideBadge" class="badge-side badge-back">BACK</span>
+                <div style="border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18);border-radius:14px;padding:12px;">
+                    @foreach (var (label, elId) in new[] {
+                                        ("Evento",          "mEventName"),
+                                        ("Selezione",       "mRunnerName"),
+                                        ("Tipo",            "mSideRow"),
+                                        ("Quota",           "mPrice"),
+                                        ("Stake % (LAY)",   "mStakePercent"),
+                                        ("Importo € (BACK)","mBackEuro")
+                                        })
+                    {
+                        <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.10);">
+                            <div style="font-weight:700;color:rgba(242,246,255,.70);white-space:nowrap;">@label</div>
+                            <div style="font-weight:900;text-align:right;">
+                                @if (elId == "mSideRow")
+                                {
+                                    <span id="mSideBadge" class="badge-side badge-back">BACK</span>
+                                }
+                                else
+                                {
+                                    <span id="@elId">—</span>
+                                }
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="bank-row">
-                        <div class="bank-k">Quota</div>
-                        <div class="bank-v" id="mPrice">-</div>
-                    </div>
-
-                    <div class="bank-row">
-                        <div class="bank-k">Stake % (LAY)</div>
-                        <div class="bank-v" id="mStakePercent">-</div>
-                    </div>
-
-                    <div class="bank-row">
-                        <div class="bank-k">Importo € (BACK)</div>
-                        <div class="bank-v" id="mBackEuro">-</div>
-                    </div>
+                    }
                 </div>
-
-
 
                 <div class="form-check mt-3">
-                    <input class="form-check-input" type="checkbox" id="chkFinalConfirm">
-                    <label class="form-check-label" for="chkFinalConfirm">
-                        Ho capito: voglio inviare davvero l’ordine
+                    <input class="form-check-input" type="checkbox" id="chkFinalConfirm" style="width:20px;height:20px;margin-top:.2rem;">
+                    <label class="form-check-label ms-1" for="chkFinalConfirm" style="color:#f2f6ff !important;">
+                        Ho capito: voglio inviare davvero l'ordine
                     </label>
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                    Annulla
-                </button>
-
-                <button type="button" class="btn btn-danger" id="btnConfirmSend" disabled>
-                    Sì, invia ordine
-                </button>
+            <div class="modal-footer" style="border-color:rgba(255,255,255,.10) !important;background:rgba(0,0,0,.10);gap:10px;">
+                <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger flex-fill" id="btnConfirmSend" disabled>Sì, invia ordine</button>
             </div>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        function toggleSideFields() {
-            const side = (document.getElementById("sideSelect")?.value || "LAY").toUpperCase();
-            const grpStake = document.getElementById("grpStakePercent");
-            const grpBack = document.getElementById("grpBackStakeEuro");
+        (function () {
 
-            const inpPct = document.querySelector('input[name="StakePercent"]');
-            const inpBack = document.querySelector('input[name="BackStakeEuro"]');
+            // ── side toggle ───────────────────────────────────────────────────────────
+            function toggleSideFields() {
+                const side   = (document.getElementById('sideSelect')?.value || 'LAY').toUpperCase();
+                const grpPct = document.getElementById('grpStakePercent');
+                const grpBk  = document.getElementById('grpBackStakeEuro');
+                const inpPct = document.querySelector('input[name="StakePercent"]');
+                const inpBk  = document.querySelector('input[name="BackStakeEuro"]');
 
-            if (!grpStake || !grpBack) return;
+                if (!grpPct || !grpBk) return;
+                const isLay = side === 'LAY';
 
-            const isLay = side === "LAY";
+                grpPct.style.display = isLay ? '' : 'none';
+                grpBk.style.display  = isLay ? 'none' : '';
 
-            grpStake.style.display = isLay ? "" : "none";
-            grpBack.style.display = isLay ? "none" : "";
+                if (inpPct) { inpPct.disabled = !isLay; inpPct.required = isLay; }
+                if (inpBk)  { inpBk.disabled  =  isLay; inpBk.required  = !isLay; }
 
-            // Disabilita il campo non usato così non viene postato
-            if (inpPct) inpPct.disabled = !isLay;
-            if (inpBack) inpBack.disabled = isLay;
-
-            // required coerente
-            if (inpPct) inpPct.required = isLay;
-            if (inpBack) inpBack.required = !isLay;
-
-            // Reset valori per UI “pulita”
-            if (isLay) {
-                if (inpBack) inpBack.value = "";
-            } else {
-                if (inpPct) inpPct.value = "";
+                if (isLay  && inpBk)  inpBk.value  = '';
+                if (!isLay && inpPct) inpPct.value = '';
             }
-        }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            toggleSideFields();
-            document.getElementById("sideSelect")?.addEventListener("change", toggleSideFields);
-        });
+            document.addEventListener('DOMContentLoaded', () => {
+                toggleSideFields();
+                document.getElementById('sideSelect')?.addEventListener('change', toggleSideFields);
+            });
 
-        (async function () {
+            // ── cancel order ─────────────────────────────────────────────────────────
             function getAntiForgeryToken() {
-                const el = document.querySelector('input[name="__RequestVerificationToken"]');
-                return el ? el.value : "";
+                return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
             }
 
             async function cancelOrder(account, betId) {
-                const token = getAntiForgeryToken();
-
                 const form = new URLSearchParams();
-                form.append("account", account);
-                form.append("betId", betId);
-
-                const res = await fetch(`/OrderPreview?handler=CancelOrder`, {
-                    method: "POST",
+                form.append('account', account);
+                form.append('betId', betId);
+                const res = await fetch('/OrderPreview?handler=CancelOrder', {
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "RequestVerificationToken": token
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getAntiForgeryToken()
                     },
                     body: form.toString()
                 });
-
                 return await res.json();
             }
 
             function bindCancelButtons() {
-                document.querySelectorAll(".btn-cancel").forEach(btn => {
-                    if (btn.dataset.bound === "1") return;
-                    btn.dataset.bound = "1";
-
-                    btn.addEventListener("click", async () => {
+                document.querySelectorAll('.btn-cancel').forEach(btn => {
+                    if (btn.dataset.bound === '1') return;
+                    btn.dataset.bound = '1';
+                    btn.addEventListener('click', async () => {
                         const account = btn.dataset.account;
-                        const betId = btn.dataset.betid;
-
-                        if (!confirm(`Confermi cancellazione ordine?\nAccount: ${account}\nBetId: ${betId}`))
-                            return;
-
+                        const betId   = btn.dataset.betid;
+                        if (!confirm(`Confermi cancellazione?\nAccount: ${account}\nBetId: ${betId}`)) return;
                         btn.disabled = true;
                         try {
                             const data = await cancelOrder(account, betId);
-                            if (!data.ok) {
-                                alert(data.error || "Errore cancellazione");
-                                return;
-                            }
-
-                            // opzionale: dopo cancel, ricarica pagina per aggiornare tabella
+                            if (!data.ok) { alert(data.error || 'Errore cancellazione'); return; }
                             location.reload();
                         } finally {
                             btn.disabled = false;
@@ -615,146 +425,76 @@
                     });
                 });
             }
-
             bindCancelButtons();
-        })();
-                // ===== Modal invio ordine (Bootstrap) =====
-        const btnOpen = document.getElementById("btnOpenSendModal");
-        const btnHidden = document.getElementById("btnSendHidden");
-        const modalEl = document.getElementById("sendConfirmModal");
-        const chk = document.getElementById("chkFinalConfirm");
-        const btnConfirm = document.getElementById("btnConfirmSend");
 
-        function valOf(name) {
-            const el = document.querySelector(`[name="${name}"]`);
-            return el ? (el.value || "").trim() : "";
-        }
+            // ── modal invio ───────────────────────────────────────────────────────────
+            const btnOpen    = document.getElementById('btnOpenSendModal');
+            const btnHidden  = document.getElementById('btnSendHidden');
+            const modalEl    = document.getElementById('sendConfirmModal');
+            const chk        = document.getElementById('chkFinalConfirm');
+            const btnConfirm = document.getElementById('btnConfirmSend');
 
-         function fillModalSummary() {
-            // Evento: titolo pagina (qui non abbiamo il vero nome match, quindi usiamo titolo)
-            const eventTitle =
-                document.querySelector("h1")?.textContent ||
-                document.querySelector(".ns-title")?.textContent ||
-                "Evento";
-
-            // Runner: testo selezionato nella select
-            const sel = document.querySelector('select[name="SelectionId"]');
-            const runnerText = sel?.selectedOptions?.[0]?.textContent || "-";
-
-            // Riempimento campi visivi
-            const evEl = document.getElementById("mEventName");
-            const runEl = document.getElementById("mRunnerName");
-            if (evEl) evEl.textContent = "-";
-            if (runEl) runEl.textContent = runnerText.trim();
-
-            const priceEl = document.getElementById("mPrice");
-            const stakePctEl = document.getElementById("mStakePercent");
-            const backEuroEl = document.getElementById("mBackEuro");
-
-            if (priceEl) priceEl.textContent = valOf("Price") || "-";
-            if (stakePctEl) stakePctEl.textContent = valOf("StakePercent") || "-";
-            if (backEuroEl) backEuroEl.textContent = valOf("BackStakeEuro") || "-";
-
-            // ===== PUNTO 4: Badge BACK/LAY colorato =====
-            const side = (valOf("Side") || "").toUpperCase();
-            const badge = document.getElementById("mSideBadge");
-            if (badge) {
-                badge.classList.remove("badge-back", "badge-lay");
-
-                if (side === "LAY") {
-                    badge.classList.add("badge-lay");
-                    badge.textContent = "LAY";
-                } else {
-                    badge.classList.add("badge-back");
-                    badge.textContent = "BACK";
-                }
+            function valOf(name) {
+                const el = document.querySelector(`[name="${name}"]`);
+                return el ? (el.value || '').trim() : '';
             }
 
-            // reset check (sempre)
-            if (chk) chk.checked = false;
-            if (btnConfirm) btnConfirm.disabled = true;
+            function fillModalSummary() {
+                const sel        = document.querySelector('select[name="SelectionId"]');
+                const runnerText = sel?.selectedOptions?.[0]?.textContent || '—';
 
-            // ===== PUNTO 5: Anti-errore (blocca invio se manca qualcosa) =====
-            const marketIdOk = !!valOf("MarketId");
-            const selectionOk = !!(sel?.value || valOf("SelectionId"));
-            const priceOk = !!valOf("Price");
+                const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
 
-            const canProceed = marketIdOk && selectionOk && priceOk;
+                set('mEventName',    '…');
+                set('mRunnerName',   runnerText.trim());
+                set('mPrice',        valOf('Price') || '—');
+                set('mStakePercent', valOf('StakePercent') || '—');
+                set('mBackEuro',     valOf('BackStakeEuro') || '—');
 
-            // Se manca qualcosa, non permettere comunque conferma
-            if (!canProceed) {
-                if (chk) chk.checked = false;
+                const side  = (valOf('Side') || '').toUpperCase();
+                const badge = document.getElementById('mSideBadge');
+                if (badge) {
+                    badge.classList.remove('badge-back', 'badge-lay');
+                    badge.classList.add(side === 'LAY' ? 'badge-lay' : 'badge-back');
+                    badge.textContent = side || 'BACK';
+                }
+
+                if (chk)        chk.checked    = false;
                 if (btnConfirm) btnConfirm.disabled = true;
             }
-        }
 
-                async function loadTeamsIntoModal() {
-            const marketId = valOf("MarketId");
-            const evEl = document.getElementById("mEventName");
-            if (!evEl) return;
-
-            if (!marketId) {
-                evEl.textContent = "-";
-                return;
+            async function loadTeamsIntoModal() {
+                const marketId = valOf('MarketId');
+                const evEl     = document.getElementById('mEventName');
+                if (!evEl || !marketId) return;
+                try {
+                    const res  = await fetch(`/OrderPreview?handler=MarketInfo&marketId=${encodeURIComponent(marketId)}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (!data.ok) { evEl.textContent = '—'; return; }
+                    const home = (data.homeTeam || '').trim();
+                    const away = (data.awayTeam || '').trim();
+                    evEl.textContent = (home && away) ? `${home} vs ${away}` : (data.eventName || '—').trim();
+                } catch { evEl.textContent = '—'; }
             }
-
-            try {
-                // Mostro un testo temporaneo mentre carica
-                evEl.textContent = "Caricamento…";
-
-                const url = `/OrderPreview?handler=MarketInfo&marketId=${encodeURIComponent(marketId)}`;
-                const res = await fetch(url, { cache: "no-store" });
-                const data = await res.json();
-
-                if (!data.ok) {
-                    evEl.textContent = "-";
-                    return;
-                }
-
-                const home = (data.homeTeam || "").trim();
-                const away = (data.awayTeam || "").trim();
-
-                if (home && away) {
-                    evEl.textContent = `${home} vs ${away}`;
-                } else {
-                    // fallback se non riesce lo split
-                    evEl.textContent = (data.eventName || "-").trim();
-                }
-            } catch {
-                evEl.textContent = "-";
-            }
-        }
-
 
             if (btnOpen && modalEl) {
-        const bsModal = new bootstrap.Modal(modalEl);
+                const bsModal = new bootstrap.Modal(modalEl);
 
-        btnOpen.addEventListener("click", async () => {
-            fillModalSummary();
-            bsModal.show();
+                btnOpen.addEventListener('click', async () => {
+                    fillModalSummary();
+                    bsModal.show();
+                    await loadTeamsIntoModal();
+                });
 
-            // dopo l'apertura, carico le squadre vere dal server
-            await loadTeamsIntoModal();
-        });
+                chk?.addEventListener('change', () => { if (btnConfirm) btnConfirm.disabled = !chk.checked; });
 
-
-            if (chk && btnConfirm) {
-                chk.addEventListener("change", () => {
-                    btnConfirm.disabled = !chk.checked;
+                btnConfirm?.addEventListener('click', () => {
+                    btnConfirm.disabled   = true;
+                    btnConfirm.textContent = 'Invio in corso…';
+                    btnHidden?.click();
                 });
             }
 
-            if (btnConfirm && btnHidden) {
-                btnConfirm.addEventListener("click", () => {
-                    // evita doppi click
-                    btnConfirm.disabled = true;
-                    btnConfirm.textContent = "Invio in corso...";
-
-                    // invia davvero
-                    btnHidden.click();
-                });
-            }
-        }
-
+        })();
     </script>
 }
