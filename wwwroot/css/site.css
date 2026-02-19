@@ -928,3 +928,27 @@ a {
         font-size: 12px;
     }
 }
+/* ================================
+   Fix select dropdown – opzioni
+   leggibili su tema scuro
+   ================================ */
+
+/* Il background sulla <select> deve essere solido (non rgba)
+   altrimenti il browser ignora il colore nel pannello nativo */
+.form-select {
+    background-color: #0e1a2e !important;
+    color: var(--bf-text) !important;
+}
+
+    /* Le <option> ereditano dal sistema – bisogna impostarle esplicitamente */
+    .form-select option {
+        background-color: #0e1a2e;
+        color: #f2f6ff;
+    }
+
+        .form-select option:hover,
+        .form-select option:focus,
+        .form-select option:checked {
+            background-color: #1a2d4a;
+            color: #ffcc00;
+        }
