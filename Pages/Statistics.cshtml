@@ -96,49 +96,6 @@
             </div>
         </div>
 
-        <!-- ═══ SUMMARY BAR ══════════════════════════════════════════════════ -->
-        @if (Model.TotalBets > 0)
-        {
-            var winRate = Model.TotalBets == 0 ? 0.0 :
-                (Model.MonthlyTotal.Count > 0 ? (double)Model.MonthlyTotal.Count(r => r.Profit > 0) / Model.MonthlyTotal.Count * 100.0 : 0.0);
-
-            <div class="bf-summary-bar mb-3">
-                <div class="bf-sb-item">
-                    <span class="bf-sb-lbl">P&amp;L totale</span>
-                    <span class="bf-sb-val @(Model.TotalProfit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
-                        @(Model.TotalProfit >= 0 ? "+" : "")@Model.TotalProfit.ToString("0.00") €
-                    </span>
-                </div>
-                <div class="bf-sb-item">
-                    <span class="bf-sb-lbl">Scommesse</span>
-                    <span class="bf-sb-val">@Model.TotalBets</span>
-                </div>
-                <div class="bf-sb-item">
-                    <span class="bf-sb-lbl">ROI Stake</span>
-                    <span class="bf-sb-val @(Model.TotalRoiPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
-                        @(Model.TotalRoiPct >= 0 ? "+" : "")@Model.TotalRoiPct.ToString("0.00")%
-                    </span>
-                </div>
-                @if (Model.StartingBankroll > 0)
-                {
-                    <div class="bf-sb-item">
-                        <span class="bf-sb-lbl">ROI Bankroll</span>
-                        <span class="bf-sb-val @(Model.TotalRoiBankrollPct >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
-                            @(Model.TotalRoiBankrollPct >= 0 ? "+" : "")@Model.TotalRoiBankrollPct.ToString("0.00")%
-                        </span>
-                    </div>
-                }
-                <div class="bf-sb-item">
-                    <span class="bf-sb-lbl">Max Drawdown</span>
-                    <span class="bf-sb-val bf-profit-neg">-@Model.MaxDrawdown.ToString("0.00") €</span>
-                </div>
-                <div class="bf-sb-item">
-                    <span class="bf-sb-lbl">Stake totale</span>
-                    <span class="bf-sb-val">@Model.TotalStake.ToString("0.00") €</span>
-                </div>
-            </div>
-        }
-
         <!-- ═══ KPI CARDS ════════════════════════════════════════════════════ -->
         <div class="row g-3 mb-3">
             <!-- Totale -->
@@ -167,6 +124,10 @@
                         <div class="st-kpi-cell">
                             <span class="st-kpi-clbl">Bets</span>
                             <span class="st-kpi-cval">@Model.TotalBets</span>
+                        </div>
+                        <div class="st-kpi-cell">
+                            <span class="st-kpi-clbl">Max Drawdown</span>
+                            <span class="st-kpi-cval bf-profit-neg">-@Model.MaxDrawdown.ToString("0.00") €</span>
                         </div>
                     </div>
                 </div>
@@ -243,7 +204,6 @@
         <div class="card shadow-sm">
             <div class="card-body">
 
-                <!-- tab nav -->
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                     <div>
                         <div class="fw-semibold">Dashboard grafici</div>
@@ -259,7 +219,6 @@
 
                 <div class="tab-content" id="statsTabsContent">
 
-                    <!-- PANORAMICA -->
                     <div class="tab-pane fade show active" id="pane-overview" role="tabpanel">
                         <div class="row g-3">
                             <div class="col-12 col-lg-6">
@@ -278,7 +237,6 @@
                         </div>
                     </div>
 
-                    <!-- MENSILE -->
                     <div class="tab-pane fade" id="pane-month" role="tabpanel">
                         <div class="row g-3">
                             <div class="col-12">
@@ -296,7 +254,6 @@
                         </div>
                     </div>
 
-                    <!-- GIORNALIERO -->
                     <div class="tab-pane fade" id="pane-day" role="tabpanel">
                         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div>
@@ -334,7 +291,6 @@
                         </div>
                     </div>
 
-                    <!-- EQUITY -->
                     <div class="tab-pane fade" id="pane-equity" role="tabpanel">
                         <div class="st-chart-label mb-2">Equity cumulata</div>
                         <div class="st-chart-wrap">
@@ -342,7 +298,7 @@
                         </div>
                     </div>
 
-                </div><!-- /tab-content -->
+                </div>
             </div>
         </div>
 
@@ -408,7 +364,6 @@
 <script>
 (function () {
 
-    // ── Account select: ricarica bankroll + from + submit ─────────────────────
     const form          = document.getElementById('statsForm');
     const accountSelect = document.getElementById('accountSelect');
     const bankrollInput = document.getElementById('bankrollInput');
@@ -425,12 +380,11 @@
                 if (bankrollInput) bankrollInput.value = v > 0 ? v.toFixed(2) : '';
                 const f = (data?.from ?? '').toString();
                 if (f && fromInput) fromInput.value = f;
-            } catch { /* fallback silenzioso */ }
+            } catch { }
             form.submit();
         });
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
     function parseCanvasJson(id) {
         const el = document.getElementById(id);
         if (!el) return null;
@@ -439,37 +393,28 @@
 
     function money(x) { return (Number(x) || 0).toFixed(2); }
     function pct(x)   { return (Number(x) || 0).toFixed(2) + '%'; }
-
-    function shortMonthLabel(s) {
-        if (!s || s.length < 7) return s;
-        return s.substring(5, 7) + '/' + s.substring(2, 4);
-    }
-    function shortDayLabel(s) {
-        if (!s || s.length < 10) return s;
-        return s.substring(8, 10) + '/' + s.substring(5, 7);
-    }
+    function shortMonthLabel(s) { if (!s || s.length < 7) return s; return s.substring(5,7) + '/' + s.substring(2,4); }
+    function shortDayLabel(s)   { if (!s || s.length < 10) return s; return s.substring(8,10) + '/' + s.substring(5,7); }
 
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
-    // ── Chart.js tema dark ────────────────────────────────────────────────────
     Chart.defaults.font.family     = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial";
     Chart.defaults.color           = 'rgba(242,246,255,.80)';
     Chart.defaults.scale.grid.color= 'rgba(255,255,255,.06)';
     Chart.defaults.scale.ticks.color = 'rgba(242,246,255,.65)';
-    Chart.defaults.plugins.legend.labels.color     = 'rgba(242,246,255,.80)';
-    Chart.defaults.plugins.legend.labels.boxWidth  = 10;
-    Chart.defaults.plugins.legend.labels.boxHeight = 10;
-    Chart.defaults.plugins.tooltip.padding         = 12;
-    Chart.defaults.plugins.tooltip.cornerRadius    = 10;
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(7,16,31,.92)';
-    Chart.defaults.plugins.tooltip.titleColor      = '#ffcc00';
-    Chart.defaults.plugins.tooltip.bodyColor       = 'rgba(242,246,255,.90)';
-    Chart.defaults.plugins.tooltip.borderColor     = 'rgba(255,255,255,.12)';
-    Chart.defaults.plugins.tooltip.borderWidth     = 1;
-    Chart.defaults.interaction.mode       = 'index';
-    Chart.defaults.interaction.intersect  = false;
+    Chart.defaults.plugins.legend.labels.color    = 'rgba(242,246,255,.80)';
+    Chart.defaults.plugins.legend.labels.boxWidth = 10;
+    Chart.defaults.plugins.legend.labels.boxHeight= 10;
+    Chart.defaults.plugins.tooltip.padding        = 12;
+    Chart.defaults.plugins.tooltip.cornerRadius   = 10;
+    Chart.defaults.plugins.tooltip.backgroundColor= 'rgba(7,16,31,.92)';
+    Chart.defaults.plugins.tooltip.titleColor     = '#ffcc00';
+    Chart.defaults.plugins.tooltip.bodyColor      = 'rgba(242,246,255,.90)';
+    Chart.defaults.plugins.tooltip.borderColor    = 'rgba(255,255,255,.12)';
+    Chart.defaults.plugins.tooltip.borderWidth    = 1;
+    Chart.defaults.interaction.mode      = 'index';
+    Chart.defaults.interaction.intersect = false;
 
-    // zero-line plugin
     const zeroLinePlugin = {
         id: 'zeroLine',
         afterDraw(chart) {
@@ -490,7 +435,6 @@
     };
     Chart.register(zeroLinePlugin);
 
-    // ── 1. Profitto mensile (barre) ───────────────────────────────────────────
     const monthly = parseCanvasJson('chartMonthlyProfit');
     if (monthly?.length) {
         const labels  = monthly.map(x => x.label);
@@ -499,122 +443,81 @@
         const bets    = monthly.map(x => x.bets);
         const rois    = monthly.map(x => x.roi);
         const colors  = profits.map(p => p >= 0 ? 'rgba(74,222,128,.85)' : 'rgba(248,113,113,.85)');
-
         new Chart(document.getElementById('chartMonthlyProfit'), {
             type: 'bar',
-            data: {
-                labels,
-                datasets: [{ label: 'Profitto', data: profits, backgroundColor: colors, borderRadius: 8, maxBarThickness: 40 }]
-            },
+            data: { labels, datasets: [{ label: 'Profitto', data: profits, backgroundColor: colors, borderRadius: 8, maxBarThickness: 40 }] },
             options: {
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            title: (items) => items?.[0]?.label ?? '',
-                            label: (ctx)   => ` P&L: ${money(ctx.raw)} €`,
-                            afterBody: (items) => {
-                                const i = items?.[0]?.dataIndex ?? 0;
-                                return [
-                                    ` Stake: ${money(stakes[i])} €`,
-                                    ` ROI: ${pct(rois[i])}`,
-                                    ` ROI Bankroll: ${pct(monthly[i]?.roiBankroll ?? 0)}`,
-                                    ` Bets: ${bets[i]}`
-                                ];
-                            }
-                        }
-                    }
-                },
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: {
+                        title: (items) => items?.[0]?.label ?? '',
+                        label: (ctx)   => ` P&L: ${money(ctx.raw)} €`,
+                        afterBody: (items) => { const i = items?.[0]?.dataIndex ?? 0; return [` Stake: ${money(stakes[i])} €`, ` ROI: ${pct(rois[i])}`, ` ROI Bankroll: ${pct(monthly[i]?.roiBankroll ?? 0)}`, ` Bets: ${bets[i]}`]; }
+                    }}},
                 scales: {
-                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10,
-                        callback: (v, i) => shortMonthLabel(labels[i]) } },
+                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, callback: (v,i) => shortMonthLabel(labels[i]) } },
                     y: { title: { display: true, text: 'P&L €', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // ── 2. ROI mensile (linea) ────────────────────────────────────────────────
     const monthlyRoi = parseCanvasJson('chartMonthlyRoi');
     if (monthlyRoi?.length) {
         const labels = monthlyRoi.map(x => x.label);
         const rois   = monthlyRoi.map(x => x.roi);
-
         new Chart(document.getElementById('chartMonthlyRoi'), {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'ROI %', data: rois,
-                    borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)',
-                    fill: true, tension: 0.25, pointRadius: 2 }]
-            },
+            data: { labels, datasets: [{ label: 'ROI %', data: rois, borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)', fill: true, tension: 0.25, pointRadius: 2 }] },
             options: {
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => ` ROI: ${pct(ctx.raw)}` } } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ROI: ${pct(ctx.raw)}` } } },
                 scales: {
-                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10,
-                        callback: (v, i) => shortMonthLabel(labels[i]) } },
+                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, callback: (v,i) => shortMonthLabel(labels[i]) } },
                     y: { title: { display: true, text: 'ROI %', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // ── 3. BACK vs LAY ────────────────────────────────────────────────────────
     const backLay = parseCanvasJson('chartBackLay');
     if (backLay?.labels?.length) {
         const labels     = backLay.labels;
         const backProfit = labels.map(l => backLay.back?.[l] ?? 0);
         const layProfit  = labels.map(l => backLay.lay?.[l]  ?? 0);
-
         new Chart(document.getElementById('chartBackLay'), {
             type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    { label: 'BACK', data: backProfit, backgroundColor: 'rgba(96,165,250,.75)', borderRadius: 8, maxBarThickness: 32 },
-                    { label: 'LAY',  data: layProfit,  backgroundColor: 'rgba(255,204,0,.75)',  borderRadius: 8, maxBarThickness: 32 }
-                ]
-            },
+            data: { labels, datasets: [
+                { label: 'BACK', data: backProfit, backgroundColor: 'rgba(96,165,250,.75)', borderRadius: 8, maxBarThickness: 32 },
+                { label: 'LAY',  data: layProfit,  backgroundColor: 'rgba(255,204,0,.75)',  borderRadius: 8, maxBarThickness: 32 }
+            ]},
             options: {
                 maintainAspectRatio: false,
                 plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)} €` } } },
                 scales: {
-                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10,
-                        callback: (v, i) => shortMonthLabel(labels[i]) } },
+                    x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, callback: (v,i) => shortMonthLabel(labels[i]) } },
                     y: { title: { display: true, text: 'P&L €', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // ── 4. Equity + Drawdown (overview) ──────────────────────────────────────
     function buildEquityChart(canvasId) {
         const eq = parseCanvasJson(canvasId);
         if (!eq?.length) return;
         const labels = eq.map(x => x.date);
         const cum    = eq.map(x => x.cum);
         const dd     = eq.map(x => x.dd);
-
         new Chart(document.getElementById(canvasId), {
-            data: {
-                labels,
-                datasets: [
-                    { type: 'line', label: 'Equity', data: cum,
-                        borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)',
-                        fill: true, tension: 0.25, pointRadius: 0 },
-                    { type: 'line', label: 'Drawdown', data: dd,
-                        borderColor: 'rgba(248,113,113,.75)', tension: 0.25, pointRadius: 0 }
-                ]
-            },
+            data: { labels, datasets: [
+                { type: 'line', label: 'Equity', data: cum, borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)', fill: true, tension: 0.25, pointRadius: 0 },
+                { type: 'line', label: 'Drawdown', data: dd, borderColor: 'rgba(248,113,113,.75)', tension: 0.25, pointRadius: 0 }
+            ]},
             options: {
                 maintainAspectRatio: false,
                 plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${money(ctx.raw)} €` } } },
                 scales: {
-                    x: { ticks: { display: !isMobile, maxRotation: 90, minRotation: 90,
-                        autoSkip: true, maxTicksLimit: 8, callback: (v, i) => shortDayLabel(labels[i]) } },
+                    x: { ticks: { display: !isMobile, maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 8, callback: (v,i) => shortDayLabel(labels[i]) } },
                     y: { title: { display: true, text: '€', color: 'rgba(242,246,255,.55)' } }
                 }
             }
@@ -622,37 +525,26 @@
     }
     buildEquityChart('chartEquity');
 
-    // ── 5. Equity only (tab) ──────────────────────────────────────────────────
     const eqOnly = parseCanvasJson('chartEquityOnly');
     if (eqOnly?.length) {
         const labels = eqOnly.map(x => x.date);
         const cum    = eqOnly.map(x => x.cum);
-
         new Chart(document.getElementById('chartEquityOnly'), {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'Equity', data: cum,
-                    borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)',
-                    fill: true, tension: 0.25, pointRadius: 0 }]
-            },
+            data: { labels, datasets: [{ label: 'Equity', data: cum, borderColor: 'rgba(96,165,250,.95)', backgroundColor: 'rgba(96,165,250,.12)', fill: true, tension: 0.25, pointRadius: 0 }] },
             options: {
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)} €` } } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` Equity: ${money(ctx.raw)} €` } } },
                 scales: {
-                    x: { ticks: { display: !isMobile, maxRotation: 90, minRotation: 90,
-                        autoSkip: true, maxTicksLimit: 8, callback: (v, i) => shortDayLabel(labels[i]) } },
+                    x: { ticks: { display: !isMobile, maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 8, callback: (v,i) => shortDayLabel(labels[i]) } },
                     y: { title: { display: true, text: 'P&L cumulato €', color: 'rgba(242,246,255,.55)' } }
                 }
             }
         });
     }
 
-    // ── CALENDARIO ────────────────────────────────────────────────────────────
     (function () {
         let calYear, calMonth, calLoaded = false;
-
         const now = new Date();
         calYear  = now.getFullYear();
         calMonth = now.getMonth() + 1;
@@ -670,37 +562,26 @@
 
         if (!grid || !label || !accSel) return;
 
-        function moneyEur(x) {
-            const v = Number(x || 0);
-            return (v >= 0 ? '+' : '') + v.toFixed(2) + ' €';
-        }
+        function moneyEur(x) { const v = Number(x || 0); return (v >= 0 ? '+' : '') + v.toFixed(2) + ' €'; }
 
         async function loadCalendar() {
             const acc = accSel.value || '';
             if (!acc) return;
             label.textContent = '…';
-
-            const url = `${location.pathname}?handler=Calendar&account=${encodeURIComponent(acc)}&year=${calYear}&month=${calMonth}`;
+            const url  = `${location.pathname}?handler=Calendar&account=${encodeURIComponent(acc)}&year=${calYear}&month=${calMonth}`;
             const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await res.json();
-
-            if (!data?.ok) {
-                label.textContent = 'Errore';
-                grid.innerHTML = `<div class="text-muted small p-2">${data?.error ?? 'Errore caricamento'}</div>`;
-                return;
-            }
+            if (!data?.ok) { label.textContent = 'Errore'; grid.innerHTML = `<div class="text-muted small p-2">${data?.error ?? 'Errore caricamento'}</div>`; return; }
             renderCalendar(data);
             calLoaded = true;
         }
 
         function renderCalendar(data) {
             label.textContent = data.label || `${data.month}/${data.year}`;
-
             const mp = Number(data.monthProfit || 0);
             monthProfitEl.textContent = moneyEur(mp);
             monthBetsEl.textContent   = String(data.monthBets || 0);
-
-            monthProfitEl.className = 'st-kpi-value ' + (mp >= 0 ? 'bf-profit-pos' : 'bf-profit-neg');
+            monthProfitEl.className   = 'st-kpi-value ' + (mp >= 0 ? 'bf-profit-pos' : 'bf-profit-neg');
             profitCard?.classList.remove('bf-profit-pos-card', 'bf-profit-neg-card');
             profitCard?.classList.add(mp >= 0 ? 'bf-profit-pos-card' : 'bf-profit-neg-card');
 
@@ -714,14 +595,9 @@
             const cells = [];
             for (let i = 0; i < 42; i++) {
                 const d = i - offset + 1;
-                if (d < 1) {
-                    cells.push({ out: true, day: prevDays + d, profit: null });
-                } else if (d > daysInMonth) {
-                    cells.push({ out: true, day: d - daysInMonth, profit: null });
-                } else {
-                    const row = days.find(x => Number(x.day) === d) || { profit: 0 };
-                    cells.push({ out: false, day: d, profit: Number(row.profit || 0) });
-                }
+                if (d < 1)           cells.push({ out: true, day: prevDays + d, profit: null });
+                else if (d > daysInMonth) cells.push({ out: true, day: d - daysInMonth, profit: null });
+                else { const row = days.find(x => Number(x.day) === d) || { profit: 0 }; cells.push({ out: false, day: d, profit: Number(row.profit || 0) }); }
             }
 
             grid.innerHTML = cells.map(c => {
@@ -736,7 +612,6 @@
         btnNext?.addEventListener('click', () => { calMonth++; if (calMonth > 12) { calMonth = 1; calYear++; } loadCalendar(); });
         btnToday?.addEventListener('click', () => { const t = new Date(); calYear = t.getFullYear(); calMonth = t.getMonth()+1; loadCalendar(); });
         tabBtn?.addEventListener('shown.bs.tab', () => { if (!calLoaded) loadCalendar(); });
-
         loadCalendar();
     })();
 
