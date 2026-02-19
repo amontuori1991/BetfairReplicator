@@ -1,4 +1,4 @@
-/* ================================
+﻿/* ================================
    BetfairReplicator - site.css
    Dark app + Betfair yellow accent
    ================================ */
@@ -375,7 +375,7 @@ a {
     }
 }
 /* ================================
-   MarketSearch � runner mobile FIX
+   MarketSearch – runner mobile FIX
    ================================ */
 @media (max-width: 768px) {
 
@@ -441,7 +441,7 @@ a {
 }
 
 /* ================================
-   OrderPreview � mobile layout
+   OrderPreview – mobile layout
    ================================ */
 
 /* Mobile: nascondo tabella, mostro cards */
@@ -509,7 +509,7 @@ a {
     }
 }
 /* ================================
-   Admin Accounts � mobile-first
+   Admin Accounts – mobile-first
    ================================ */
 
 .bf-admin-header {
@@ -643,7 +643,7 @@ a {
 }
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
     .bf-loader {
-        background: rgba(7,16,31,.85); /* pi� scuro senza blur */
+        background: rgba(7,16,31,.85); /* più scuro senza blur */
     }
 }
 
@@ -687,7 +687,7 @@ a {
     }
 }
 /* ================================
-   Orders � mobile cards (no horizontal scroll)
+   Orders – mobile cards (no horizontal scroll)
    ================================ */
 
 .bf-order-card {
@@ -730,4 +730,201 @@ a {
 .footer {
     position: static !important;
     line-height: normal !important;
+}
+
+
+/* ================================
+   Orders – additions (paginazione,
+   side chip, P&L, summary bar)
+   ================================ */
+
+/* Side chip (BACK / LAY) */
+.bf-side-chip {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .3px;
+    vertical-align: middle;
+}
+
+.bf-side-back {
+    background: rgba(47,107,255,.18);
+    border: 1px solid rgba(47,107,255,.55);
+    color: #7fa8ff;
+}
+
+.bf-side-lay {
+    background: rgba(255,204,0,.14);
+    border: 1px solid rgba(255,204,0,.50);
+    color: #ffcc00;
+}
+
+/* P&L color */
+.bf-profit-pos {
+    color: #4ade80 !important;
+    font-weight: 700;
+}
+
+.bf-profit-neg {
+    color: #f87171 !important;
+    font-weight: 700;
+}
+
+/* Price highlight */
+.bf-price {
+    color: var(--bf-yellow-2);
+    font-weight: 700;
+}
+
+/* ─── Summary bar ──────────────────────────────────── */
+.bf-summary-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    background: rgba(0,0,0,.18);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 10px 14px;
+}
+
+.bf-sb-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bf-sb-lbl {
+    font-size: 11px;
+    color: var(--bf-muted);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.bf-sb-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bf-text);
+}
+
+/* ─── Inline kv row (cards mobile) ────────────────── */
+.bf-order-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    background: rgba(0,0,0,.12);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 12px;
+    padding: 8px 10px;
+}
+
+.bf-oi-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.bf-oi-lbl {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: var(--bf-muted);
+}
+
+.bf-oi-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bf-text);
+    white-space: nowrap;
+}
+
+/* ─── Details toggle button ────────────────────────── */
+.bf-details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--bf-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: color .12s;
+}
+
+    .bf-details-toggle:hover {
+        color: var(--bf-yellow);
+    }
+
+.bf-dt-arrow {
+    transition: transform .18s ease;
+}
+
+/* ─── Pager ────────────────────────────────────────── */
+.bf-pager {
+    min-height: 0;
+}
+
+.bf-pager-inner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.bf-pg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border-radius: 10px;
+    border: 1px solid var(--bf-border);
+    background: rgba(255,255,255,.04);
+    color: var(--bf-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+}
+
+    .bf-pg-btn:hover:not([disabled]) {
+        background: rgba(255,204,0,.14);
+        border-color: rgba(255,204,0,.45);
+        color: var(--bf-yellow);
+    }
+
+    .bf-pg-btn.active {
+        background: rgba(255,204,0,.22);
+        border-color: rgba(255,204,0,.70);
+        color: var(--bf-yellow);
+    }
+
+    .bf-pg-btn[disabled] {
+        opacity: .35;
+        cursor: default;
+    }
+
+.bf-pg-info {
+    font-size: 12px;
+    color: var(--bf-muted);
+    padding: 0 4px;
+    white-space: nowrap;
+}
+
+.bf-pg-dots {
+    color: var(--bf-muted);
+    font-size: 13px;
+    padding: 0 2px;
+}
+
+@media (max-width: 576px) {
+    .bf-pg-btn {
+        min-width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
 }

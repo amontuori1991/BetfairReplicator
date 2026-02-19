@@ -4,8 +4,7 @@
     ViewData["Title"] = "Ordini";
     var minDate = "2026-01-30";
     var maxDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
-    TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).ToString("yyyy-MM-dd");
-
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).ToString("yyyy-MM-dd");
 }
 
 <div class="ns-page">
@@ -21,7 +20,6 @@
                     }
                 </div>
             </div>
-
             <a class="btn btn-outline-secondary btn-sm" asp-page="/Index" data-loading="Torno alla Home…">Home</a>
         </div>
     </div>
@@ -32,6 +30,7 @@
     }
     else
     {
+        <!-- FILTRI -->
         <div class="card shadow-sm mb-3">
             <div class="card-body">
                 <form id="ordersForm" method="get" class="row g-2 align-items-end">
@@ -43,30 +42,20 @@
                                 <option value="@a" selected="@(string.Equals(a, Model.MasterUsed, StringComparison.OrdinalIgnoreCase))">@a</option>
                             }
                         </select>
-                        <div class="form-text">Default: primo account collegato.</div>
                     </div>
-
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small text-muted mb-1">Da (min @minDate)</label>
-                        <input type="date" class="form-control"
-                        id="fromInput"
-                               name="From"
-                               min="@minDate"
-                               max="@maxDate"
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-muted mb-1">Da</label>
+                        <input type="date" class="form-control" id="fromInput" name="From"
+                               min="@minDate" max="@maxDate"
                                value="@Model.FromLocalUsed.ToString("yyyy-MM-dd")" />
                     </div>
-
-                    <div class="col-12 col-md-3">
+                    <div class="col-6 col-md-3">
                         <label class="form-label small text-muted mb-1">A</label>
-                        <input type="date" class="form-control"
-                        id="toInput"
-                               name="To"
-                               min="@minDate"
-                               max="@maxDate"
+                        <input type="date" class="form-control" id="toInput" name="To"
+                               min="@minDate" max="@maxDate"
                                value="@Model.ToLocalUsed.ToString("yyyy-MM-dd")" />
                     </div>
-
-                    <div class="col-12 col-md-2 d-flex gap-2">
+                    <div class="col-12 col-md-2">
                         <button class="btn btn-primary w-100" type="submit">Applica</button>
                     </div>
                 </form>
@@ -75,240 +64,283 @@
 
         <div class="row g-3">
 
-            <!-- =====================================================
-                 OPEN ORDERS
-                 ===================================================== -->
+            <!-- ===================== OPEN ORDERS ===================== -->
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="fw-semibold mb-2">Ordini aperti</div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="fw-semibold">
+                                Ordini aperti
+                                <span class="badge bg-secondary ms-1">@Model.OpenOrders.Count</span>
+                            </div>
+                        </div>
 
-                        <!-- =========================
-                             MOBILE: CARDS
-                             ========================= -->
-                        <div class="bf-orders-open-cards d-md-none">
-                            <div class="row g-2">
-                                @if (Model.OpenOrders.Count == 0)
-                                {
-                                    <div class="col-12">
-                                        <div class="text-muted">Nessun ordine aperto.</div>
-                                    </div>
-                                }
-                                else
-                                {
+                        @if (Model.OpenOrders.Count == 0)
+                        {
+                            <div class="text-muted small">Nessun ordine aperto.</div>
+                        }
+                        else
+                        {
+                            <!-- MOBILE: CARDS -->
+                            <div id="openCards" class="d-md-none">
+                                <div class="row g-2" id="openCardsList">
                                     @foreach (var o in Model.OpenOrders)
                                     {
-                                        <div class="col-12 col-sm-6">
+                                        <div class="col-12 bf-ord-item" data-src="open">
                                             <div class="bf-order-card">
                                                 <div class="bf-order-top">
-                                                    <div>
-                                                        <div class="bf-order-title">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</div>
-                                                        <div class="bf-order-sub text-muted small mt-1">
-                                                            @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))
+                                                    <div class="flex-grow-1 min-w-0">
+                                                        <div class="bf-order-title text-truncate">
+                                                            @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
+                                                        </div>
+                                                        <div class="text-muted small mt-1">
+                                                            @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "—")
+                                                            &nbsp;·&nbsp;
+                                                            <span class="bf-side-chip bf-side-@(o.Side?.ToLower())">@o.Side</span>
                                                         </div>
                                                     </div>
-                                                    <div class="bf-order-badges">
+                                                    <div class="bf-order-badges ms-2">
                                                         <span class="@o.ResultClass">@o.ResultBadge</span>
                                                     </div>
                                                 </div>
 
-                                                <div class="bf-kv mt-2">
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Data</div>
-                                                        <div class="bf-v">@Model.FormatRome(o.DateUtc)</div>
+                                                <!-- riga compatta: data | price | size -->
+                                                <div class="bf-order-inline mt-2">
+                                                    <div class="bf-oi-item">
+                                                        <span class="bf-oi-lbl">Data</span>
+                                                        <span class="bf-oi-val">@Model.FormatRome(o.DateUtc)</span>
                                                     </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Side</div>
-                                                        <div class="bf-v">@o.Side</div>
+                                                    <div class="bf-oi-item">
+                                                        <span class="bf-oi-lbl">Price</span>
+                                                        <span class="bf-oi-val bf-price">@((o.Price?.ToString("0.00")) ?? "—")</span>
                                                     </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Price</div>
-                                                        <div class="bf-v">@((o.Price?.ToString("0.00")) ?? "-")</div>
+                                                    <div class="bf-oi-item">
+                                                        <span class="bf-oi-lbl">Size</span>
+                                                        <span class="bf-oi-val">@((o.Size?.ToString("0.00")) ?? "—")</span>
                                                     </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Size</div>
-                                                        <div class="bf-v">@((o.Size?.ToString("0.00")) ?? "-")</div>
-                                                    </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Stato</div>
-                                                        <div class="bf-v">@o.Status</div>
-                                                    </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">BetId</div>
-                                                        <div class="bf-v bf-mono">@o.BetId</div>
+                                                </div>
+
+                                                <!-- dettagli collassabili -->
+                                                <button class="bf-details-toggle mt-2" data-target="open-det-@o.BetId">
+                                                    <span class="bf-dt-text">Dettagli</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="bf-dt-arrow"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                                </button>
+                                                <div id="open-det-@o.BetId" class="bf-details-body" hidden>
+                                                    <div class="bf-kv mt-2">
+                                                        <div class="bf-kv-row">
+                                                            <div class="bf-k">Stato</div>
+                                                            <div class="bf-v">@o.Status</div>
+                                                        </div>
+                                                        <div class="bf-kv-row">
+                                                            <div class="bf-k">BetId</div>
+                                                            <div class="bf-v bf-mono">@o.BetId</div>
+                                                        </div>
+                                                        <div class="bf-kv-row">
+                                                            <div class="bf-k">MarketId</div>
+                                                            <div class="bf-v bf-mono">@o.MarketId</div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     }
-                                }
+                                </div>
+                                <div id="openCardsPager" class="bf-pager mt-3"></div>
                             </div>
-                        </div>
 
-                        <!-- =========================
-                             DESKTOP/TABLET: TABELLA
-                             ========================= -->
-                        <div class="bf-orders-open-table d-none d-md-block">
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Data</th>
-                                            <th>Evento</th>
-                                            <th>Giocata</th>
-                                            <th>Side</th>
-                                            <th class="text-end">Price</th>
-                                            <th class="text-end">Size</th>
-                                            <th>Stato</th>
-                                            <th>BetId</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    @if (Model.OpenOrders.Count == 0)
-                                    {
-                                        <tr><td colspan="8" class="text-muted">Nessun ordine aperto.</td></tr>
-                                    }
-                                    else
-                                    {
-                                        foreach (var o in Model.OpenOrders)
-                                        {
+                            <!-- DESKTOP: TABELLA -->
+                            <div class="d-none d-md-block">
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0" id="openTable">
+                                        <thead>
                                             <tr>
-                                                <td class="text-nowrap">@Model.FormatRome(o.DateUtc)</td>
-                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</td>
-                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : (o.SelectionId?.ToString() ?? "-"))</td>
-                                                <td>@o.Side</td>
-                                                <td class="text-end">@((o.Price?.ToString("0.00")) ?? "-")</td>
-                                                <td class="text-end">@((o.Size?.ToString("0.00")) ?? "-")</td>
-                                                <td>@o.Status</td>
-                                                <td class="text-nowrap">@o.BetId</td>
+                                                <th>Data</th>
+                                                <th>Evento</th>
+                                                <th>Giocata</th>
+                                                <th>Side</th>
+                                                <th class="text-end">Price</th>
+                                                <th class="text-end">Size rem.</th>
+                                                <th>Stato</th>
+                                                <th class="text-muted small">BetId</th>
                                             </tr>
-                                        }
-                                    }
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody id="openTableBody">
+                                            @foreach (var o in Model.OpenOrders)
+                                            {
+                                                <tr class="bf-ord-item" data-src="open">
+                                                    <td class="text-nowrap">@Model.FormatRome(o.DateUtc)</td>
+                                                    <td>@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</td>
+                                                    <td>@(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "—")</td>
+                                                    <td><span class="bf-side-chip bf-side-@(o.Side?.ToLower())">@o.Side</span></td>
+                                                    <td class="text-end bf-price">@((o.Price?.ToString("0.00")) ?? "—")</td>
+                                                    <td class="text-end">@((o.Size?.ToString("0.00")) ?? "—")</td>
+                                                    <td>@o.Status</td>
+                                                    <td class="text-muted bf-mono small">@o.BetId</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="openTablePager" class="bf-pager mt-3"></div>
                             </div>
-                        </div>
+                        }
 
-                        <div class="text-muted small mt-2">
-                            Fonte: listCurrentOrders (master).
-                        </div>
+                        <div class="text-muted small mt-2">Fonte: listCurrentOrders (master)</div>
                     </div>
                 </div>
             </div>
 
 
-            <!-- =====================================================
-                 SETTLED ORDERS
-                 ===================================================== -->
+            <!-- ===================== SETTLED ORDERS ===================== -->
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="fw-semibold mb-2">Ordini settled</div>
 
-                        <!-- =========================
-                             MOBILE: CARDS
-                             ========================= -->
-                        <div class="bf-orders-settled-cards d-md-none">
-                            <div class="row g-2">
-                                @if (Model.SettledOrders.Count == 0)
-                                {
-                                    <div class="col-12">
-                                        <div class="text-muted">Nessun dato nel periodo selezionato.</div>
-                                    </div>
-                                }
-                                else
-                                {
+                        <!-- summary bar -->
+                        @if (Model.SettledOrders.Count > 0)
+                        {
+                            var totalProfit = Model.SettledOrders.Sum(x => x.Profit ?? 0);
+                            var wins = Model.SettledOrders.Count(x => (x.Profit ?? 0) > 0.0001);
+                            var losses = Model.SettledOrders.Count(x => (x.Profit ?? 0) < -0.0001);
+                            <div class="bf-summary-bar mb-3">
+                                <div class="bf-sb-item">
+                                    <span class="bf-sb-lbl">Totale</span>
+                                    <span class="bf-sb-val">@Model.SettledOrders.Count scommesse</span>
+                                </div>
+                                <div class="bf-sb-item">
+                                    <span class="bf-sb-lbl">P&amp;L netto</span>
+                                    <span class="bf-sb-val @(totalProfit >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                                        @(totalProfit >= 0 ? "+" : "")@totalProfit.ToString("0.00") €
+                                    </span>
+                                </div>
+                                <div class="bf-sb-item">
+                                    <span class="bf-sb-lbl">Win / Loss</span>
+                                    <span class="bf-sb-val"><span class="text-success">@wins</span> / <span class="text-danger">@losses</span></span>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="fw-semibold">
+                                Ordini settled
+                                <span class="badge bg-secondary ms-1">@Model.SettledOrders.Count</span>
+                            </div>
+                        </div>
+
+                        @if (Model.SettledOrders.Count == 0)
+                        {
+                            <div class="text-muted small">Nessun dato nel periodo selezionato.</div>
+                        }
+                        else
+                        {
+                            <!-- MOBILE: CARDS -->
+                            <div id="settledCards" class="d-md-none">
+                                <div class="row g-2" id="settledCardsList">
                                     @foreach (var o in Model.SettledOrders)
                                     {
-                                        <div class="col-12 col-sm-6">
+                                        var p = o.Profit ?? 0;
+                                        <div class="col-12 bf-ord-item" data-src="settled">
                                             <div class="bf-order-card">
                                                 <div class="bf-order-top">
-                                                    <div>
-                                                        <div class="bf-order-title">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</div>
-                                                        <div class="bf-order-sub text-muted small mt-1">
-                                                            @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")
+                                                    <div class="flex-grow-1 min-w-0">
+                                                        <div class="bf-order-title text-truncate">
+                                                            @(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)
+                                                        </div>
+                                                        <div class="text-muted small mt-1">
+                                                            @(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "—")
+                                                            &nbsp;·&nbsp;
+                                                            <span class="bf-side-chip bf-side-@(o.Side?.ToLower())">@o.Side</span>
                                                         </div>
                                                     </div>
-                                                    <div class="bf-order-badges">
+                                                    <div class="bf-order-badges ms-2">
                                                         <span class="@o.ResultClass">@o.ResultBadge</span>
                                                     </div>
                                                 </div>
 
-                                                <div class="bf-kv mt-2">
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Data</div>
-                                                        <div class="bf-v">@Model.FormatRome(o.DateUtc)</div>
+                                                <!-- riga compatta: data | stake | P&L -->
+                                                <div class="bf-order-inline mt-2">
+                                                    <div class="bf-oi-item">
+                                                        <span class="bf-oi-lbl">Data</span>
+                                                        <span class="bf-oi-val">@Model.FormatRome(o.DateUtc)</span>
                                                     </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Side</div>
-                                                        <div class="bf-v">@o.Side</div>
+                                                    <div class="bf-oi-item">
+                                                        <span class="bf-oi-lbl">Stake</span>
+                                                        <span class="bf-oi-val">@((o.Stake?.ToString("0.00")) ?? "—") €</span>
                                                     </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Stake</div>
-                                                        <div class="bf-v">@((o.Stake?.ToString("0.00")) ?? "-")</div>
+                                                    <div class="bf-oi-item">
+                                                        <span class="bf-oi-lbl">P&amp;L</span>
+                                                        <span class="bf-oi-val @(p >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                                                            @(p >= 0 ? "+" : "")@p.ToString("0.00") €
+                                                        </span>
                                                     </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">Profit</div>
-                                                        <div class="bf-v">@((o.Profit?.ToString("0.00")) ?? "-")</div>
-                                                    </div>
-                                                    <div class="bf-kv-row">
-                                                        <div class="bf-k">BetId</div>
-                                                        <div class="bf-v bf-mono">@o.BetId</div>
+                                                </div>
+
+                                                <!-- dettagli collassabili -->
+                                                <button class="bf-details-toggle mt-2" data-target="set-det-@o.BetId">
+                                                    <span class="bf-dt-text">Dettagli</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="bf-dt-arrow"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                                </button>
+                                                <div id="set-det-@o.BetId" class="bf-details-body" hidden>
+                                                    <div class="bf-kv mt-2">
+                                                        <div class="bf-kv-row">
+                                                            <div class="bf-k">BetId</div>
+                                                            <div class="bf-v bf-mono">@o.BetId</div>
+                                                        </div>
+                                                        <div class="bf-kv-row">
+                                                            <div class="bf-k">MarketId</div>
+                                                            <div class="bf-v bf-mono">@o.MarketId</div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     }
-                                }
+                                </div>
+                                <div id="settledCardsPager" class="bf-pager mt-3"></div>
                             </div>
-                        </div>
 
-                        <!-- =========================
-                             DESKTOP/TABLET: TABELLA
-                             ========================= -->
-                        <div class="bf-orders-settled-table d-none d-md-block">
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Data</th>
-                                            <th>Esito</th>
-                                            <th>Evento</th>
-                                            <th>Giocata</th>
-                                            <th>Side</th>
-                                            <th class="text-end">Stake</th>
-                                            <th class="text-end">Profit</th>
-                                            <th>BetId</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    @if (Model.SettledOrders.Count == 0)
-                                    {
-                                        <tr><td colspan="8" class="text-muted">Nessun dato nel periodo selezionato.</td></tr>
-                                    }
-                                    else
-                                    {
-                                        foreach (var o in Model.SettledOrders)
-                                        {
+                            <!-- DESKTOP: TABELLA -->
+                            <div class="d-none d-md-block">
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0" id="settledTable">
+                                        <thead>
                                             <tr>
-                                                <td class="text-nowrap">@Model.FormatRome(o.DateUtc)</td>
-                                                <td class="text-nowrap"><span class="@o.ResultClass">@o.ResultBadge</span></td>
-                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</td>
-                                                <td class="text-nowrap">@(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "-")</td>
-                                                <td>@o.Side</td>
-                                                <td class="text-end">@((o.Stake?.ToString("0.00")) ?? "-")</td>
-                                                <td class="text-end">@((o.Profit?.ToString("0.00")) ?? "-")</td>
-                                                <td class="text-nowrap">@o.BetId</td>
+                                                <th>Data</th>
+                                                <th>Esito</th>
+                                                <th>Evento</th>
+                                                <th>Giocata</th>
+                                                <th>Side</th>
+                                                <th class="text-end">Stake</th>
+                                                <th class="text-end">P&amp;L</th>
+                                                <th class="text-muted small">BetId</th>
                                             </tr>
-                                        }
-                                    }
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody id="settledTableBody">
+                                            @foreach (var o in Model.SettledOrders)
+                                            {
+                                                var p = o.Profit ?? 0;
+                                                <tr class="bf-ord-item" data-src="settled">
+                                                    <td class="text-nowrap">@Model.FormatRome(o.DateUtc)</td>
+                                                    <td><span class="@o.ResultClass">@o.ResultBadge</span></td>
+                                                    <td>@(!string.IsNullOrWhiteSpace(o.EventName) ? o.EventName : o.MarketId)</td>
+                                                    <td>@(!string.IsNullOrWhiteSpace(o.RunnerName) ? o.RunnerName : "—")</td>
+                                                    <td><span class="bf-side-chip bf-side-@(o.Side?.ToLower())">@o.Side</span></td>
+                                                    <td class="text-end">@((o.Stake?.ToString("0.00")) ?? "—") €</td>
+                                                    <td class="text-end @(p >= 0 ? "bf-profit-pos" : "bf-profit-neg")">
+                                                        @(p >= 0 ? "+" : "")@p.ToString("0.00") €
+                                                    </td>
+                                                    <td class="text-muted bf-mono small">@o.BetId</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="settledTablePager" class="bf-pager mt-3"></div>
                             </div>
-                        </div>
+                        }
 
                         <div class="text-muted small mt-2">
-                            Fonte: listClearedOrders (master) • periodo clampato min @minDate.
+                            Fonte: listClearedOrders (master) · min @minDate
                         </div>
                     </div>
                 </div>
@@ -316,19 +348,89 @@
 
         </div>
     }
-
 </div>
 
-    @section Scripts {
+@section Scripts {
 <script>
 (function () {
+    // ─── auto-submit master select ───────────────────────────────────────────
     const form = document.getElementById('ordersForm');
     const masterSelect = document.getElementById('masterSelect');
-    if (!form || !masterSelect) return;
+    if (form && masterSelect) {
+        masterSelect.addEventListener('change', () => form.submit());
+    }
 
-    masterSelect.addEventListener('change', () => {
-        form.submit(); // ricarica la pagina e quindi la tabella
+    // ─── details toggle (mobile cards) ───────────────────────────────────────
+    document.querySelectorAll('.bf-details-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id  = btn.dataset.target;
+            const det = document.getElementById(id);
+            if (!det) return;
+            const open = !det.hidden;
+            det.hidden = open;
+            btn.querySelector('.bf-dt-text').textContent = open ? 'Dettagli' : 'Nascondi';
+            btn.querySelector('.bf-dt-arrow').style.transform = open ? '' : 'rotate(180deg)';
+        });
     });
+
+    // ─── PAGINATION ───────────────────────────────────────────────────────────
+    const PAGE_SIZE = 20;
+
+    function paginate(allItems, pageEl, page) {
+        const total = allItems.length;
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        page = Math.max(1, Math.min(page, pages));
+        const start = (page - 1) * PAGE_SIZE;
+        const end   = start + PAGE_SIZE;
+
+        allItems.forEach((el, i) => {
+            el.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        // render pager
+        if (pages <= 1) { pageEl.innerHTML = ''; return; }
+
+        const from = start + 1;
+        const to   = Math.min(end, total);
+
+        let html = `<div class="bf-pager-inner">
+            <button class="bf-pg-btn" data-p="${page-1}" ${page===1?'disabled':''}>&#8249;</button>
+            <span class="bf-pg-info">${from}–${to} di ${total}</span>`;
+
+        // pagine vicine
+        const range = [];
+        for (let i = Math.max(1, page-2); i <= Math.min(pages, page+2); i++) range.push(i);
+        if (range[0] > 1) { html += `<button class="bf-pg-btn" data-p="1">1</button>`; if (range[0]>2) html += `<span class="bf-pg-dots">…</span>`; }
+        range.forEach(i => { html += `<button class="bf-pg-btn${i===page?' active':''}" data-p="${i}">${i}</button>`; });
+        if (range[range.length-1] < pages) { if (range[range.length-1]<pages-1) html += `<span class="bf-pg-dots">…</span>`; html += `<button class="bf-pg-btn" data-p="${pages}">${pages}</button>`; }
+
+        html += `<button class="bf-pg-btn" data-p="${page+1}" ${page===pages?'disabled':''}>&#8250;</button></div>`;
+
+        pageEl.innerHTML = html;
+        pageEl.querySelectorAll('.bf-pg-btn:not([disabled])').forEach(b => {
+            b.addEventListener('click', () => paginate(allItems, pageEl, +b.dataset.p));
+        });
+    }
+
+    function initPager(tableBodyId, cardListId, tablePagerId, cardsPagerId) {
+        const tbody = document.getElementById(tableBodyId);
+        const clist = document.getElementById(cardListId);
+        const tpager = document.getElementById(tablePagerId);
+        const cpager = document.getElementById(cardsPagerId);
+
+        if (tbody && tpager) {
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            if (rows.length > PAGE_SIZE) paginate(rows, tpager, 1);
+        }
+        if (clist && cpager) {
+            const cards = Array.from(clist.querySelectorAll('.bf-ord-item'));
+            if (cards.length > PAGE_SIZE) paginate(cards, cpager, 1);
+        }
+    }
+
+    initPager('openTableBody',    'openCardsList',    'openTablePager',    'openCardsPager');
+    initPager('settledTableBody', 'settledCardsList', 'settledTablePager', 'settledCardsPager');
+
 })();
 </script>
 }
