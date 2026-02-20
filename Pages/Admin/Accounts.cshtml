@@ -76,6 +76,26 @@
                         <input class="form-control" type="password" name="Password" />
                     </div>
 
+                    <div class="col-12">
+                        <div class="form-check form-switch ps-0">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input ms-0" type="checkbox"
+                                       id="useGrossBankroll"
+                                       name="useGrossBankroll" value="true"
+                                       style="width:2.4em;height:1.3em;cursor:pointer;" />
+                                <div>
+                                    <label class="form-check-label fw-semibold" for="useGrossBankroll">
+                                        Bankroll lordo
+                                    </label>
+                                    <div class="text-muted small mt-1">
+                                        Se attivo, lo stake % viene calcolato su <strong>saldo disponibile + esposizione ordini aperti</strong>.
+                                        Utile per mantenere la stessa % di rischio anche con giocate in corso non ancora incassate.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 <button class="btn btn-primary w-100 mt-3">Salva account</button>
             </form>
@@ -130,6 +150,19 @@
                                             }
                                         </div>
                                     </div>
+                                    <div class="bf-kv-row">
+                                        <div class="bf-k">Bankroll lordo</div>
+                                        <div class="bf-v">
+                                            @if (a.UseGrossBankroll)
+                                            {
+                                                <span class="badge bg-success">Attivo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">No</span>
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <form method="post" asp-page-handler="Delete" class="m-0">
@@ -153,6 +186,7 @@
                             <th>DisplayName</th>
                             <th>AppKey</th>
                             <th>Certificato P12</th>
+                            <th>Bankroll lordo</th>
                             <th class="text-end">Azioni</th>
                         </tr>
                     </thead>
@@ -179,6 +213,16 @@
                                     else
                                     {
                                         <span class="badge bg-warning text-dark">mancante</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (a.UseGrossBankroll)
+                                    {
+                                        <span class="badge bg-success">Attivo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">No</span>
                                     }
                                 </td>
                                 <td class="text-end">

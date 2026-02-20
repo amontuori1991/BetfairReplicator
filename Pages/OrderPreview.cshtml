@@ -154,6 +154,13 @@
                                     <span class="bf-oi-lbl">Saldo</span>
                                     <span class="bf-oi-val bf-price">@(r.Balance?.ToString("0.00") ?? "—") €</span>
                                 </div>
+                                @if (r.GrossBankroll.HasValue)
+                                {
+                                    <div class="bf-oi-item">
+                                        <span class="bf-oi-lbl">Bankroll lordo</span>
+                                        <span class="bf-oi-val bf-price">@r.GrossBankroll.Value.ToString("0.00") €</span>
+                                    </div>
+                                }
                                 <div class="bf-oi-item">
                                     <span class="bf-oi-lbl">Stake</span>
                                     <span class="bf-oi-val">@(r.Stake?.ToString("0.00") ?? "—") €</span>
@@ -216,6 +223,7 @@
                                 <tr>
                                     <th>Account</th>
                                     <th class="text-end">Saldo</th>
+                                    <th class="text-end">Bankroll lordo</th>
                                     <th class="text-end">Stake</th>
                                     @if (Model.Side == "LAY")
                                     {
@@ -238,6 +246,16 @@
                                     <tr>
                                         <td class="fw-semibold">@r.DisplayName</td>
                                         <td class="text-end bf-price">@(r.Balance?.ToString("0.00") ?? "—") €</td>
+                                        <td class="text-end">
+                                            @if (r.GrossBankroll.HasValue)
+                                            {
+                                                <span class="bf-price">@r.GrossBankroll.Value.ToString("0.00") €</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">—</span>
+                                            }
+                                        </td>
                                         <td class="text-end">@(r.Stake?.ToString("0.00") ?? "—") €</td>
                                         @if (Model.Side == "LAY")
                                         {

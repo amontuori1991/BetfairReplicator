@@ -29,8 +29,8 @@ public class AccountsModel : PageModel
             {
                 DisplayName = a.DisplayName,
                 AppKeyDelayed = a.AppKeyDelayed ?? "",
-                // Nel record esistono solo i campi cifrati: se c'è P12Base64Enc => abbiamo un p12 salvato
-                HasP12 = !string.IsNullOrWhiteSpace(a.P12Base64Enc)
+                HasP12 = !string.IsNullOrWhiteSpace(a.P12Base64Enc),
+                UseGrossBankroll = a.UseGrossBankroll
             })
             .ToList();
     }
@@ -50,7 +50,8 @@ public class AccountsModel : PageModel
         string? p12Base64,
         IFormFile? p12File,
         string? username,
-        string? password)
+        string? password,
+        bool useGrossBankroll = false)
     {
         if (string.IsNullOrWhiteSpace(displayName))
         {
@@ -107,7 +108,8 @@ public class AccountsModel : PageModel
                 username: username,
                 password: password,
                 p12Base64: finalP12Base64,
-                p12Password: p12Password
+                p12Password: p12Password,
+                useGrossBankroll: useGrossBankroll
             );
 
             Success = $"Account '{displayName}' salvato.";
@@ -143,5 +145,6 @@ public class AccountsModel : PageModel
         public string DisplayName { get; set; } = "";
         public string AppKeyDelayed { get; set; } = "";
         public bool HasP12 { get; set; }
+        public bool UseGrossBankroll { get; set; }
     }
 }

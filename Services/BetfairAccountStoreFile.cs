@@ -32,6 +32,13 @@ public class BetfairAccountStoreFile
         public string? PasswordEnc { get; set; }
         public string? P12Base64Enc { get; set; }
         public string? P12PasswordEnc { get; set; }
+
+        /// <summary>
+        /// Se true, il calcolo dello stake usa il bankroll lordo:
+        /// saldo disponibile + esposizione ordini aperti (|exposure|).
+        /// Utile per mantenere la stessa % anche con ordini ancora in corso.
+        /// </summary>
+        public bool UseGrossBankroll { get; set; } = false;
     }
 
     public async Task<List<BetfairAccountRecord>> GetAllAsync()
@@ -67,7 +74,8 @@ public class BetfairAccountStoreFile
         string? username,
         string? password,
         string? p12Base64,
-        string? p12Password)
+        string? p12Password,
+        bool useGrossBankroll = false)
     {
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("displayName mancante");
@@ -87,6 +95,8 @@ public class BetfairAccountStoreFile
 
                 P12Base64Enc = string.IsNullOrWhiteSpace(p12Base64) ? null : _protector.Protect(p12Base64.Trim()),
                 P12PasswordEnc = string.IsNullOrWhiteSpace(p12Password) ? null : _protector.Protect(p12Password),
+
+                UseGrossBankroll = useGrossBankroll,
             };
 
             await SaveAsync(dict);

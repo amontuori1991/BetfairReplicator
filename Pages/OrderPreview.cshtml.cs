@@ -64,6 +64,8 @@ public class OrderPreviewModel : PageModel
     {
         public string DisplayName { get; set; } = "";
         public double? Balance { get; set; }
+        public double? Exposure { get; set; }
+        public double? GrossBankroll { get; set; }   // != null solo se UseGrossBankroll attivo
         public double? Stake { get; set; }
         public double? Liability { get; set; }
         public bool MinStakeApplied { get; set; }
@@ -158,6 +160,12 @@ public class OrderPreviewModel : PageModel
 
             var balance = funds.availableToBetBalance.Value;
 
+            // Bankroll lordo: se il flag è attivo, sommiamo l'esposizione degli ordini aperti
+            // (exposure è negativo su Betfair, quindi prendiamo il valore assoluto)
+            var bankroll = balance;
+            if (acc.UseGrossBankroll && funds.exposure is double exp && exp < 0)
+                bankroll = balance + Math.Abs(exp);
+
             double rawStake;
             double stake;
             bool minApplied;
@@ -170,7 +178,7 @@ public class OrderPreviewModel : PageModel
             }
             else
             {
-                rawStake = balance * (StakePercent / 100.0);
+                rawStake = bankroll * (StakePercent / 100.0);
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
             }
@@ -213,6 +221,8 @@ public class OrderPreviewModel : PageModel
             {
                 DisplayName = acc.DisplayName,
                 Balance = balance,
+                Exposure = funds.exposure,
+                GrossBankroll = acc.UseGrossBankroll ? bankroll : null,
                 Stake = stake,
                 Liability = liability,
                 MinStakeApplied = minApplied,
@@ -301,6 +311,11 @@ public class OrderPreviewModel : PageModel
 
             var balance = funds.availableToBetBalance.Value;
 
+            // Bankroll lordo: se il flag è attivo, sommiamo l'esposizione degli ordini aperti
+            var bankroll = balance;
+            if (acc.UseGrossBankroll && funds.exposure is double exp2 && exp2 < 0)
+                bankroll = balance + Math.Abs(exp2);
+
             if (balance < 1.0)
             {
                 Rows.Add(new PreviewRow
@@ -338,7 +353,7 @@ public class OrderPreviewModel : PageModel
             }
             else
             {
-                rawStake = balance * (StakePercent / 100.0);
+                rawStake = bankroll * (StakePercent / 100.0);
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
             }
@@ -419,6 +434,8 @@ public class OrderPreviewModel : PageModel
             {
                 DisplayName = acc.DisplayName,
                 Balance = balance,
+                Exposure = funds.exposure,
+                GrossBankroll = acc.UseGrossBankroll ? bankroll : null,
                 Stake = stake,
                 Liability = liability,
                 MinStakeApplied = minApplied,
