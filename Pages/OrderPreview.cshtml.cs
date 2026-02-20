@@ -170,26 +170,72 @@ public class OrderPreviewModel : PageModel
             double rawStake;
             double stake;
             bool minApplied;
-            bool wasScaled;
 
             if (Side == "BACK")
             {
                 rawStake = BackStakeEuro ?? 0.0;
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
-                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
             else
             {
                 rawStake = bankroll * (StakePercent / 100.0);
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
-                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
+
+            var (scaledStake, wasScaled, blockReason) = ScaleIfNeeded(stake, balance, Side, Price);
+            if (blockReason != null)
+            {
+                Rows.Add(new PreviewRow
+                {
+                    DisplayName = acc.DisplayName,
+                    Balance = balance,
+                    Exposure = funds.exposure,
+                    GrossBankroll = acc.UseGrossBankroll ? bankroll : null,
+                    Status = blockReason
+                });
+                continue;
+            }
+            stake = scaledStake;
 
             double? liability = null;
             if (Side == "LAY")
                 liability = Math.Round((Price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
+
+            // Verifica finale: se liability > saldo (può accadere con stake minimo 1€ forzato),
+            // mostra blocco in preview — l'invio non deve partire
+            if (Side == "LAY" && liability.HasValue && liability.Value > balance)
+            {
+                Rows.Add(new PreviewRow
+                {
+                    DisplayName = acc.DisplayName,
+                    Balance = balance,
+                    Exposure = funds.exposure,
+                    GrossBankroll = acc.UseGrossBankroll ? bankroll : null,
+                    Stake = stake,
+                    Liability = liability,
+                    MinStakeApplied = minApplied,
+                    WasScaled = wasScaled,
+                    Status = $"Saldo insufficiente: liability {liability.Value:0.00} € su saldo {balance:0.00} €"
+                });
+                continue;
+            }
+            if (Side == "BACK" && stake > balance)
+            {
+                Rows.Add(new PreviewRow
+                {
+                    DisplayName = acc.DisplayName,
+                    Balance = balance,
+                    Exposure = funds.exposure,
+                    GrossBankroll = acc.UseGrossBankroll ? bankroll : null,
+                    Stake = stake,
+                    MinStakeApplied = minApplied,
+                    WasScaled = wasScaled,
+                    Status = $"Saldo insufficiente: stake {stake:0.00} € su saldo {balance:0.00} €"
+                });
+                continue;
+            }
 
             var place = new PlaceOrdersParams
             {
@@ -336,22 +382,34 @@ public class OrderPreviewModel : PageModel
             double rawStake;
             double stake;
             bool minApplied;
-            bool wasScaled;
 
             if (Side == "BACK")
             {
                 rawStake = BackStakeEuro ?? 0.0;
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
-                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
             else
             {
                 rawStake = bankroll * (StakePercent / 100.0);
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
-                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
+
+            var (scaledStake2, wasScaled, blockReason) = ScaleIfNeeded(stake, balance, Side, Price);
+            if (blockReason != null)
+            {
+                Rows.Add(new PreviewRow
+                {
+                    DisplayName = acc.DisplayName,
+                    Balance = balance,
+                    Exposure = funds.exposure,
+                    GrossBankroll = acc.UseGrossBankroll ? bankroll : null,
+                    Status = blockReason
+                });
+                continue;
+            }
+            stake = scaledStake2;
 
             double? liability = null;
             if (Side == "LAY")
@@ -649,32 +707,38 @@ public class OrderPreviewModel : PageModel
     /// BACK: stake = balance
     /// Restituisce (stake finale, wasScaled).
     /// </summary>
-    private static (double stake, bool wasScaled) ScaleIfNeeded(
+    private static (double stake, bool wasScaled, string? blockReason) ScaleIfNeeded(
         double stake, double balance, string side, double price)
     {
         if (side == "LAY")
         {
             var liability = Math.Round((price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
-            if (liability <= balance) return (stake, false);
+            if (liability <= balance) return (stake, false, null);
 
-            // scala: floor a 2 decimali (non round) così la liability non supera mai il balance
+            // Controlla se anche lo stake minimo (1€) è sostenibile
+            var minLiability = Math.Round((price - 1.0) * 1.0, 2, MidpointRounding.AwayFromZero);
+            if (minLiability > balance)
+                return (0, false, $"Saldo insufficiente: anche lo stake minimo (1€) produrrebbe una liability di {minLiability:0.00} € su un saldo di {balance:0.00} €");
+
+            // Floor a 2 decimali — garantisce liability ≤ balance
             var rawScaled = balance / (price - 1.0);
-            var scaled = Math.Floor(rawScaled * 100.0) / 100.0;  // floor a 2 decimali
+            var scaled = Math.Floor(rawScaled * 100.0) / 100.0;
             scaled = scaled < 1.0 ? 1.0 : scaled;
 
-            // verifica finale: se liability ancora > balance (edge case price molto bassa),
-            // sottrai un centesimo finché non rientra
+            // Verifica finale per edge case floating point
             while (Math.Round((price - 1.0) * scaled, 2, MidpointRounding.AwayFromZero) > balance && scaled > 1.0)
                 scaled = Math.Round(scaled - 0.01, 2, MidpointRounding.AwayFromZero);
 
-            return (scaled, true);
+            return (scaled, true, null);
         }
         else // BACK
         {
-            if (stake <= balance) return (stake, false);
+            if (stake <= balance) return (stake, false, null);
+            if (balance < 1.0)
+                return (0, false, $"Saldo insufficiente: disponibile {balance:0.00} € (minimo 1€)");
+
             var scaled = Math.Floor(balance * 100.0) / 100.0;
-            scaled = scaled < 1.0 ? 1.0 : scaled;
-            return (scaled, true);
+            return (scaled, true, null);
         }
     }
 
