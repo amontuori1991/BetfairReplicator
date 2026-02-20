@@ -153,12 +153,16 @@
                                     <div class="bf-kv-row">
                                         <div class="bf-k">Bankroll lordo</div>
                                         <div class="bf-v">
-                                            <form method="post" asp-page-handler="ToggleGrossBankroll" class="m-0">
+                                            <form method="post" asp-page-handler="ToggleGrossBankroll" class="m-0" id="toggle-mob-@a.DisplayName">
                                                 <input type="hidden" name="displayName" value="@a.DisplayName" />
-                                                <input type="hidden" name="useGrossBankroll" value="@(!a.UseGrossBankroll ? "true" : "false")" />
-                                                <button type="submit" class="btn btn-sm @(a.UseGrossBankroll ? "btn-success" : "btn-outline-secondary")">
-                                                    @(a.UseGrossBankroll ? "Attivo" : "No")
-                                                </button>
+                                                <input type="hidden" name="useGrossBankroll" value="@(!a.UseGrossBankroll ? "true" : "false")" id="val-mob-@a.DisplayName" />
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input bf-gross-switch" type="checkbox"
+                                                           data-form="toggle-mob-@a.DisplayName"
+                                                           data-valinput="val-mob-@a.DisplayName"
+                                                           @(a.UseGrossBankroll ? "checked" : "")
+                                                           style="width:2.4em;height:1.3em;cursor:pointer;" />
+                                                </div>
                                             </form>
                                         </div>
                                     </div>
@@ -203,7 +207,7 @@
                                     {
                                         <span class="badge bg-success">ok</span>
                                     }
-                                </td> 
+                                </td>
                                 <td>
                                     @if (a.HasP12)
                                     {
@@ -215,12 +219,16 @@
                                     }
                                 </td>
                                 <td>
-                                    <form method="post" asp-page-handler="ToggleGrossBankroll" class="m-0">
+                                    <form method="post" asp-page-handler="ToggleGrossBankroll" class="m-0" id="toggle-desk-@a.DisplayName">
                                         <input type="hidden" name="displayName" value="@a.DisplayName" />
-                                        <input type="hidden" name="useGrossBankroll" value="@(!a.UseGrossBankroll ? "true" : "false")" />
-                                        <button type="submit" class="btn btn-sm @(a.UseGrossBankroll ? "btn-success" : "btn-outline-secondary")">
-                                            @(a.UseGrossBankroll ? "Attivo" : "No")
-                                        </button>
+                                        <input type="hidden" name="useGrossBankroll" value="@(!a.UseGrossBankroll ? "true" : "false")" id="val-desk-@a.DisplayName" />
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input bf-gross-switch" type="checkbox"
+                                                   data-form="toggle-desk-@a.DisplayName"
+                                                   data-valinput="val-desk-@a.DisplayName"
+                                                   @(a.UseGrossBankroll ? "checked" : "")
+                                                   style="width:2.4em;height:1.3em;cursor:pointer;" />
+                                        </div>
                                     </form>
                                 </td>
                                 <td class="text-end">
@@ -242,3 +250,15 @@
     </div>
 
 </div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.bf-gross-switch').forEach(sw => {
+            sw.addEventListener('change', function () {
+                const valInput = document.getElementById(this.dataset.valinput);
+                if (valInput) valInput.value = this.checked ? 'true' : 'false';
+                document.getElementById(this.dataset.form)?.submit();
+            });
+        });
+    </script>
+}
