@@ -657,15 +657,22 @@ public class OrderPreviewModel : PageModel
             var liability = Math.Round((price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
             if (liability <= balance) return (stake, false);
 
-            // scala: liability = balance → stake = balance / (price - 1)
-            var scaled = Math.Round(balance / (price - 1.0), 2, MidpointRounding.AwayFromZero);
+            // scala: floor a 2 decimali (non round) così la liability non supera mai il balance
+            var rawScaled = balance / (price - 1.0);
+            var scaled = Math.Floor(rawScaled * 100.0) / 100.0;  // floor a 2 decimali
             scaled = scaled < 1.0 ? 1.0 : scaled;
+
+            // verifica finale: se liability ancora > balance (edge case price molto bassa),
+            // sottrai un centesimo finché non rientra
+            while (Math.Round((price - 1.0) * scaled, 2, MidpointRounding.AwayFromZero) > balance && scaled > 1.0)
+                scaled = Math.Round(scaled - 0.01, 2, MidpointRounding.AwayFromZero);
+
             return (scaled, true);
         }
         else // BACK
         {
             if (stake <= balance) return (stake, false);
-            var scaled = Math.Round(balance, 2, MidpointRounding.AwayFromZero);
+            var scaled = Math.Floor(balance * 100.0) / 100.0;
             scaled = scaled < 1.0 ? 1.0 : scaled;
             return (scaled, true);
         }
