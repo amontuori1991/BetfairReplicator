@@ -1296,3 +1296,44 @@ a {
 .bf-runner-table th:nth-child(4) {
     text-align: center !important;
 }
+/* ================================
+   Runner table – spacing & alignment
+   ================================ */
+
+/* Più padding a sinistra della colonna Azione
+   così le quote respirano rispetto ai tasti */
+.bf-runner-table th:nth-child(4),
+.bf-runner-table td:nth-child(4) {
+    padding-left: 24px !important;
+}
+
+/* Header "Azione" centrato rispetto ai due tasti */
+.bf-runner-table th:nth-child(4) {
+    text-align: center !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
