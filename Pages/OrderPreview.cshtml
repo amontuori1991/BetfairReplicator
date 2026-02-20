@@ -246,7 +246,7 @@
                                 {
                                     var s = (r.Status ?? "").ToUpperInvariant();
                                     var isOk = s.Contains("OK") || s.Contains("SUCCESS") || s.Contains("PREVIEW OK");
-                                    var isWarn = s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("LIABILITY") || s.Contains("SUPERIORE");
+                                    var isWarn = s.Contains("SALDO INSUFFICIENTE") || s.Contains("INSUFFICIENT") || s.Contains("MIN") || s.Contains("SUPERIORE") || s.Contains("SCALATO");
                                     var cls = isOk ? "bg-success" : (isWarn ? "bg-warning text-dark" : "bg-danger");
 
                                     <tr>
