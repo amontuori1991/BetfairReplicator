@@ -69,6 +69,7 @@ public class OrderPreviewModel : PageModel
         public double? Stake { get; set; }
         public double? Liability { get; set; }
         public bool MinStakeApplied { get; set; }
+        public bool WasScaled { get; set; }       // stake ridotto per saldo insufficiente
         public string Status { get; set; } = "";
 
         public string? BetId { get; set; }
@@ -169,18 +170,21 @@ public class OrderPreviewModel : PageModel
             double rawStake;
             double stake;
             bool minApplied;
+            bool wasScaled;
 
             if (Side == "BACK")
             {
                 rawStake = BackStakeEuro ?? 0.0;
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
             else
             {
                 rawStake = bankroll * (StakePercent / 100.0);
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
 
             double? liability = null;
@@ -226,6 +230,7 @@ public class OrderPreviewModel : PageModel
                 Stake = stake,
                 Liability = liability,
                 MinStakeApplied = minApplied,
+                WasScaled = wasScaled,
                 Status = "PREVIEW OK",
                 JsonRpcPreview = json
             });
@@ -331,52 +336,26 @@ public class OrderPreviewModel : PageModel
             double rawStake;
             double stake;
             bool minApplied;
+            bool wasScaled;
 
             if (Side == "BACK")
             {
                 rawStake = BackStakeEuro ?? 0.0;
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
-
-                if (stake > balance)
-                {
-                    Rows.Add(new PreviewRow
-                    {
-                        DisplayName = acc.DisplayName,
-                        Balance = balance,
-                        Stake = stake,
-                        MinStakeApplied = minApplied,
-                        Status = "Importo BACK superiore al saldo disponibile"
-                    });
-                    continue;
-                }
+                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
             else
             {
                 rawStake = bankroll * (StakePercent / 100.0);
                 stake = ApplyBetfairMinStake(rawStake);
                 minApplied = stake > Math.Round(rawStake, 2, MidpointRounding.AwayFromZero);
+                (stake, wasScaled) = ScaleIfNeeded(stake, balance, Side, Price);
             }
 
             double? liability = null;
             if (Side == "LAY")
-            {
                 liability = Math.Round((Price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
-
-                if (liability > balance)
-                {
-                    Rows.Add(new PreviewRow
-                    {
-                        DisplayName = acc.DisplayName,
-                        Balance = balance,
-                        Stake = stake,
-                        Liability = liability,
-                        MinStakeApplied = minApplied,
-                        Status = "Liability superiore al saldo disponibile"
-                    });
-                    continue;
-                }
-            }
 
             var customerRef = $"{batchRef}-{acc.DisplayName}".Replace(" ", "");
             if (customerRef.Length > 32) customerRef = customerRef.Substring(0, 32);
@@ -439,6 +418,7 @@ public class OrderPreviewModel : PageModel
                 Stake = stake,
                 Liability = liability,
                 MinStakeApplied = minApplied,
+                WasScaled = wasScaled,
                 Status = msg,
                 BetId = betId,
                 AvgPriceMatched = instr?.averagePriceMatched,
@@ -661,6 +641,34 @@ public class OrderPreviewModel : PageModel
 
         // fallback: se non riesco a splittare, almeno ritorno il nome evento
         return (s, null);
+    }
+
+    /// <summary>
+    /// Se stake/liability supera il saldo, scala al massimo piazzabile.
+    /// LAY: stake = balance / (price - 1)
+    /// BACK: stake = balance
+    /// Restituisce (stake finale, wasScaled).
+    /// </summary>
+    private static (double stake, bool wasScaled) ScaleIfNeeded(
+        double stake, double balance, string side, double price)
+    {
+        if (side == "LAY")
+        {
+            var liability = Math.Round((price - 1.0) * stake, 2, MidpointRounding.AwayFromZero);
+            if (liability <= balance) return (stake, false);
+
+            // scala: liability = balance → stake = balance / (price - 1)
+            var scaled = Math.Round(balance / (price - 1.0), 2, MidpointRounding.AwayFromZero);
+            scaled = scaled < 1.0 ? 1.0 : scaled;
+            return (scaled, true);
+        }
+        else // BACK
+        {
+            if (stake <= balance) return (stake, false);
+            var scaled = Math.Round(balance, 2, MidpointRounding.AwayFromZero);
+            scaled = scaled < 1.0 ? 1.0 : scaled;
+            return (scaled, true);
+        }
     }
 
     private static double ApplyBetfairMinStake(double rawStake)

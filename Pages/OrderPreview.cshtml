@@ -163,7 +163,13 @@
                                 }
                                 <div class="bf-oi-item">
                                     <span class="bf-oi-lbl">Stake</span>
-                                    <span class="bf-oi-val">@(r.Stake?.ToString("0.00") ?? "—") €</span>
+                                    <span class="bf-oi-val">
+                                        @(r.Stake?.ToString("0.00") ?? "—") €
+                                        @if (r.WasScaled)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1" title="Stake ridotto al massimo piazzabile">↓ scalato</span>
+                                        }
+                                    </span>
                                 </div>
                                 @if (Model.Side == "LAY")
                                 {
@@ -256,7 +262,13 @@
                                                 <span class="text-muted small">—</span>
                                             }
                                         </td>
-                                        <td class="text-end">@(r.Stake?.ToString("0.00") ?? "—") €</td>
+                                        <td class="text-end">
+                                            @(r.Stake?.ToString("0.00") ?? "—") €
+                                            @if (r.WasScaled)
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1" title="Stake ridotto al massimo piazzabile">↓ scalato</span>
+                                            }
+                                        </td>
                                         @if (Model.Side == "LAY")
                                         {
                                             <td class="text-end bf-profit-neg">@(r.Liability?.ToString("0.00") ?? "—") €</td>
