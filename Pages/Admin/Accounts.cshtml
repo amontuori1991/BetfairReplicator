@@ -153,14 +153,13 @@
                                     <div class="bf-kv-row">
                                         <div class="bf-k">Bankroll lordo</div>
                                         <div class="bf-v">
-                                            @if (a.UseGrossBankroll)
-                                            {
-                                                <span class="badge bg-success">Attivo</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">No</span>
-                                            }
+                                            <form method="post" asp-page-handler="ToggleGrossBankroll" class="m-0">
+                                                <input type="hidden" name="displayName" value="@a.DisplayName" />
+                                                <input type="hidden" name="useGrossBankroll" value="@(!a.UseGrossBankroll ? "true" : "false")" />
+                                                <button type="submit" class="btn btn-sm @(a.UseGrossBankroll ? "btn-success" : "btn-outline-secondary")">
+                                                    @(a.UseGrossBankroll ? "Attivo" : "No")
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
@@ -216,14 +215,13 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (a.UseGrossBankroll)
-                                    {
-                                        <span class="badge bg-success">Attivo</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">No</span>
-                                    }
+                                    <form method="post" asp-page-handler="ToggleGrossBankroll" class="m-0">
+                                        <input type="hidden" name="displayName" value="@a.DisplayName" />
+                                        <input type="hidden" name="useGrossBankroll" value="@(!a.UseGrossBankroll ? "true" : "false")" />
+                                        <button type="submit" class="btn btn-sm @(a.UseGrossBankroll ? "btn-success" : "btn-outline-secondary")">
+                                            @(a.UseGrossBankroll ? "Attivo" : "No")
+                                        </button>
+                                    </form>
                                 </td>
                                 <td class="text-end">
                                     <form method="post" asp-page-handler="Delete" class="d-inline">

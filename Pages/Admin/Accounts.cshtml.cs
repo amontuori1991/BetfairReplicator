@@ -123,6 +123,41 @@ public class AccountsModel : PageModel
         return Page();
     }
 
+    // POST /Admin/Accounts?handler=ToggleGrossBankroll
+    public async Task<IActionResult> OnPostToggleGrossBankrollAsync(string displayName, bool useGrossBankroll)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            Error = "DisplayName mancante.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var rec = await _store.GetAsync(displayName.Trim());
+        if (rec is null)
+        {
+            Error = $"Account '{displayName}' non trovato.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var (username, password, p12Base64, p12Password) = _store.UnprotectSecrets(rec);
+
+        await _store.UpsertAsync(
+            displayName: rec.DisplayName,
+            appKeyDelayed: rec.AppKeyDelayed,
+            username: username,
+            password: password,
+            p12Base64: p12Base64,
+            p12Password: p12Password,
+            useGrossBankroll: useGrossBankroll
+        );
+
+        Success = $"Bankroll lordo per '{displayName}': {(useGrossBankroll ? "attivato" : "disattivato")}.";
+        await OnGetAsync();
+        return Page();
+    }
+
     // POST /Admin/Accounts?handler=Delete
     public async Task<IActionResult> OnPostDeleteAsync(string displayName)
     {
